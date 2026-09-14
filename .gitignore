@@ -1,0 +1,23 @@
+# Virtual env (Poetry creates .venv in-project)
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Data — too large for git
+Data/complaints.csv
+Data/data/
+
+# IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Environment secrets
+.env
+
+# Personal documents — not part of the project
+Context/*.docx
+Context/*.pages

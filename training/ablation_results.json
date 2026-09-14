@@ -1,0 +1,48 @@
+{
+  "A_quoted_experiment_500k_raw_sample": {
+    "text": {
+      "pooled_auc": 0.9706318606183604,
+      "pooled_pr": 0.36757017840869,
+      "within_strata_auc": 0.8977187118792472,
+      "n_strata": 23
+    },
+    "metadata": {
+      "pooled_auc": 0.9714254621473994,
+      "pooled_pr": 0.365446771932751,
+      "within_strata_auc": 0.9399963253418151,
+      "n_strata": 23
+    },
+    "fusion": {
+      "pooled_auc": 0.9785512890241032,
+      "pooled_pr": 0.43853381307608996,
+      "within_strata_auc": 0.9447405669735327,
+      "n_strata": 23
+    },
+    "_test_base_rate": 0.016622538407680732,
+    "_n_train": 251482,
+    "_n_test": 248518
+  },
+  "B_shipped_v2_artifact": {
+    "text": {
+      "pooled_auc": 0.9541539070811293,
+      "pooled_pr": 0.3551230956390756,
+      "within_strata_auc": 0.8905461305622073,
+      "n_strata": 24
+    },
+    "metadata": {
+      "pooled_auc": 0.9532649163381952,
+      "pooled_pr": 0.3414223421693235,
+      "within_strata_auc": 0.9075822259242043,
+      "n_strata": 24
+    },
+    "fusion": {
+      "pooled_auc": 0.9634482459788829,
+      "pooled_pr": 0.40730338618674833,
+      "within_strata_auc": 0.9329597759322719,
+      "n_strata": 24
+    },
+    "_test_base_rate": 0.02776,
+    "_n_train": 71460,
+    "_n_test": 150000
+  }
+}
