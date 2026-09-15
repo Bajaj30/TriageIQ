@@ -1,5 +1,8 @@
 # TriageIQ — Agent Context
 
+> **`Context/FACTS.md` is the single source of truth for every number.**
+> If this file disagrees with it, FACTS.md wins. Regenerate with `training/canonical_facts.py`.
+
 > **Read this instead of `Context/TriageIQ.md` for orientation.** The bible (v2) is the authoritative
 > spec; this file is the working state, the decisions already made, and the traps.
 > **Keep this file updated as work progresses** — it is the handoff artifact between agent windows.
@@ -24,8 +27,9 @@ Three systems, one pipeline:
 - **A fusion model + FastAPI on Cloud Run** combines both, pulling features live from the same view
   training used.
 
-**The thesis, now measured rather than asserted:** within (Product × Issue) strata, text alone gets
-0.898 AUC, metadata alone 0.940, fusion 0.945. Neither modality subsumes the other.
+**The thesis, measured on the shipped artifact:** within (Product × Issue) strata, text alone gets
+**0.8905** AUC, metadata alone **0.9076**, fusion **0.9330**. Neither modality subsumes the other.
+All numbers live in `Context/FACTS.md` — that file wins over this one.
 
 ---
 
@@ -64,7 +68,7 @@ refunds) with an escalation label from a generated event log. **That design is d
    The consumer-facing view comes free via §2.5 precedent retrieval — *same model, same label,
    different framing.* Consumer-facing does **not** imply severity; that pairing was a wrong turn.
 
-v1 is archived at `Context/TriageIQ_v1_archive.md`. **Do not delete it** — the v1→v2 delta is itself
+v1 is archived at `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete it** — the v1→v2 delta is itself
 a portfolio artifact and an interview story.
 
 ---
@@ -163,24 +167,28 @@ Real, US-government-published, redistributable.
 | `Complaint ID` | **Verified unique PK** across all 4,826,564 window rows |
 | `Date received` | **Day granularity only** — see the tiebreak trap below |
 | `Date sent to company` | **100% populated** → real event log. Post-intake = leakage if used as a feature |
-| `Product` / `Sub-product` | 21 / 85 values |
-| `Issue` / `Sub-issue` | 173 / 266; sub-issue 2.5% null |
+| `Product` / `Sub-product` | **14 / 58** in window (21 / 85 is the all-time figure — do not use) |
+| `Issue` / `Sub-issue` | **93 / 212** in window; sub-issue 2.53% null (F1) / 4.17% (F2) |
 | `Company` | 4,950 in window; only 53 in name-collision groups → raw name usable as dim key |
-| `State` | 63 values, 0.2% null |
+| `State` | **61** in window, 0.23% null |
 | `Company response to consumer` | **The label source.** Post-intake — never a feature |
-| `Timely response?` | 97.9% Yes. Post-intake — never a feature |
-| `Tags` | **DROPPED** — 94.5% null |
-| `Submitted via` | **DROPPED** — single-valued ("Web") for narrative rows |
+| `Timely response?` | **99.62%** Yes (F1). Post-intake — never a feature |
+| `Tags` | **DROPPED** — 94.49% null in F1, but **87.82% in the training set**; revisit if a sparse flag is wanted |
+| `Submitted via` | Single-valued in F2, but **5 values in F1** (Phone 67,953 · Referral 34,071 · Postal 17,873). Dead for the model, NOT for company-volume features — decide deliberately |
 | `ZIP code` | **DROPPED** — 19% redacted, thousands of levels, `State` alone is only AUC 0.549 |
 
 ### Measured baselines to beat (TF-IDF + LR, temporal split, 2024 held out)
 
 | model | pooled AUC | pooled PR | within (Product×Issue) AUC |
 |---|---|---|---|
-| base rate | — | 0.017 | — |
-| text only | 0.971 | 0.368 | 0.898 |
-| metadata only | 0.971 | 0.362 | 0.940 |
-| **fusion** | **0.979** | **0.438** | **0.945** |
+| base rate | — | 0.028 | — |
+| text only | 0.9542 | 0.3551 | 0.8905 |
+| metadata only | 0.9533 | 0.3414 | 0.9076 |
+| **fusion** | **0.9634** | **0.4073** | **0.9330** |
+
+Measured on the **shipped v2 artifact** (`training/verify_ablation.py`). An earlier table quoted
+0.898 / 0.940 / 0.945 — those came from a 500k random sample with a *different* split and are not
+the target. **Beat 0.9330.**
 
 Per-product text-only AUC: credit card 0.833 · mortgage 0.809 · vehicle loan 0.771 · checking 0.754 ·
 debt collection 0.879 · credit reporting 0.932.

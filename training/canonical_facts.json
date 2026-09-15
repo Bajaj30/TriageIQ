@@ -1,0 +1,110 @@
+{
+  "F1_feature_population": {
+    "rows": 4826564,
+    "positives": 60952,
+    "base_rate": 0.012628445411684171,
+    "n_Product": 14,
+    "n_Sub-product": 58,
+    "n_Issue": 93,
+    "n_Sub-issue": 212,
+    "n_Company": 4950,
+    "n_State": 61,
+    "null_Sub-issue": 0.025319668401786448,
+    "null_State": 0.002325049455471843,
+    "null_Tags": 0.9448545590610629,
+    "n_Submitted_via": 5,
+    "timely_yes": 0.9961931510697879
+  },
+  "F2_modeling_population": {
+    "rows": 1639068,
+    "positives": 35375,
+    "base_rate": 0.021582387063868003,
+    "n_Product": 14,
+    "n_Sub-product": 58,
+    "n_Issue": 93,
+    "n_Sub-issue": 212,
+    "n_Company": 4210,
+    "n_State": 60,
+    "null_Sub-issue": 0.041705408195389086,
+    "null_State": 0.0032451368704654107,
+    "null_Tags": 0.9133617397203777,
+    "n_Submitted_via": 1,
+    "timely_yes": 0.9941021360919742
+  },
+  "F3_training_artifact": {
+    "rows": 301460,
+    "positives": 25131,
+    "base_rate": 0.08336429377031779,
+    "n_Product": 14,
+    "n_Sub-product": 57,
+    "n_Issue": 92,
+    "n_Sub-issue": 211,
+    "n_Company": 2745,
+    "n_State": 60,
+    "null_Sub-issue": 0.053065083261460894,
+    "null_State": 0.003456511643335766,
+    "null_Tags": 0.8782060638227294
+  },
+  "schema": {
+    "pk_unique_in_F1": true,
+    "complaint_id_all_numeric": true,
+    "complaint_id_min": 5059826,
+    "complaint_id_max": 25594248,
+    "company_day_groups": 280846,
+    "company_day_multi_share": 0.43462609401593755,
+    "company_day_max": 4245,
+    "date_min": "2022-01-01",
+    "date_max": "2024-12-31",
+    "null_response_rows_F1": 19
+  },
+  "submitted_via_F1": {
+    "Web": 4706666,
+    "Phone": 67953,
+    "Referral": 34071,
+    "Postal mail": 17873,
+    "Email": 1,
+    "Fax": 0
+  },
+  "submitted_via_F2": {
+    "Web": 1639068
+  },
+  "response_values_F1": {
+    "Closed with explanation": 2588007,
+    "Closed with non-monetary relief": 2174801,
+    "Closed with monetary relief": 60952,
+    "Untimely response": 2785,
+    "NaN": 19,
+    "Closed": 0,
+    "Closed with relief": 0,
+    "Closed without relief": 0,
+    "In progress": 0
+  },
+  "base_rate_by_year_F2": {
+    "2022": 0.0274,
+    "2023": 0.0251,
+    "2024": 0.0171
+  },
+  "splits_F3": {
+    "test": {
+      "rows": 150000,
+      "positives": 4164,
+      "rate": 0.0278,
+      "from": "2024-01-01",
+      "to": "2024-12-31"
+    },
+    "train": {
+      "rows": 71460,
+      "positives": 17865,
+      "rate": 0.25,
+      "from": "2022-01-01",
+      "to": "2023-09-30"
+    },
+    "val": {
+      "rows": 80000,
+      "positives": 3102,
+      "rate": 0.0388,
+      "from": "2023-10-01",
+      "to": "2023-12-31"
+    }
+  }
+}
