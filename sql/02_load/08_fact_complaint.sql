@@ -1,0 +1,14 @@
+-- ============================================================
+-- 02_load/08_fact_complaint.sql
+-- TARGET  : fact_complaint
+-- READS   : stg_canonical + all 6 dimensions
+-- EXPECT  : 4,826,564 — LOWER means an INNER JOIN silently dropped complaints
+-- CONCEPT : Swap every name for its id. Each join must use EXACTLY the expression used to build that dimension.
+-- ============================================================
+-- STEPS
+--  1. JOIN each dimension on the same expression used to build it (lower(), COALESCE(...))
+--  2. sub-dimensions join on BOTH parent id and name
+--  3. cast complaint_id::bigint, date_received::date; raw_product = original product name
+--  4. if short: switch joins to LEFT JOIN one at a time, look for WHERE <id> IS NULL
+
+-- query goes here

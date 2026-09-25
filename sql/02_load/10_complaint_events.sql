@@ -1,0 +1,14 @@
+-- ============================================================
+-- 02_load/10_complaint_events.sql
+-- TARGET  : complaint_events
+-- READS   : stg_window, fact_complaint
+-- EXPECT  : 4,826,564 per event type · 14,479,692 total
+-- CONCEPT : Event log: one complaint becomes three rows. A different grain from the fact.
+-- ============================================================
+-- STEPS
+--  1. 'received'        — event_date = date_received::date
+--  2. 'sent_to_company' — event_date = date_sent_to_company::date
+--  3. 'responded'       — event_date NULL; company_response, timely_response, public_response
+--     keep NULL responses as NULL (19 rows): unknown is not negative
+
+-- query goes here

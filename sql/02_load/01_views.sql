@@ -1,0 +1,16 @@
+-- ============================================================
+-- 02_load/01_views.sql
+-- TARGET  : stg_window, stg_canonical
+-- READS   : stg_complaints_raw, product_crosswalk
+-- EXPECT  : stg_window 4,826,564 · stg_canonical 4,826,564 (the LEFT JOIN must NOT change the count)
+-- CONCEPT : VIEW = a saved query that stores nothing. Write the window filter and the crosswalk logic ONCE;
+--           every later step reads from these views.
+-- ============================================================
+-- STEPS
+--  1. stg_window: staging rows with date_received::date between 2022-01-01 and 2024-12-31
+--  2. stg_canonical: stg_window + one column canonical_product =
+--     COALESCE(crosswalk.canonical_product, raw product), via a LEFT JOIN on
+--     raw_product = product AND (raw_sub_product = sub_product OR raw_sub_product IS NULL)
+--  3. Count both. If stg_canonical has MORE rows, one complaint matched two rules — a fan-out.
+
+-- query goes here

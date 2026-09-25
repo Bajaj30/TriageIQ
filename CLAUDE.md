@@ -115,7 +115,9 @@ Not yet created: `api/`, `deploy/`, top-level `README.md`.
 
 **Postgres:** container `triageiq-postgres`, database `triageiq`, user `triageiq`, `localhost:5433`,
 password in `.env`. CSV mounted read-only at `/import/complaints.csv`. **Division of labour:** I do
-infrastructure and dependencies; **Shivam writes every query** in `sql/`, I explain and review.
+infrastructure, dependencies and DDL. **Load queries (`sql/02_load/`): one file at a time, only when
+Shivam says go** — I write it, he reviews and understands it, then the next. Features (window/CTE
+work) come after all tables are loaded.
 
 ---
 

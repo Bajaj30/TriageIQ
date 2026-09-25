@@ -1,0 +1,13 @@
+-- ============================================================
+-- 02_load/03_dim_company.sql
+-- TARGET  : dim_company
+-- READS   : stg_window
+-- EXPECT  : 4,946 (4,950 raw names − 4 case-only duplicates)
+-- CONCEPT : GROUP BY + aggregate. One row per company, with a value computed across all its complaints.
+-- ============================================================
+-- STEPS
+--  1. GROUP BY lower(company) — merges 'ATM OPS Inc' / 'ATM OPS INC'
+--  2. keep one spelling: MIN(company)
+--  3. first_seen_in_window = MIN(date_received::date)
+
+-- query goes here

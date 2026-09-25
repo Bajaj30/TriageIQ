@@ -1,0 +1,12 @@
+-- ============================================================
+-- 02_load/09_complaint_narrative.sql
+-- TARGET  : complaint_narrative
+-- READS   : stg_window, fact_complaint
+-- EXPECT  : 1,639,068
+-- CONCEPT : Extension table: same grain as the fact, only rows that have text.
+-- ============================================================
+-- STEPS
+--  1. keep rows where btrim(narrative) is not empty
+--  2. INSERT complaint_id::bigint, narrative — n_words fills itself
+
+-- query goes here

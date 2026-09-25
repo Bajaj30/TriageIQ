@@ -1,8 +1,7 @@
 -- ============================================================
--- 02_load/06_indexes.sql          (DDL — run AFTER all loads in this folder)
+-- 02_load/12_indexes.sql          (DDL — run LAST, after 11_validate passes)
 -- PURPOSE : indexes for the feature pipeline's hot paths
--- WHY LAST: building an index once over loaded data is far faster than updating it
---           on every one of 4.8M inserts.
+-- WHY LAST: one index build over loaded data is far faster than updating it on 4.8M inserts
 -- ============================================================
 -- Window functions PARTITION BY an entity and ORDER BY date: index exactly that shape.
 CREATE INDEX IF NOT EXISTS ix_fact_company_date   ON fact_complaint (company_id, date_received);

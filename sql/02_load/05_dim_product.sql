@@ -1,0 +1,11 @@
+-- ============================================================
+-- 02_load/05_dim_product.sql
+-- TARGET  : dim_product
+-- READS   : stg_canonical
+-- EXPECT  : 11 canonical products — 'Credit card or prepaid card' must NOT appear
+-- CONCEPT : The crosswalk in action: 14 raw names collapse to 11.
+-- ============================================================
+-- STEPS
+--  1. SELECT DISTINCT canonical_product FROM stg_canonical
+
+-- query goes here

@@ -1,0 +1,12 @@
+-- ============================================================
+-- 02_load/07_dim_sub_product.sql
+-- TARGET  : dim_sub_product
+-- READS   : stg_canonical, dim_product
+-- EXPECT  : 62
+-- CONCEPT : Same as 06 — but join on the CANONICAL product, not the raw one.
+-- ============================================================
+-- STEPS
+--  1. JOIN dim_product ON product_name = canonical_product
+--  2. SELECT DISTINCT product_id, COALESCE(sub_product, '(not specified)')
+
+-- query goes here

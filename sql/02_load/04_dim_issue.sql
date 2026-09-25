@@ -1,0 +1,11 @@
+-- ============================================================
+-- 02_load/04_dim_issue.sql
+-- TARGET  : dim_issue
+-- READS   : stg_window
+-- EXPECT  : 94 (93 issues + '(not specified)' for 6 NULL rows)
+-- CONCEPT : Same pattern as dim_state.
+-- ============================================================
+-- STEPS
+--  1. SELECT DISTINCT COALESCE(issue, '(not specified)')
+
+-- query goes here

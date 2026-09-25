@@ -1,0 +1,15 @@
+-- ============================================================
+-- 02_load/11_validate.sql
+-- TARGET  : (checks only)
+-- READS   : everything above
+-- EXPECT  : all must match before indexing
+-- CONCEPT : Trust nothing until counted.
+-- ============================================================
+-- STEPS
+--  1. counts: fact 4,826,564 · narrative 1,639,068 · events 14,479,692
+--  2. grain: count(*) = count(DISTINCT complaint_id) on fact and narrative
+--  3. every complaint has exactly 3 events
+--  4. positives: responded + 'Closed with monetary relief' = 60,952
+--  5. re-routed: fact rows where raw_product <> canonical name = 1,334,958
+
+-- query goes here

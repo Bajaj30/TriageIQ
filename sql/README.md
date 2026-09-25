@@ -7,7 +7,7 @@ Every file is plain SQL: open it in pgAdmin's Query Tool on the `triageiq` datab
 |---|---|---|
 | `00_staging/` | CSV → `stg_complaints_raw`, untouched | DDL: Claude · validation: Shivam |
 | `01_schema/` | CREATE TABLE for the modelled layer | **Claude — done and constraint-tested** |
-| `02_load/` | staging → modelled tables (`06_indexes.sql` is DDL) | **Shivam** |
+| `02_load/` | staging → modelled tables, one table per file | **Claude writes on request, Shivam reviews** |
 | `03_features/` | Stage 1 — features over all 4.8M rows | Shivam |
 | `04_training_set/` | Stage 2 — the funnel down to train/val/test | Shivam |
 | `05_export/` | snapshot to Parquet | |

@@ -1,0 +1,12 @@
+-- ============================================================
+-- 02_load/06_dim_sub_issue.sql
+-- TARGET  : dim_sub_issue
+-- READS   : stg_window, dim_issue
+-- EXPECT  : 298 (212 names, but unique per PARENT — names repeat across issues, D6)
+-- CONCEPT : Child dimension: JOIN the parent ON its name to fetch the parent's id. Parent loads first.
+-- ============================================================
+-- STEPS
+--  1. JOIN dim_issue ON issue_name = COALESCE(issue, '(not specified)')
+--  2. SELECT DISTINCT issue_id, COALESCE(sub_issue, '(not specified)')
+
+-- query goes here

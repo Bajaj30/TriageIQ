@@ -1,0 +1,12 @@
+-- ============================================================
+-- 02_load/02_dim_state.sql
+-- TARGET  : dim_state
+-- READS   : stg_window
+-- EXPECT  : 62 (61 states + '(not specified)')
+-- CONCEPT : INSERT ... SELECT DISTINCT. DISTINCT sets the grain: one row per state.
+-- ============================================================
+-- STEPS
+--  1. SELECT DISTINCT COALESCE(state, '(not specified)')
+--  2. INSERT only the name — state_id is generated
+
+-- query goes here
