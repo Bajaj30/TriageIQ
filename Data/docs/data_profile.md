@@ -78,20 +78,23 @@ consumers copy-paste from credit-repair forums — evidence *for* authenticity, 
    was not aimed at.
 
 ## Field decisions for the DDL
+Sizes are frame **F1** (all 4,826,564 window complaints). Source of truth: `Context/FACTS.md`.
+Schema reasoning: `Context/schema_explanation.md`.
+
 | column | decision |
 |---|---|
-| `Consumer complaint narrative` | primary model input |
+| `Consumer complaint narrative` | primary model input; lives in its own extension table |
 | `Complaint ID` | PK — unique across all 4,826,564 window rows; stored as text, **cast to BIGINT** |
-| `Date received` | day granularity only; 43.5% of company-days hold >1 complaint -> `TriageIQ.md` §1.4a |
-| `Company` | 4,950 distinct; only 53 in name-collision groups -> usable as a dim key |
-| `Product` / `Sub-product` | 21 / 85 values |
-| `Issue` / `Sub-issue` | 173 / 266 values; sub-issue 2.5% null |
-| `State` | 63 values, 0.2% null |
-| `Tags` | **drop** — 94.5% null |
-| `Submitted via` | **drop** — single-valued ("Web") for narrative rows |
+| `Date received` | day granularity only; 43.46% of company-days hold >1 complaint -> `TriageIQ.md` §1.4a |
+| `Company` | 4,950 distinct; 53 in name-collision groups -> surrogate key, collisions mapped to one id |
+| `Product` / `Sub-product` | **14 / 58** in window. Sub-products repeat across products -> child unique on (product, sub-product). Products renamed/split ~2023-08-24 |
+| `Issue` / `Sub-issue` | **93 / 212** in window. Sub-issue 2.53% null (F1) / 4.17% (F2) -> `'(not specified)'` member. Issue is independent of Product |
+| `State` | **61** in window, 0.23% null |
+| `Tags` | **open** — 94.49% null in F1 but 87.82% in the training set |
+| `Submitted via` | **open** — 1 value in narrative rows, **5 in F1** (Phone, Referral, Postal mail…). Dead for the model, not for volume features |
 | `ZIP code` | **drop** — 100% populated but 19% redacted (`XXXXX`, `604XX`); thousands of levels; `State` alone scores only AUC 0.549, so ZIP adds noise + PII surface |
-| `Company response to consumer` | **the label**. Post-intake — never a feature |
-| `Date sent to company`, `Timely response?`, `Company public response` | **leakage** — post-intake, event-log only |
+| `Company response to consumer` | **the label**. Post-intake — never a feature. 19 NULLs in F1 -> excluded, not negative |
+| `Date sent to company`, `Timely response?`, `Company public response` | **leakage** — post-intake, event-log only. `Date sent to company` is **not in `meta.parquet`** yet |
 
 ## Two-tier rule
 This training set is **not** the feature population. Aggregates are computed in Postgres over all

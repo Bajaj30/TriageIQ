@@ -1,77 +1,157 @@
 """Single source of truth for every number the project depends on.
 
-Root cause of prior doc errors: statistics were quoted without pinning WHICH
-population they came from. There are exactly three, and they are not interchangeable.
-Run: python training/canonical_facts.py  -> writes Context/FACTS.md
+Root cause of earlier doc errors: statistics were quoted without pinning WHICH
+population they came from, so all-time figures stood in for windowed ones.
+There are exactly three populations and they are not interchangeable.
+
+Run:  python training/canonical_facts.py
+      -> training/canonical_facts.json  and  Context/FACTS.md
+Baselines are read from training/ablation_results.json (run verify_ablation.py first).
 """
 import json
-import pandas as pd, numpy as np, pyarrow.parquet as pq
+from pathlib import Path
+import pandas as pd, pyarrow.parquet as pq
 
-META = "Data/data/interim/meta.parquet"
+META  = "Data/data/interim/meta.parquet"
 TRAIN = "Data/data/interim/triageiq_training_v2.parquet"
+ABL   = Path("training/ablation_results.json")
 LO, HI = "2022-01-01", "2024-12-31"
-NARR = "Consumer complaint narrative"
 LABEL = "Closed with monetary relief"
-F = {}
 
 cols = ["Complaint ID","Date received","Product","Sub-product","Issue","Sub-issue",
         "Company","State","Submitted via","Company response to consumer",
         "Timely response?","Tags","has_narrative","n_words"]
 m = pq.read_table(META, columns=cols).to_pandas()
 m["Date received"] = pd.to_datetime(m["Date received"])
+f1 = m[m["Date received"].between(LO, HI)].copy()          # feature population
+f2 = f1[f1.has_narrative]                                   # modeling population
+f3 = pd.read_parquet(TRAIN)                                 # training artifact
+f3["Date received"] = pd.to_datetime(f3["Date received"])
+for c in ["Product","Sub-product","Issue","Sub-issue"]:
+    f1[c] = f1[c].astype(object)
+yl = lambda d: (d["Company response to consumer"].astype(str) == LABEL)
 
-# ---- F1: FEATURE population — what gets loaded into Postgres ----
-f1 = m[m["Date received"].between(LO, HI)]
-# ---- F2: MODELING population — narrative rows in window (pre quality filters) ----
-f2 = f1[f1.has_narrative]
-# ---- F3: TRAINING artifact — the shipped parquet ----
-f3 = pd.read_parquet(TRAIN)
-
-def stats(d, name, has_sv=True):
-    y = (d["Company response to consumer"].astype(str) == LABEL)
+def stats(d, sv=True):
+    y = yl(d)
     o = {"rows": len(d), "positives": int(y.sum()), "base_rate": float(y.mean())}
     for c in ["Product","Sub-product","Issue","Sub-issue","Company","State"]:
         o[f"n_{c}"] = int(d[c].nunique())
     for c in ["Sub-issue","State","Tags"]:
         o[f"null_{c}"] = float(d[c].isna().mean())
-    if has_sv:
+    if sv:
         o["n_Submitted_via"] = int(d["Submitted via"].nunique())
         o["timely_yes"] = float((d["Timely response?"].astype(str) == "Yes").mean())
     return o
 
-F["F1_feature_population"] = stats(f1, "F1")
-F["F2_modeling_population"] = stats(f2, "F2")
-F["F3_training_artifact"] = stats(f3, "F3", has_sv=False)
-
-# ---- schema-critical facts ----
+F = {"F1": stats(f1), "F2": stats(f2), "F3": stats(f3, sv=False)}
 ids = pd.to_numeric(f1["Complaint ID"], errors="coerce")
 cd = f1.groupby(["Company", f1["Date received"].dt.date], observed=True).size()
 F["schema"] = {
-    "pk_unique_in_F1": bool(f1["Complaint ID"].is_unique),
-    "complaint_id_all_numeric": bool(ids.notna().all()),
-    "complaint_id_min": int(ids.min()), "complaint_id_max": int(ids.max()),
-    "company_day_groups": int(len(cd)),
-    "company_day_multi_share": float((cd > 1).mean()),
+    "pk_unique_F1": bool(f1["Complaint ID"].is_unique),
+    "id_numeric": bool(ids.notna().all()), "id_min": int(ids.min()), "id_max": int(ids.max()),
+    "company_days": int(len(cd)), "company_day_multi": float((cd > 1).mean()),
     "company_day_max": int(cd.max()),
-    "date_min": str(f1["Date received"].min().date()),
-    "date_max": str(f1["Date received"].max().date()),
-    "null_response_rows_F1": int(f1["Company response to consumer"].isna().sum()),
+    "date_min": str(f1["Date received"].min().date()), "date_max": str(f1["Date received"].max().date()),
+    "null_response_F1": int(f1["Company response to consumer"].isna().sum()),
 }
-# submitted-via breakdown (the column whose verdict flipped by frame)
-F["submitted_via_F1"] = {k: int(v) for k, v in f1["Submitted via"].value_counts().items()}
-F["submitted_via_F2"] = {k: int(v) for k, v in f2["Submitted via"].value_counts().items() if v}
-# label distribution
-F["response_values_F1"] = {k: int(v) for k, v in f1["Company response to consumer"].value_counts(dropna=False).items()}
-# base-rate drift
+F["no_narrative"] = {"rows": len(f1) - len(f2),
+                     "positives": int(yl(f1).sum() - yl(f2).sum()),
+                     "share_of_all_positives": float((yl(f1).sum() - yl(f2).sum()) / yl(f1).sum())}
+F["submitted_via_F1"] = {k: int(v) for k, v in f1["Submitted via"].value_counts().items() if v}
+
+def hier(parent, child):
+    x = f1[[parent, child]].dropna().drop_duplicates()
+    per = x.groupby(child)[parent].nunique(); multi = per[per > 1]
+    return {"n_children": int(len(per)), "multi_parent": int(len(multi)),
+            "rows_affected_share": float(f1[child].isin(multi.index).mean()),
+            "null_child_rows": int(f1[child].isna().sum())}
+F["hierarchy"] = {"sub_product_under_product": hier("Product", "Sub-product"),
+                  "sub_issue_under_issue": hier("Issue", "Sub-issue"),
+                  "issue_under_product": hier("Product", "Issue")}
+pr = f1.groupby("Product")["Date received"].agg(["min", "max", "size"]).sort_values("min")
+F["product_date_ranges"] = {p: {"from": str(r["min"].date()), "to": str(r["max"].date()),
+                                "rows": int(r["size"])} for p, r in pr.iterrows()}
 F["base_rate_by_year_F2"] = {int(k): round(float(v), 4) for k, v in
-    f2.assign(y=(f2["Company response to consumer"].astype(str) == LABEL)).groupby(f2["Date received"].dt.year)["y"].mean().items()}
-# split summary
-f3["Date received"] = pd.to_datetime(f3["Date received"])
-F["splits_F3"] = {s: {"rows": int(len(g)), "positives": int(g.y.sum()),
-                      "rate": round(float(g.y.mean()), 4),
-                      "from": str(g["Date received"].min().date()),
-                      "to": str(g["Date received"].max().date())}
+                             yl(f2).groupby(f2["Date received"].dt.year).mean().items()}
+F["splits_F3"] = {s: {"rows": int(len(g)), "positives": int(g.y.sum()), "rate": float(g.y.mean()),
+                      "from": str(g["Date received"].min().date()), "to": str(g["Date received"].max().date())}
                   for s, g in f3.groupby("split")}
-print(json.dumps(F, indent=2)[:600])
-json.dump(F, open("training/canonical_facts.json", "w"), indent=2)
-print("\n-> training/canonical_facts.json")
+F["baselines"] = json.loads(ABL.read_text()) if ABL.exists() else None
+Path("training/canonical_facts.json").write_text(json.dumps(F, indent=2))
+
+# ---------------------------------------------------------------- render FACTS.md
+pc = lambda x: f"{x*100:.2f}%"
+a, b, c, s, h = F["F1"], F["F2"], F["F3"], F["schema"], F["hierarchy"]
+L = []; w = L.append
+w("# TriageIQ — Canonical Facts\n")
+w("**Generated by `training/canonical_facts.py`. Do not hand-edit — re-run it.**")
+w("Every number in every other document must match this file. If they disagree, this file wins.\n")
+w("## The three populations — always state which one a number comes from\n")
+w("| frame | what it is | rows |\n|---|---|---|")
+w(f"| **F1 — feature population** | every complaint in the window. Loaded into Postgres; aggregates computed here | **{a['rows']:,}** |")
+w(f"| **F2 — modeling population** | F1 rows that have a narrative. Only these can be training rows | **{b['rows']:,}** |")
+w(f"| **F3 — training artifact** | the shipped sampled parquet (train / val / test) | **{c['rows']:,}** |\n")
+w(f"Window {s['date_min']} .. {s['date_max']} · label `Company response to consumer == '{LABEL}'`\n")
+w("## Label counts\n\n| frame | rows | positives | base rate |\n|---|---|---|---|")
+w(f"| F1 | {a['rows']:,} | {a['positives']:,} | {pc(a['base_rate'])} |")
+w(f"| F2 | {b['rows']:,} | {b['positives']:,} | {pc(b['base_rate'])} |")
+w(f"| F3 | {c['rows']:,} | {c['positives']:,} | mixed — use the split table below |\n")
+nn = F["no_narrative"]
+w(f"**Why F1 keeps the {nn['rows']:,} rows with no narrative:** they hold **{nn['positives']:,} payout "
+  f"outcomes — {nn['share_of_all_positives']:.0%} of all positives.** Company-level relief rates computed "
+  "without them are biased by a different amount for every company.\n")
+w("Base rate by year (F2): " + " · ".join(f"{k} {v*100:.2f}%" for k, v in F["base_rate_by_year_F2"].items())
+  + " — **test is genuinely harder than train.**\n")
+w("## Cardinality — size the DDL from F1\n\n| field | F1 | F2 | F3 |\n|---|---|---|---|")
+for fld in ["Product","Sub-product","Issue","Sub-issue","Company","State"]:
+    w(f"| {fld} | **{a['n_'+fld]:,}** | {b['n_'+fld]:,} | {c['n_'+fld]:,} |")
+w("\n> 21 / 85 / 173 / 266 / 63 are **all-time** values. Never use them for this project.\n")
+w("## Null rates\n\n| field | F1 | F2 | F3 |\n|---|---|---|---|")
+for fld in ["Sub-issue","State","Tags"]:
+    w(f"| {fld} | {pc(a['null_'+fld])} | {pc(b['null_'+fld])} | {pc(c['null_'+fld])} |")
+w("\n## Hierarchies — children repeat across parents\n")
+w("| child under parent | distinct children | under >1 parent | F1 rows affected | NULL child rows |\n|---|---|---|---|---|")
+for k, lbl in [("sub_product_under_product","Sub-product under Product"),
+               ("sub_issue_under_issue","Sub-issue under Issue"),
+               ("issue_under_product","Issue under Product")]:
+    x = h[k]
+    w(f"| {lbl} | {x['n_children']} | {x['multi_parent']} | {pc(x['rows_affected_share'])} | {x['null_child_rows']:,} |")
+w("\nConsequence: a child dimension must be **unique on (parent_id, child_name)**, never on the name "
+  "alone. Issue is **not** a child of Product — they are independent dimensions.\n")
+w("## Product name date ranges — renames and splits\n\n| product | first seen | last seen | rows |\n|---|---|---|---|")
+for p, r in F["product_date_ranges"].items():
+    w(f"| {p} | {r['from']} | {r['to']} | {r['rows']:,} |")
+w("\nA product that stops on the day another starts is a **rename**, and must map to one canonical "
+  "`product_id` — otherwise every product-level feature resets to zero history mid-window.\n")
+w("## Schema-critical facts\n")
+w(f"- `Complaint ID` unique across F1: **{s['pk_unique_F1']}**; all numeric: **{s['id_numeric']}**; "
+  f"range {s['id_min']:,} .. {s['id_max']:,} → **BIGINT** (text sort ≠ numeric sort)")
+w(f"- Company-days: {s['company_days']:,}; **{pc(s['company_day_multi'])} hold >1 complaint**; "
+  f"max **{s['company_day_max']:,}** in one company-day")
+w(f"- NULL `Company response to consumer` in F1: **{s['null_response_F1']}** — unknown, not negative; exclude")
+w(f"- `Submitted via`: 1 value in F2, **{a['n_Submitted_via']} in F1** — "
+  + ", ".join(f"{k} {v:,}" for k, v in F["submitted_via_F1"].items()) + "\n")
+sp = F["splits_F3"]
+w("## Splits (F3)\n\n| split | period | rows | positives | rate | sampling |\n|---|---|---|---|---|---|")
+for k, samp in [("train","case-control, ALL positives kept"),("val","natural"),("test","natural")]:
+    x = sp[k]
+    w(f"| {k} | {x['from']} .. {x['to']} | {x['rows']:,} | {x['positives']:,} | {pc(x['rate'])} | {samp} |")
+w("\nNegative keep-fraction in train **0.104639** → recalibrate with logit offset **−2.2572**.\n")
+w("## Baselines — measured on F3, the data that actually ships\n")
+if F["baselines"]:
+    B = F["baselines"]["B_shipped_v2_artifact"]
+    w("Reproduce with `training/verify_ablation.py` (TF-IDF + logistic regression).\n")
+    w("| model | pooled AUC | pooled PR | within (Product×Issue) AUC | within-company AUC |\n|---|---|---|---|---|")
+    for mdl in ["text","metadata","fusion"]:
+        x = B[mdl]; bold = "**" if mdl == "fusion" else ""
+        w(f"| {bold}{mdl}{bold} | {x['pooled_auc']:.4f} | {x['pooled_pr']:.4f} | {x['within_strata_auc']:.4f} | "
+          + (f"{x['within_company_auc']:.4f}" if "within_company_auc" in x else "—") + " |")
+    w(f"\nTest base rate {B['_test_base_rate']*100:.2f}% · {B['_n_train']:,} train / {B['_n_test']:,} test rows.\n")
+    w("Three numbers, three different claims: **pooled** is flattered by between-company and "
+      "between-product differences; **within-strata** holds product and issue fixed; **within-company** is "
+      "what a single bank triaging its own queue would actually experience. Report the honest one.\n")
+    w("> The metadata branch is depressed on F3 because target encoding was fitted on "
+      "case-control-resampled train data (25% positive vs ~3.4%). **Entity rates must be computed over F1 "
+      "in Postgres, never over resampled training rows.**")
+Path("Context/FACTS.md").write_text("\n".join(L) + "\n")
+print("wrote training/canonical_facts.json and Context/FACTS.md")

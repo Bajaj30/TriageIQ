@@ -1,6 +1,7 @@
 # Schema — Explained Simply
 
 Running notes for Phase 0.3. Each decision is tied back to the concept it rests on.
+Numbers come from `Context/FACTS.md` (frame **F1** = all 4,826,564 complaints in the window).
 
 ---
 
@@ -16,31 +17,28 @@ table is wrong.
 
 ---
 
-## Three concepts you need
+## Five concepts you need
 
 ### 1. Grain — "one row per WHAT"
 
 | table | grain |
 |---|---|
 | `fact_complaint` | one row per **complaint** |
-| `complaint_events` | one row per **event** |
+| `complaint_events` | one row per **event** (2–3 per complaint) |
 | `dim_company` | one row per **company** |
 
 **The rule that trips everyone up:** grain is about **rows**, not about **values**.
 
 ```
 complaint_id   company_id   date_received
-  4102931        CHASE       2024-03-15
-  4102955        CHASE       2024-03-15   <- company repeats. date repeats.
-  4103012        WELLS       2024-03-15      Grain is STILL one row per complaint.
+  4102931         1847       2024-03-15
+  4102955         1847       2024-03-15   <- company repeats. date repeats.
+  4103012         2210       2024-03-15      Grain is STILL one row per complaint.
 ```
 
-Repeated values in a column are completely normal — `company_id` repeats across 16,000 rows.
-Grain only changes when **the number of rows changes**, and the only thing that does that is a
-join that fans out.
-
-**Why it matters:** if a join turns 1 complaint into 3 rows, every `SUM` triples and every
-`COUNT` lies — silently, with no error.
+Repeated values in a column are normal. Grain only changes when **the number of rows changes**,
+and the only thing that does that is a join that fans out. If a join turns 1 complaint into 3 rows,
+every `SUM` triples and every `COUNT` lies — silently.
 
 **The habit:** after every join, check the row count. Ask *"did this add rows?"* — never
 *"does this column repeat?"*
@@ -49,90 +47,156 @@ join that fans out.
 
 | type | what it is | example |
 |---|---|---|
-| **Fact** | the thing that happened, with its measurements and foreign keys | `fact_complaint` |
-| **Dimension** | describes an entity that **many facts share**; you group and filter by it | `dim_company`, `dim_product`, `dim_issue` |
+| **Fact** | the thing that happened, with its foreign keys | `fact_complaint` |
+| **Dimension** | describes an entity that **many facts share**; you group and filter by it | `dim_company`, `dim_product` |
 | **Extension** | more attributes of the **same fact**, at the **same grain**, split out for performance | `complaint_narrative` |
 
-**The test:** does it describe something many complaints have in common? → **dimension**.
-Does it describe *this one complaint*? → **extension**.
+**The test:** does it describe something many complaints share? → dimension.
+Does it describe *this one complaint*? → extension.
 
-### 3. Event log
+### 3. Attribute vs Measure — what may live on a dimension
 
-An append-only table recording *what happened and when*. It has a **different grain** from the
-fact — one complaint produces several event rows.
+**The test: does it change when a new complaint arrives?**
 
-**Why bother:** a mutable `status` column overwrites history. An event log keeps it, which is the
-only way to answer *"what did we know on 15 March?"* — the question this whole project rests on.
+| column | changes with new facts? | so it's… |
+|---|---|---|
+| `company_name` | no | an **attribute** — belongs on the dimension |
+| `total_complaints`, `relief_rate` | yes, and differs by *when you ask* | a **measure** — computed as-of-date in Phase 1, never stored |
+
+Storing `relief_rate` on `dim_company` would store the *all-time* rate — which includes the future.
+That's leakage wearing a dimension's clothes.
+
+### 4. Natural vs Surrogate keys
+
+- **Natural key** — the real-world value (`'JPMORGAN CHASE & CO.'`). Readable.
+- **Surrogate key** — a meaningless integer you mint (`1847`). Not readable — that's its cost, not a benefit.
+
+### 5. "Two names, one thing" vs "One name, different things"
+
+| | fix |
+|---|---|
+| **Two names, one thing** — CFPB renamed a product mid-window | **merge** → one id |
+| **One name, different things** — `'Credit reporting'` is a sub-product under 3 different products | **keep separate** → one id per (parent, name) |
+
+Getting these backwards either splits one entity's history in half or blurs different situations
+together. Both silently corrupt features.
 
 ---
 
-## Decisions made so far
+## Decisions made
 
 ### D1 — the narrative lives in its own table
-
-**Concept:** extension table (same grain, split for performance).
-
-`complaint_narrative (complaint_id, narrative)` — 1.64M rows, one-to-zero-or-one with the fact.
-
-**Why:** the feature pipeline scans `fact_complaint` constantly — every window function, every CTE
-— and **never reads the text**. Keeping ~650MB of narrative out means more rows fit per page and
-every scan is faster. Text on the fact table is dead weight dragged through work that never
-touches it.
-
-**Not a dimension.** A dimension describes something many complaints share. The narrative belongs
-to exactly one complaint. Calling it a dimension would tempt you to join it in the feature
-pipeline — the exact cost you're avoiding.
+**Concept:** extension table.
+`complaint_narrative (complaint_id, narrative)` — 1,639,068 rows, one-to-zero-or-one with the fact.
+**Why:** the feature pipeline scans `fact_complaint` constantly and **never reads the text**. Keeping
+~650MB out means every scan is faster. The model never reads Postgres directly anyway — training
+reads a Parquet snapshot, and at serving time the caller sends the text in the request.
 
 ### D2 — the outcome lives in `complaint_events`, not on the fact
-
 **Concept:** leakage prevention through physical separation.
+A label column on the fact is one `SELECT *` away from becoming a feature. In the event table it
+takes a deliberate, visible join. **Leakage now requires intent instead of vigilance.**
+**Catch:** events have 2–3 rows per complaint — aggregate before joining, or the grain breaks.
 
-`Company response to consumer` is the **label**. It is only knowable *after* intake.
+### D3 — `date_received` lives in both
+**Concept:** deliberate denormalisation of the hottest column.
+On the fact it's the point-in-time anchor every window function orders by. In the event log it
+completes the story (received → sent → responded). Stored twice, knowingly.
 
-**Why:** a column on `fact_complaint` is one `SELECT *` away from becoming a feature. In the event
-table it takes a deliberate, visible join. **You've made leakage require intent instead of
-requiring vigilance.**
+### D4 — surrogate keys on every dimension
+**Concept:** natural vs surrogate.
+**Why:** `PARTITION BY company_id` runs on 4.8M rows constantly — integer beats text; ~10MB instead
+of ~145MB in the fact table; and it fixes name collisions (`'ATM OPS Inc'` vs `'ATM OPS INC'` —
+one company, two strings — map to one id).
+**Accepted costs:** `SELECT *` shows numbers not names; IDs must be assigned **once and never
+change** (persist the mapping, never regenerate it); load must resolve name → id.
 
-**The catch this introduces:** `complaint_events` has 2–3 rows per complaint. Join it to the fact
-without aggregating first and your grain breaks. Aggregate first, then join.
+### D5 — `dim_company` stays thin
+**Concept:** attribute vs measure.
+`dim_company (company_id, company_name, first_seen_in_window)`.
+CFPB gives no industry, size or location, so the dimension is legitimately thin. No counts, no rates.
+**Naming caveat:** `first_seen_in_window` means *first complaint in our 2022–24 data*, not the
+company's real age. A company active since 2015 shows 2022. Never call it "tenure".
 
-### D3 — `date_received` lives in **both**
+### D6 — hierarchies are two tables, child unique on the pair
+**Concept:** one name, different things.
+```
+dim_product      (product_id, product_name)
+dim_sub_product  (sub_product_id, product_id → dim_product, sub_product_name)
+                  UNIQUE (product_id, sub_product_name)          -- NOT UNIQUE(sub_product_name)
+```
+Same shape for `dim_issue` / `dim_sub_issue`.
+**Why:** 16 of 58 sub-product names sit under more than one product (87.5% of F1 rows); 29 of 212
+sub-issues sit under more than one issue (20% of rows). Unique-on-name would fail the load or
+silently merge different sub-products.
+**Why two tables, not one combined:** product needs to be a real entity with its own id — the rename
+fix (D8) lives in one row there, and there are product-level features.
 
-**Concept:** deliberate denormalisation, for the hottest column in the pipeline.
+### D7 — Issue is independent of Product
+**Concept:** check the hierarchy before assuming one.
+55% of issues appear under more than one product (`'Improper use of your report'` under 10). They are
+separate dimensions. No link between them.
 
-- On `fact_complaint` — it is the **point-in-time anchor**. Every window function partitions and
-  orders by it. It must be one cheap column read, not a join.
-- In `complaint_events` — so the log tells the complete story: received → sent to company → responded.
+### D8 — renamed products map to one canonical id
+**Concept:** two names, one thing.
+`'Credit reporting, credit repair services, …'` runs to 2023-08-25; `'Credit reporting or other
+personal consumer reports'` starts 2023-08-24. A clean cutover — CFPB renamed it. Kept as two ids,
+every credit-reporting feature resets to zero history six weeks before val begins — on ~62% of
+complaints. `dim_product` stores the canonical name plus the raw names that map to it.
+**Still to verify:** which other product pairs are renames and which are **splits** (one old product
+becoming two new ones — a split cannot simply be merged). See `FACTS.md` → product date ranges.
 
-**The trade:** the same fact is stored twice and could drift. Accepted knowingly, because the
-alternative — joining a 2–3-row-per-complaint table on every single feature query just to fetch a
-date — reintroduces the fan-out risk everywhere.
+### D9 — NULL children get a placeholder member, never a NULL key
+**Concept:** inner joins silently drop NULLs.
+122,207 complaints (2.53%) have an issue but no sub-issue. A NULL `sub_issue_id` means
+`INNER JOIN dim_sub_issue` drops all of them — the grain bug arriving through a different door.
+Each issue gets a `'(not specified)'` sub-issue row instead.
 
-*(A grain note, since this caused confusion: putting `date_received` on the fact does NOT break
-its grain, even though thousands of complaints share a date. Repeated values ≠ repeated rows.)*
+### D10 — all 4.8M rows stay; no pre-computed ratio columns
+**Concept:** store raw facts, compute features from them.
+Proposal considered: drop the 3.2M complaints with no narrative and keep a count/ratio column instead.
+**Rejected, on evidence:** those rows hold **25,577 payout outcomes — 42% of all positives.** Company
+relief rates computed without them are off by a median 15%, up to 100%, differently per company.
+And a ratio isn't one number — "Chase's relief rate" differs on every date, so a single column
+either leaks the future or becomes the feature table. **You can recompute a count from rows; you can
+never recover rows from a count.**
+Also: these rows are metadata only (~300MB), so they cost nothing on the GPU — training reads a 44MB
+slice of the training artifact, never the database.
+
+### D11 — `product_id` and `sub_product_id` both on the fact
+**Concept:** same as D3 — hot columns live on the fact.
+`sub_product_id` implies the product, but product-level `PARTITION BY` runs constantly and shouldn't
+pay a join each time. Same for `issue_id` / `sub_issue_id`.
 
 ---
 
 ## The shape so far
 
 ```
-        dim_company ─┐
-        dim_product ─┤
-        dim_issue   ─┼──<  fact_complaint  >── complaint_narrative
-        dim_state   ─┘     (1 row/complaint)    (1 row/complaint that has text)
-                                  │
-                                  └──<  complaint_events
-                                        (2-3 rows per complaint)
-                                        received → sent → responded
-                                        ^ the LABEL lives here
+   dim_product ──< dim_sub_product            dim_issue ──< dim_sub_issue
+        │                │                         │               │
+        └───────┬────────┘                         └───────┬───────┘
+                │                                          │
+ dim_company ───┼──────────<  fact_complaint  >────────────┘
+ dim_state   ───┘          (1 row / complaint)
+                           4,826,564 rows
+                              │         │
+                              │         └── complaint_narrative   (1 row / complaint WITH text)
+                              │                1,639,068 rows
+                              └──< complaint_events               (2–3 rows / complaint)
+                                     received → sent → responded
+                                     ^ the LABEL lives here
 ```
-
-**Row counts:** `fact_complaint` = 4,826,564 (all complaints in window, including the 3.2M with no
-text — they still count toward company volume). `complaint_narrative` = 1,639,068.
 
 ---
 
-## Next
+## Still open — decide before writing DDL
 
-**Step 3 — the dimension tables.** The question to answer there: natural keys (company name) or
-surrogate keys (integer id)? And what belongs *on* a dimension versus computed later in SQL.
+1. **Product renames vs splits** (D8) — which pairs merge, which can't.
+2. **`Submitted via`** — one value in narrative rows, **five** in F1 (Phone 67,953 · Referral 34,071 ·
+   Postal 17,873). Dead for the model; not dead for company-volume features.
+3. **`Tags`** — 94.49% null in F1 but 87.82% in the training set. Drop, or keep as a sparse flag?
+4. **`Date sent to company`** — needed for `complaint_events`, but **missing from `meta.parquet`**.
+   Rebuild the cache (~15 min) or backfill at load.
+5. **NULL outcome** — 19 complaints in F1 have no response at all. Unknown ≠ negative: the label view
+   must exclude them, not count them as 0.

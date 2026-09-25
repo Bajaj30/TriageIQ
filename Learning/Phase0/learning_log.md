@@ -15,7 +15,7 @@ Postgres -> Doen watched a leacture on docker , understod -
 ## 0.2 Finding the Source Text Dataset and EDA
 
 Dataset -> **CFPB Consumer Complaints** (US gov, public, redistributable). 17.3M rows / 9.2GB raw, 3.84M with narrative text.
-Final artifact -> `Data/data/interim/triageiq_tickets_v1.parquet` — 40k rows, seed 42, 2022–2024.
+Final artifact -> ~~`triageiq_tickets_v1.parquet` (40k, product-capped)~~ **deleted — replaced by `triageiq_training_v2.parquet`** (301,460 rows, case-control train split, no product cap).
 
 ### What I did
 1. Streamed a 9GB CSV in 250k chunks (can't load it whole) -> built a meta table + narrative corpus, cached both as parquet
@@ -59,3 +59,40 @@ Final artifact -> `Data/data/interim/triageiq_tickets_v1.parquet` — 40k rows, 
   **Resolved in v2:** we do NOT invent customers. The entity that accumulates history is the
   **company / issue**, not the consumer. Point-in-time window features survive; only the partition
   key changes. See `Context/TriageIQ.md` §0.5.
+
+## 0.3 Schema Design (in progress)
+
+Full decisions + reasoning -> `Context/schema_explanation.md`. Numbers -> `Context/FACTS.md`.
+
+### What I learned
+1. **Grain** = "one row per WHAT". The most important schema concept — most bugs are grain bugs
+2. **Fact vs dimension vs extension** — dimension = shared by many facts; extension = same grain, split out
+3. **Attribute vs measure** — if it changes when new complaints arrive, it's a measure -> compute it, don't store it
+4. **Natural vs surrogate keys** — surrogate = meaningless integer id
+5. **Snowflake vs star** — parent-child dimension tables vs one flattened table
+6. **Event log** — append-only rows keep history; a mutable status column overwrites it
+
+### What confused me and how I resolved it
+1. **Thought repeated dates broke the fact table's grain** -> wanted to move `date_received` to the event table.
+   -> Grain is about ROWS, not repeated VALUES. `company_id` repeats across 16k rows too.
+   -> Only a join that ADDS rows changes grain. Ask "did this add rows?", not "does this repeat?"
+2. **Wanted to drop the 3.2M complaints with no text and keep a count/ratio column instead.**
+   -> Those rows hold 42% of all payout outcomes. Without them, company relief rates are off by a median 15%.
+   -> A ratio isn't one number — it's different on every date. Can recompute a count from rows, never rows from a count.
+   -> Also: those rows live in Postgres on disk; the GPU only ever sees a 44MB training slice.
+3. **Called the narrative table a "dimension".** -> It's an EXTENSION: describes one complaint, same grain.
+   -> Mattered because calling it a dimension tempts you to join it in the feature pipeline.
+4. **Picked surrogate keys because they're "more readable".** -> Backwards: `1847` is LESS readable than a name.
+   -> Real reasons: integer PARTITION BY on 4.8M rows, 10MB vs 145MB, and name collisions map to one id.
+5. **Assumed each sub-product has one parent product.** -> False for 87.5% of rows ('Credit reporting' sits under 3 products).
+   -> Child table must be UNIQUE on (parent_id, name), not name alone.
+   -> Two different problems: two names/one thing (rename) -> MERGE; one name/different things -> KEEP SEPARATE.
+
+### Decisions made
+Surrogate keys · narrative in its own table · label in the event log · `date_received` on both ·
+thin `dim_company` · parent-child dims unique on the pair · Issue independent of Product ·
+renamed products -> one id · NULL children -> '(not specified)' member · keep all 4.8M rows
+
+### Still open
+Product renames vs splits · `Submitted via` · `Tags` · rebuild cache for `Date sent to company` · NULL outcomes
+

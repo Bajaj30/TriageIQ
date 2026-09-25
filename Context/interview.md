@@ -94,7 +94,7 @@ from `Company` alone. The label was nearly determined by a field handed over at 
 would have added nothing.
 
 **Fix:** Evaluated *within* (Product × Issue) strata instead of pooled. Inside a stratum the
-metadata shortcut disappears and text-only reaches 0.898 AUC — real, independent signal. The lesson
+metadata shortcut disappears and text-only still reaches ~0.89 AUC — real, independent signal. The lesson
 generalises: a high pooled AUC can be entirely between-group variation that is useless to any single
 deployed user.
 
@@ -108,8 +108,9 @@ have a 1.2% payout rate.
 well, so filtering by product discards exactly the cases that need human judgement.
 
 ### Issue 10 — Pooled metrics were flattering the design
-Pooled fusion AUC was 0.835 but **within-company** it was 0.768. The gap was company-identity
-signal — useless to a bank triaging its own queue, where "which company" is constant.
+On the shipped data, fusion scores **0.963** pooled, **0.933** holding product and issue fixed, and
+**0.803** inside a single company. The pooled gap is company-identity signal — useless to a bank
+triaging its own queue, where "which company" is constant.
 
 **Fix:** Report all three numbers (pooled / within-strata / within-company) and explain the gap in
 the README rather than quoting the best one. A sharp interviewer will ask; answering before they ask
@@ -127,7 +128,7 @@ scores $3 — 800× separation, correctly ordered, without inventing a label.
 ---
 
 ## Phase 0.3 — Schema design *(in progress)*
-**What it does:** A star schema over one real fact table — `fact_complaint` plus company / product /
+**What it does:** A snowflake schema over one real fact table — `fact_complaint` plus company / product /
 issue / state dimensions, and an append-only `complaint_events` log (received → sent to company →
 responded).
 
@@ -160,13 +161,54 @@ SQL produced `NULL, 1.0, 1.0, 0.667, 0.5` in one row order and `0.25, 0, 0, 0, N
 where it doesn't. Also flagged that `complaint_id` is stored as text (`'10000000' < '8688670'` under
 string sort) so it must be cast to `bigint`, and that it is a deterministic tiebreak — not a clock.
 
+### Issue 15 — Almost moving the most-used column off the fact table
+Every complaint on the same day shares a `date_received`, so it looked like that column "broke the
+one-row-per-complaint grain" and should move to the event log.
+
+**Fix:** Grain is about **rows**, not repeated **values** — `company_id` repeats across 16,000 rows too.
+Grain only changes when a join adds rows. Moving the date out would have forced a join to a 2–3-rows-
+per-complaint table on every feature query, introducing the very fan-out risk it was meant to avoid.
+Kept on the fact, and duplicated into the event log deliberately.
+
+### Issue 16 — "Drop the 3.2M complaints with no text, keep a count column instead"
+Those rows can never be training rows, so storing a pre-computed company volume or relief-ratio
+column looked cheaper than keeping 3.2M rows.
+
+**Fix:** Measured first. Those rows hold **25,577 payout outcomes — 42% of all positives.** Company relief
+rates computed without them were off by a median 15%, up to 100%, differently for each company. And a
+ratio isn't one number — a company's rate differs on every date, so a single column either leaks the
+future or becomes the feature table. Rule: you can recompute a count from rows, never rows from a count.
+
+### Issue 17 — The category hierarchy wasn't a hierarchy
+The schema assumed each sub-product belongs to one product. It doesn't: 16 of 58 sub-product names
+appear under several products, covering 87.5% of rows — `'Credit reporting'` is a sub-product of three.
+
+**Fix:** Child dimensions are unique on **(parent_id, name)**, never the name alone — otherwise the load
+fails or silently merges different sub-products. Also found Issue isn't a child of Product at all (55%
+of issues span several products), so they became independent dimensions.
+
+### Issue 18 — CFPB renamed and split products mid-dataset
+A form change around 2023-08-24 renamed some products and split others (`'Credit card or prepaid card'`
+became two). Loaded naively, every credit-reporting feature resets to zero history six weeks before the
+validation period starts — on ~62% of all complaints.
+
+**Fix:** Separated the two cases: **two names for one thing** (rename) maps to one canonical product id;
+**one name for different things** (a sub-product under several parents) stays separate. Splits need
+their own handling since one old product can't map to two new ones by name alone.
+
+### Issue 19 — 122,207 complaints would vanish in a join
+2.53% of complaints have an issue but no sub-issue. Stored as a NULL foreign key, any `INNER JOIN` to
+the sub-issue table drops all of them — no error, just fewer rows.
+
+**Fix:** An explicit `'(not specified)'` member per issue, so every complaint has a real key to join to.
+
 ---
 
 ## Audit (2026-09-12)
 **What it does:** An adversarial audit of every quantitative claim, run partly by an independent
 model and partly as a self-audit (disclosed). Full report: `Context/audit_findings_2026-09-12.md`.
 
-### Issue 15 — The headline numbers existed nowhere in the repo
+### Issue 20 — The headline numbers existed nowhere in the repo
 The ablation figures quoted throughout the docs were produced by throwaway scripts that were never
 saved. Unreproducible by definition, which violates the project's own ground rule 6.
 
@@ -174,7 +216,7 @@ saved. Unreproducible by definition, which violates the project's own ground rul
 to three decimals (0.9706 / 0.9714 / 0.9786 pooled) — but the exercise surfaced a worse problem
 (below), which is the argument for making things reproducible in the first place.
 
-### Issue 16 — The baselines were measured on the wrong dataset
+### Issue 21 — The baselines were measured on the wrong dataset
 The quoted numbers came from a 500k random sample with a different split than the shipped artifact.
 Re-run on the actual training set, fusion within-strata fell 0.9447 → 0.9330 and metadata-only fell
 0.9400 → **0.9076**.
@@ -184,7 +226,7 @@ data, where the positive rate is 25% instead of the true 3.4% — distorting bot
 and the smoothing prior. This is a concrete argument for the two-tier rule: entity rates must be
 computed over the full population in Postgres, never over resampled training rows.
 
-### Issue 17 — Documented cardinalities were from the wrong time frame
+### Issue 22 — Documented cardinalities were from the wrong time frame
 The DDL was about to be written against all-time figures (Product 21, Issue 173, Sub-issue 266) when
 the project operates on the 2022–24 window, where the real values are 14 / 93 / 212.
 
@@ -193,10 +235,42 @@ window-narrative, all-time, shipped training set) and corrected the docs. Same c
 made `Tags` look 94.5% null when it is 87.8% in the training set, and made `Submitted via` look dead
 when it has five values in the feature population.
 
-### Issue 18 — The project had zero version control
+### Issue 23 — The project had zero version control
 `git init` had been run; nothing had ever been committed. Every document and derived artifact was
 untracked — one bad command from total loss, while ground rule 6 claims reproducibility.
 
-**Fix: NOT YET DONE.** Open action — commit before any schema work. The lesson is that
-"reproducible" is a property you have to actually check, not one you get by writing it in a rules
-list: the project asserted reproducibility in ground rule 6 for weeks while having no history at all.
+**Fix:** Committed and pushed to GitHub before any schema work, with personal documents excluded via
+`.gitignore` and a secret scan before the first push. The lesson: "reproducible" is a property you have to
+actually check, not one you get by writing it in a rules list — the project asserted it for weeks while
+having no history at all.
+
+---
+
+## Phase 2 — planning *(decided before building)*
+**What it does:** Fine-tunes a text encoder and fuses it with the SQL features, on a free-tier GPU.
+
+### Issue 24 — "The SQL side carries more than the transformer" was only half true
+Holding product and issue fixed, structured history beat text (0.9076 vs 0.8905 AUC). That made the
+transformer look like the junior partner.
+
+**Fix:** Measured a third way — **inside a single company**, which is what a deployed bank actually sees.
+There the order flips: text 0.7900, history 0.7463, fusion 0.8034. Once "which company" is constant,
+what the consumer wrote is the stronger signal. The lesson: a model comparison is only meaningful
+inside a stated evaluation frame, and the frame should match the deployment.
+
+### Issue 25 — How much text to read
+DistilBERT reads at most 512 tokens; the longest complaints run to ~7,800. The question was whether
+to switch to a long-context model.
+
+**Fix:** Checked whether length relates to the label first. The payout rate climbs with length, peaks at
+512–1k tokens (39.6%), then *declines*. Complaints in that band are already ~78% read at 512, and length
+itself is already a structured feature. So 512 stays; a 256-vs-512 run tests whether the tail matters
+before paying for a bigger model.
+
+### Issue 26 — The standard speed-up did nothing
+Dynamic padding (pad each batch to its longest item, not to 512) is the usual first optimisation.
+
+**Fix:** Measured it on this data: **1.00× — no gain at all.** With a long-tailed length distribution,
+nearly every random batch of 32 contains one long complaint, so everything pads to ~512 anyway. Grouping
+similar-length complaints into the same batch cut padded tokens **2.23×**. The textbook optimisation
+needed a second one to work.

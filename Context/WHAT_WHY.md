@@ -38,17 +38,19 @@ intersection of structured data (what has happened before — numbers in tables)
 (what someone is saying — free text). Most student projects pick one world. I deliberately picked a
 problem that is measurably unsolvable with either alone.
 
-And I can prove that claim rather than assert it. Holding product and issue type constant, so
-metadata can't cheat:
+And I can prove that claim rather than assert it. Measured on the data the model actually trains
+on, evaluated two ways — holding product and issue fixed, and inside a single company's queue:
 
-| signal | ROC-AUC |
-|---|---|
-| narrative text only | 0.898 |
-| structured metadata only | 0.940 |
-| **both, fused** | **0.945** |
+| signal | within product × issue | within one company |
+|---|---|---|
+| narrative text only | 0.8905 | **0.7900** |
+| structured history only | **0.9076** | 0.7463 |
+| **both, fused** | **0.9330** | **0.8034** |
 
-Neither modality subsumes the other. That measurement is the justification for the entire
-architecture, and I ran it before writing a line of the pipeline.
+Neither modality subsumes the other — and which one leads depends on the question. Across a product
+category, the institution's history dominates. Inside one bank's queue, where "which company" is
+constant, **what the consumer wrote is the stronger signal.** Fusion wins both ways. That measurement
+is the justification for the entire architecture, and I ran it before writing a line of the pipeline.
 
 ## The actual problem it affects
 
@@ -102,8 +104,8 @@ relief four times out of five."*
 **It's honest about time, and about itself.** Every feature and the train/test split respect what
 was knowable when — trained on the past, evaluated on the future, exactly as it would face reality
 in production. And because pooled metrics on this data are flattered by differences *between*
-companies and products, I report the stratified numbers too. Pooled ROC-AUC is 0.979; held within
-product and issue it's 0.945; inside a single company it's 0.768. All three are true, they answer
+companies and products, I report the stratified numbers too. Pooled ROC-AUC is 0.963; held within
+product and issue it's 0.933; inside a single company it's 0.803. All three are true, they answer
 different questions, and quoting only the first would be the easiest lie in the project.
 
 **What it deliberately does not claim.** The model predicts whether a complaint costs the *company*

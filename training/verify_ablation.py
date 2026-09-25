@@ -33,6 +33,16 @@ def within_strata_auc(te, y, p, keys=("Product", "Issue"), min_pos=25, min_n=150
         aucs.append(roc_auc_score(yy, p[idx])); wts.append(len(yy))
     return float(np.average(aucs, weights=np.array(wts, float))), len(aucs)
 
+def within_company_auc(te, y, p, min_pos=20, min_n=200):
+    """AUC computed inside each company, volume-weighted. What a single deployed bank sees."""
+    aucs, wts = [], []
+    for _, idx in te.groupby("Company", observed=True).indices.items():
+        yy = y[idx]
+        if yy.sum() < min_pos or yy.sum() == len(yy) or len(yy) < min_n:
+            continue
+        aucs.append(roc_auc_score(yy, p[idx])); wts.append(len(yy))
+    return float(np.average(aucs, weights=np.array(wts, float))), len(aucs)
+
 def run(d, tag):
     tr = d[d["Date received"] < "2024-01-01"]
     te = d[d["Date received"] >= "2024-01-01"].reset_index(drop=True)
@@ -61,11 +71,14 @@ def run(d, tag):
     }.items():
         p = LogisticRegression(max_iter=800, solver="liblinear").fit(A, ytr).predict_proba(B)[:, 1]
         wa, nstr = within_strata_auc(te, yte, p)
+        wc, nco = within_company_auc(te, yte, p)
         res[label] = {"pooled_auc": float(roc_auc_score(yte, p)),
                       "pooled_pr": float(average_precision_score(yte, p)),
-                      "within_strata_auc": wa, "n_strata": nstr}
+                      "within_strata_auc": wa, "n_strata": nstr,
+                      "within_company_auc": wc, "n_companies": nco}
         print(f"  {label:<9} pooled AUC {res[label]['pooled_auc']:.4f}  "
-              f"PR {res[label]['pooled_pr']:.4f}  within-strata AUC {wa:.4f} ({nstr} strata)")
+              f"PR {res[label]['pooled_pr']:.4f}  within-strata {wa:.4f} ({nstr})  "
+              f"within-company {wc:.4f} ({nco})")
     res["_test_base_rate"] = float(yte.mean()); res["_n_train"] = len(tr); res["_n_test"] = len(te)
     return res
 

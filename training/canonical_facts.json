@@ -1,5 +1,5 @@
 {
-  "F1_feature_population": {
+  "F1": {
     "rows": 4826564,
     "positives": 60952,
     "base_rate": 0.012628445411684171,
@@ -15,7 +15,7 @@
     "n_Submitted_via": 5,
     "timely_yes": 0.9961931510697879
   },
-  "F2_modeling_population": {
+  "F2": {
     "rows": 1639068,
     "positives": 35375,
     "base_rate": 0.021582387063868003,
@@ -31,7 +31,7 @@
     "n_Submitted_via": 1,
     "timely_yes": 0.9941021360919742
   },
-  "F3_training_artifact": {
+  "F3": {
     "rows": 301460,
     "positives": 25131,
     "base_rate": 0.08336429377031779,
@@ -46,38 +46,120 @@
     "null_Tags": 0.8782060638227294
   },
   "schema": {
-    "pk_unique_in_F1": true,
-    "complaint_id_all_numeric": true,
-    "complaint_id_min": 5059826,
-    "complaint_id_max": 25594248,
-    "company_day_groups": 280846,
-    "company_day_multi_share": 0.43462609401593755,
+    "pk_unique_F1": true,
+    "id_numeric": true,
+    "id_min": 5059826,
+    "id_max": 25594248,
+    "company_days": 280846,
+    "company_day_multi": 0.43462609401593755,
     "company_day_max": 4245,
     "date_min": "2022-01-01",
     "date_max": "2024-12-31",
-    "null_response_rows_F1": 19
+    "null_response_F1": 19
+  },
+  "no_narrative": {
+    "rows": 3187496,
+    "positives": 25577,
+    "share_of_all_positives": 0.41962527890799317
   },
   "submitted_via_F1": {
     "Web": 4706666,
     "Phone": 67953,
     "Referral": 34071,
     "Postal mail": 17873,
-    "Email": 1,
-    "Fax": 0
+    "Email": 1
   },
-  "submitted_via_F2": {
-    "Web": 1639068
+  "hierarchy": {
+    "sub_product_under_product": {
+      "n_children": 58,
+      "multi_parent": 16,
+      "rows_affected_share": 0.8749619812355125,
+      "null_child_rows": 32
+    },
+    "sub_issue_under_issue": {
+      "n_children": 212,
+      "multi_parent": 29,
+      "rows_affected_share": 0.20015916084402902,
+      "null_child_rows": 122207
+    },
+    "issue_under_product": {
+      "n_children": 93,
+      "multi_parent": 51,
+      "rows_affected_share": 0.8955625575461136,
+      "null_child_rows": 6
+    }
   },
-  "response_values_F1": {
-    "Closed with explanation": 2588007,
-    "Closed with non-monetary relief": 2174801,
-    "Closed with monetary relief": 60952,
-    "Untimely response": 2785,
-    "NaN": 19,
-    "Closed": 0,
-    "Closed with relief": 0,
-    "Closed without relief": 0,
-    "In progress": 0
+  "product_date_ranges": {
+    "Checking or savings account": {
+      "from": "2022-01-01",
+      "to": "2024-12-31",
+      "rows": 140276
+    },
+    "Credit card or prepaid card": {
+      "from": "2022-01-01",
+      "to": "2023-08-25",
+      "rows": 75189
+    },
+    "Credit reporting, credit repair services, or other personal consumer reports": {
+      "from": "2022-01-01",
+      "to": "2023-08-25",
+      "rows": 1248996
+    },
+    "Debt collection": {
+      "from": "2022-01-01",
+      "to": "2024-12-31",
+      "rows": 283440
+    },
+    "Money transfer, virtual currency, or money service": {
+      "from": "2022-01-01",
+      "to": "2024-12-31",
+      "rows": 44034
+    },
+    "Mortgage": {
+      "from": "2022-01-01",
+      "to": "2024-12-31",
+      "rows": 67570
+    },
+    "Payday loan, title loan, or personal loan": {
+      "from": "2022-01-01",
+      "to": "2023-08-24",
+      "rows": 10446
+    },
+    "Student loan": {
+      "from": "2022-01-01",
+      "to": "2024-12-31",
+      "rows": 33242
+    },
+    "Vehicle loan or lease": {
+      "from": "2022-01-01",
+      "to": "2024-12-31",
+      "rows": 34793
+    },
+    "Credit card": {
+      "from": "2023-08-17",
+      "to": "2024-12-31",
+      "rows": 97861
+    },
+    "Prepaid card": {
+      "from": "2023-08-18",
+      "to": "2024-12-31",
+      "rows": 8585
+    },
+    "Credit reporting or other personal consumer reports": {
+      "from": "2023-08-24",
+      "to": "2024-12-31",
+      "rows": 2767640
+    },
+    "Debt or credit management": {
+      "from": "2023-08-25",
+      "to": "2024-12-31",
+      "rows": 2897
+    },
+    "Payday loan, title loan, personal loan, or advance loan": {
+      "from": "2023-08-25",
+      "to": "2024-12-31",
+      "rows": 11595
+    }
   },
   "base_rate_by_year_F2": {
     "2022": 0.0274,
@@ -88,7 +170,7 @@
     "test": {
       "rows": 150000,
       "positives": 4164,
-      "rate": 0.0278,
+      "rate": 0.02776,
       "from": "2024-01-01",
       "to": "2024-12-31"
     },
@@ -102,9 +184,69 @@
     "val": {
       "rows": 80000,
       "positives": 3102,
-      "rate": 0.0388,
+      "rate": 0.038775,
       "from": "2023-10-01",
       "to": "2023-12-31"
+    }
+  },
+  "baselines": {
+    "A_quoted_experiment_500k_raw_sample": {
+      "text": {
+        "pooled_auc": 0.9706318606183604,
+        "pooled_pr": 0.36757017840869,
+        "within_strata_auc": 0.8977187118792472,
+        "n_strata": 23,
+        "within_company_auc": 0.7977623157274971,
+        "n_companies": 25
+      },
+      "metadata": {
+        "pooled_auc": 0.9714254621473994,
+        "pooled_pr": 0.365446771932751,
+        "within_strata_auc": 0.9399963253418151,
+        "n_strata": 23,
+        "within_company_auc": 0.7568348597156325,
+        "n_companies": 25
+      },
+      "fusion": {
+        "pooled_auc": 0.9785512890241032,
+        "pooled_pr": 0.43853381307608996,
+        "within_strata_auc": 0.9447405669735327,
+        "n_strata": 23,
+        "within_company_auc": 0.8153974461170775,
+        "n_companies": 25
+      },
+      "_test_base_rate": 0.016622538407680732,
+      "_n_train": 251482,
+      "_n_test": 248518
+    },
+    "B_shipped_v2_artifact": {
+      "text": {
+        "pooled_auc": 0.9541539070811293,
+        "pooled_pr": 0.3551230956390756,
+        "within_strata_auc": 0.8905461305622073,
+        "n_strata": 24,
+        "within_company_auc": 0.7899997194217705,
+        "n_companies": 24
+      },
+      "metadata": {
+        "pooled_auc": 0.9532649163381952,
+        "pooled_pr": 0.3414223421693235,
+        "within_strata_auc": 0.9075822259242043,
+        "n_strata": 24,
+        "within_company_auc": 0.7462700950888411,
+        "n_companies": 24
+      },
+      "fusion": {
+        "pooled_auc": 0.9634482459788829,
+        "pooled_pr": 0.40730338618674833,
+        "within_strata_auc": 0.9329597759322719,
+        "n_strata": 24,
+        "within_company_auc": 0.8033644515161633,
+        "n_companies": 24
+      },
+      "_test_base_rate": 0.02776,
+      "_n_train": 71460,
+      "_n_test": 150000
     }
   }
 }

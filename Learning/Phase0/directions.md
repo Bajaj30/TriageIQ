@@ -83,40 +83,61 @@ Red flags to check:
 ## 0.3 Schema Design (ERD)
 
 > [!WARNING]
-> The v1 version of this section described 7 tables (`customers`, `subscriptions`, `orders`,
-> `payments`, `refunds`, `tickets`, `ticket_events`) for a **synthetic** transactional world.
+> v1 described 7 tables for a **synthetic** transactional world (customers, orders, payments…).
 > **That design is dead** — CFPB has no consumer identity. See `Context/TriageIQ.md` §0.5.
+> Running decisions and the reasoning behind each: **`Context/schema_explanation.md`**.
 
-### What you need to learn
-- How to read/draw an Entity-Relationship Diagram
-- Dimensional modelling basics: what a **fact** table is vs a **dimension** table
-- What cardinality means (one-to-many, etc.)
-- Why an append-only **event log** beats mutable status columns
+### What you need to learn (just enough)
+- **Grain** — "one row per *what*". The concept that matters most; most schema bugs are grain bugs
+- **Fact vs dimension vs extension table**
+- **Attribute vs measure** — what may live on a dimension, and what must be computed later
+- **PK / FK / cardinality** — one-to-many, and reading it off a diagram
+- **Natural vs surrogate keys**
+- **Star vs snowflake** — flattened dimensions vs parent-child dimension tables
+- **`TIMESTAMPTZ` vs `DATE`**, stored UTC
+- **Constraints** — `NOT NULL`, `CHECK`, `UNIQUE` as executable documentation
+- **Append-only event log** — why it beats a mutable status column
+- **B-tree indexes** — what they are and why the serving path needs them
 
-### The v2 shape — a star schema over one real fact table
-- `fact_complaint` — one row per complaint (grain), FKs out to every dimension
-- `dim_company` · `dim_product` · `dim_issue` · `dim_state` — the descriptive lookups
-- `complaint_events` — append-only log: received -> sent to company -> responded
+Skip for now: normal forms beyond "don't repeat data", partitioning, materialized view internals.
 
 ### How to approach it
-1. Use [dbdiagram.io](https://dbdiagram.io) — free, browser-based, simple DSL
-2. Start from `Context/TriageIQ.md` §0.3, which lists every table and the measured column facts
-3. For each table ask: primary key? foreign keys? cardinality? constraints?
-4. **Trace 2-3 Phase 1 features through the schema before drawing** — "can this answer this
-   question *at a point in time*?"
+**Work backwards from the features, never forwards from the tables.**
+1. Write the ~15 Phase-1 features down first
+2. For each, ask: *can my tables answer this using only rows that existed before this complaint arrived?*
+3. Only then draw: fact grain → dimensions → event log → constraints → indexes
+4. Trace three features end-to-end on paper before writing any DDL
 
-### Non-negotiables for this schema
-- All timestamps `TIMESTAMPTZ`, stored UTC
-- `complaint_id` is `BIGINT`, not text (text sort != numeric sort)
-- Ordering convention `(date_received, complaint_id)` documented — see `TriageIQ.md` §1.4a
-- Mark the four post-intake columns as **leakage, never features**: `Date sent to company`,
-  `Company response to consumer`, `Timely response?`, `Company public response`
+Tool: [dbdiagram.io](https://dbdiagram.io) — write DBML, see the diagram, iterate in minutes.
+
+### The v2 shape — snowflake over one real fact table
+- `fact_complaint` — one row per complaint (all 4,826,564, including the ones with no text)
+- `complaint_narrative` — extension table, 1,639,068 rows, text only
+- `complaint_events` — append-only: received → sent to company → responded. **The label lives here**
+- `dim_company` — thin: id, name, `first_seen_in_window`
+- `dim_product` → `dim_sub_product` and `dim_issue` → `dim_sub_issue` — parent-child pairs
+- `dim_state`
+
+### Non-negotiables (each one found the hard way — see `schema_explanation.md`)
+- Surrogate integer keys on every dimension; the id mapping is assigned once and never regenerated
+- A child dimension is **unique on (parent_id, child_name)** — child names repeat across parents
+- Issue and Product are **independent** — do not link them
+- Renamed products map to **one** canonical `product_id`
+- NULL children get a `'(not specified)'` member — never a NULL foreign key
+- `complaint_id` is `BIGINT` (text sort ≠ numeric sort)
+- Timestamps `TIMESTAMPTZ`, UTC
+- Ordering convention for window functions — see `Context/TriageIQ.md` §1.4a
+- Post-intake columns are **never features**: `Date sent to company`, `Company response to consumer`,
+  `Timely response?`, `Company public response`
+- Numbers for sizing come from **`Context/FACTS.md`, frame F1** — never all-time figures
 
 ### Done when
-- You have an ERD from dbdiagram.io
-- You can explain every relationship and cardinality
-- You've written the DDL with all constraints
-- You've traced at least 2-3 Phase 1 features through it
+- ERD drawn in dbdiagram.io
+- You can explain every relationship, cardinality and grain
+- DDL written with all constraints
+- At least 3 Phase-1 features traced through it at a point in time
+
+---
 
 ## Suggested Order & Timeline
 

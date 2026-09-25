@@ -1,13 +1,12 @@
 # TriageIQ — Agent Context
 
-> **`Context/FACTS.md` is the single source of truth for every number.**
-> If this file disagrees with it, FACTS.md wins. Regenerate with `training/canonical_facts.py`.
+> **Read order for a fresh session:** this file → `Context/FACTS.md` (every number) →
+> `Context/schema_explanation.md` (current phase) → `Context/TriageIQ.md` (full spec, when needed).
+> **`Context/FACTS.md` is the only source of numbers.** If this file disagrees with it, FACTS.md wins.
+> Regenerate it with `python training/canonical_facts.py`.
+> **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-> **Read this instead of `Context/TriageIQ.md` for orientation.** The bible (v2) is the authoritative
-> spec; this file is the working state, the decisions already made, and the traps.
-> **Keep this file updated as work progresses** — it is the handoff artifact between agent windows.
-
-Last updated: 2026-09-11 · Phase 0.2 complete, training set built · Phase 0.3 (schema) in progress
+Last updated: 2026-09-25 · Phase 0.3 (schema) in progress — 11 decisions made, 5 open
 
 ---
 
@@ -20,56 +19,59 @@ desk can staff senior analysts against a 15-day regulatory response deadline.
 complaint arrives → P(monetary relief) → high: senior analyst / low: template response
 ```
 
-Three systems, one pipeline:
-- **PostgreSQL** holds 4.8M real complaints and turns them into point-in-time entity features
-  (company / issue relief rates, volume trends) via layered SQL.
-- **A fine-tuned DistilBERT** reads the complaint narrative — this is the primary signal.
-- **A fusion model + FastAPI on Cloud Run** combines both, pulling features live from the same view
+- **PostgreSQL** holds 4.8M real complaints and computes point-in-time company / issue features.
+- **A fine-tuned DistilBERT** reads the complaint narrative.
+- **A fusion model + FastAPI on Cloud Run** combines both, reading features from the same view
   training used.
 
-**The thesis, measured on the shipped artifact:** within (Product × Issue) strata, text alone gets
-**0.8905** AUC, metadata alone **0.9076**, fusion **0.9330**. Neither modality subsumes the other.
-All numbers live in `Context/FACTS.md` — that file wins over this one.
+**The thesis, measured on the shipped training artifact (F3):**
+
+| | within (Product×Issue) | **within-company** |
+|---|---|---|
+| text only | 0.8905 | **0.7900** |
+| metadata only | 0.9076 | 0.7463 |
+| fusion | **0.9330** | **0.8034** |
+
+Neither modality subsumes the other. Note the flip: holding product and issue fixed, metadata wins;
+**inside one company's queue — the deployment view — text wins.** Never quote one frame as if it
+were the other.
 
 ---
 
-## 2. v2 pivot — read this before touching anything
+## 2. How to work with Shivam — read before responding
 
-v1 assumed real ticket text + a **synthetic** transactional world (customers, orders, payments,
-refunds) with an escalation label from a generated event log. **That design is dead.**
+**Learning project, not a delivery contract.** He does a sub-task, reports back, gets reviewed,
+gets the next step.
 
-**Why:** CFPB has **no consumer identity**. Every complaint is anonymous, so customer-level features
-(lifetime spend, ticket velocity, prior escalations) have nothing to attach to.
+**Style**
+- **Small steps.** One decision or concept at a time, so he can hold the context himself.
+- **Crisp, simple language, no story-type responses.** Tie each step back to basics and to the core
+  goal above.
+- **Do not circle.** When he states a requirement, map every decision to it directly.
 
-**What we measured before deciding** (temporal split, train ≤2023 / test 2024):
+**Rigor**
+- **Ask when in doubt; never assume.** If an instruction is ambiguous, ask — or state the
+  interpretation explicitly before acting on it.
+- **Every number states its frame** (F1 / F2 / F3 — see `FACTS.md`). Numbers come from `FACTS.md`
+  or a fresh query, **never from memory**. Quoting stats without a frame caused a whole round of
+  doc corrections and a re-evaluation of the entire project.
+- **Verify before agreeing.** Check the data before accepting a design assumption — e.g. "each
+  sub-product has one parent" was false for 87.5% of rows.
+- **Never claim an action you haven't verified** (a file saved, a commit made). Both happened once.
+- **Correct the reasoning, not just the conclusion.** If he reaches the right answer for the wrong
+  reason (e.g. "surrogate keys are more readable"), say so — wrong reasons resurface later.
 
-| finding | number | consequence |
-|---|---|---|
-| monetary relief across all products, `Product` alone | AUC 0.957 | degenerate — label nearly determined by an intake field |
-| same, `Company` alone | AUC 0.976 | ditto |
-| pooled vs **within-company** fusion AUC | 0.835 → 0.768 | pooled metrics inflated by between-company variation |
-| **text only, within (Product×Issue)** | **AUC 0.898** | narrative carries real independent signal |
-| fusion, same strata | **AUC 0.945** | fusion justified |
-| `any_relief` label, text vs metadata | 0.628 vs 0.702 | **rejected** — metadata-dominated, kills the NLP thesis |
-| monetary-relief positives | 35,375 (2.16%) | sparse rate, ample count |
+**Boundaries**
+- **Do not hand over finished code for the curriculum**: SQL, Docker, schema design, DDL. Explain,
+  review, ask hard questions. He draws the ERD and writes the DDL.
+- Analysis / verification / profiling code on his behalf is fine and expected.
+- He values honesty about limitations over polish; diagnosing a flaw is an explicit project goal.
 
-**Decisions locked in:**
-1. **No synthetic data.** 100% real, public, verifiable end to end.
-2. **Entity = company / issue, not customer.** Point-in-time discipline and the whole window-function
-   curriculum survive; only the partition key changes.
-3. **Label = `Closed with monetary relief`.** "Did this cost the company money."
-4. **No product filter, no rule tier.** An earlier draft filtered to five "money-bearing" products and
-   template-routed the rest. **Wrong** — text-only AUC is 0.809 within Mortgage, 0.771 within Vehicle
-   loan, so serious complaints in low-payout products are still rankable by narrative. The rule tier
-   would have discarded exactly those.
-5. **Target is company cost, not consumer harm.** CFPB has no severity label; any severity model would
-   be unvalidatable. Documented as a limitation, not hidden.
-6. **Serving the company, not the consumer.** "Get a senior analyst" is a company staffing decision.
-   The consumer-facing view comes free via §2.5 precedent retrieval — *same model, same label,
-   different framing.* Consumer-facing does **not** imply severity; that pairing was a wrong turn.
+**Machine:** MacBook M4, 16GB. Mac does SQL, data prep, and 1k-row training smoke tests on MPS.
+**All real training runs go to Kaggle free tier (T4).**
 
-v1 is archived at `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete it** — the v1→v2 delta is itself
-a portfolio artifact and an interview story.
+**Git:** remote `git@github.com:Bajaj30/TriageIQ.git`, branch `main`. Commit + push after doc/decision
+updates. Personal documents (`Context/*.docx`, `*.pages`) are gitignored — never commit them.
 
 ---
 
@@ -81,195 +83,151 @@ a portfolio artifact and an interview story.
 4. **One source of truth for features.** All feature logic in SQL. Python never re-implements a
    feature. The central architectural claim.
 5. **No leakage.** Every feature computable only from what existed at complaint receipt.
-6. **Reproducible.** SEED=42, versioned snapshots, logged configs.
+6. **Reproducible.** SEED=42, versioned snapshots, logged configs, code for every quoted number.
 
 ---
 
-## 4. How to work with Shivam
-
-**Learning project, not a delivery contract.** Pattern: he does a sub-task, reports back, gets
-reviewed, gets the next step.
-
-- **Do not hand over finished code for something he's meant to learn.** SQL, Docker, and schema design
-  are the curriculum. Explain, review, ask hard questions.
-- Writing throwaway *analysis* code (verification, profiling, ablation probes) on his behalf is fine
-  and expected — that's not the curriculum.
-- **Verify claims against the artifact on disk before agreeing.** Several "red flags" so far were
-  measurement artifacts, not data problems.
-- **Do not circle.** When he states a requirement, map every design decision to it directly. He will
-  call out hedging and repetition, and he's right to.
-- He values honesty about limitations over polish. Diagnosing a flaw is an explicit project goal.
-
----
-
-## 5. Repo map
+## 4. Repo map
 
 ```
-Context/   TriageIQ.md (bible v2) · WHAT_WHY.md (pitch v2) · diagram.png
-Context/old_context/  v1 archives — TriageIQ_v1_archive.md, WHAT_WHY_v1_archive.md, data_profile_placeholder.md
-Learning/Phase0/  directions.md (sub-task guide) · learning_log.md
-Data/      EDA.ipynb · complaints.csv (9.2GB, gitignored)
-Data/data/interim/  meta.parquet · narratives.parquet · triageiq_training_v2.parquet + manifest
-Data/docs/ data_profile.md (v2, complete)
-pyproject.toml  Poetry, Python 3.11. pandas/numpy/pyarrow/matplotlib/langdetect/ipykernel/sklearn
+CLAUDE.md                     this file
+Context/FACTS.md              every number, three frames — generated, never hand-edit
+Context/schema_explanation.md Phase 0.3 decisions, each tied to a concept   ← current work
+Context/TriageIQ.md           full engineering spec (bible v2); §1.4a = verified window-frame rules
+Context/WHAT_WHY.md           pitch and positioning
+Context/interview.md          per-phase: what broke, how it was fixed
+Context/audit.md              prompt for an independent audit
+Context/audit_findings_2026-09-12.md   audit results + resolution status
+Context/old_context/          v1 archives (synthetic-customer design) — do not delete
+Learning/Phase0/              directions.md (learning guide) · learning_log.md (his notes)
+Data/EDA.ipynb                profiling + v2 training-set build (Cell 8)
+Data/docs/data_profile.md     dataset profile
+Data/complaints.csv           9.2GB raw — gitignored
+Data/data/interim/            meta.parquet · narratives.parquet · triageiq_training_v2.parquet — gitignored
+training/verify_ablation.py   reproduces every baseline number
+training/canonical_facts.py   regenerates FACTS.md
+claude_agent/                 CLI agent on the Anthropic API (used for the audit)
 ```
 
-Not yet created: `db/`, `sql/`, `etl/`, `training/`, `api/`, `deploy/`, top-level `README.md`.
+Not yet created: `db/`, `sql/`, `etl/`, `api/`, `deploy/`, top-level `README.md`.
 
 ---
 
-## 6. Phase status
+## 5. Phase status
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0.1 | Docker + Compose, `pgvector/pgvector:pg16` | **Partial** — lecture watched, no compose file exists |
-| 0.2 | Source dataset + profiling | **Complete** — v2 training set built, profile written |
-| 0.3 | **Star schema + DDL** | **NEXT** |
-| 0.4 | Bulk load 4.8M rows (replaces synthetic generator) | Not started |
+| 0.1 | Docker + Compose, `pgvector/pgvector:pg16` | **Partial** — concepts learned, no compose file yet |
+| 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
+| 0.3 | **Schema + DDL** | **In progress** — see §6 |
+| 0.4 | Bulk load 4.8M rows | Not started |
 | 0.5 | Label as a SQL view | Not started |
 | 1 | Layered CTE point-in-time pipeline | Not started |
-| 2 | pgvector, fusion, stratified ablation | Not started |
+| 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |
 | 3 | FastAPI, Docker, Cloud Run, CI/CD, monitoring | Not started |
 
 ---
 
-## 7. The dataset — CFPB Consumer Complaints
+## 6. Phase 0.3 — schema decisions (full reasoning: `Context/schema_explanation.md`)
 
-Real, US-government-published, redistributable.
-
-| | |
+| # | decision |
 |---|---|
-| raw | 17,355,295 rows / 9.2 GB |
-| with narrative | 3,843,057 (22%) |
-| working window | 2022-01-01 → 2024-12-31 |
-| complaints in window | **4,826,564** |
-| with narrative in window | **1,639,068** |
-| monetary-relief positives | **35,375 (2.16%)** |
+| D1 | Narrative in its own **extension** table `complaint_narrative` (1,639,068 rows) — not a dimension |
+| D2 | Outcome / label lives in `complaint_events`, never on the fact — leakage needs a deliberate join |
+| D3 | `date_received` on the fact (point-in-time anchor) **and** in the event log |
+| D4 | **Surrogate** integer keys on every dimension; id mapping assigned once, never regenerated |
+| D5 | `dim_company (company_id, company_name, first_seen_in_window)` — thin; no counts or rates |
+| D6 | Hierarchies = two tables; child **UNIQUE (parent_id, child_name)** — names repeat across parents |
+| D7 | Issue and Product are **independent** — 55% of issues span several products |
+| D8 | Renamed products map to **one canonical** `product_id` |
+| D9 | NULL child → `'(not specified)'` member, never a NULL FK (inner joins drop NULLs silently) |
+| D10 | Keep **all** F1 rows; never store a pre-computed ratio in place of rows |
+| D11 | Both `product_id` and `sub_product_id` (and issue pair) on the fact — hot path |
 
-### Gate check — PASSED, data is real
-
-| metric | raw | note |
-|---|---|---|
-| exact-dup rate | 19.8% | drops to 0.3% after cluster capping |
-| sentence-length CV | 0.94 | <0.35 suspicious |
-| TTR | 0.065 | <0.08 suspicious |
-| top opener | 3.7% | FCRA boilerplate — *evidence for* real humans |
-
-**Two false alarms — do not re-litigate.** (a) "placeholders 1→15" is a regex bug: `\{[a-z_]+\}` with
-`case=False` matches `{XXXX}`, CFPB's currency-redaction convention. Zero real LLM placeholders.
-(b) "40+ char words" are URLs — 103 rows (0.26%) in the sampled artifact, 0 materially corrupted.
-
-### Column reality check — read before writing DDL
-
-| column | verdict |
-|---|---|
-| `Consumer complaint narrative` | **The primary signal.** 0.898 within-strata AUC alone |
-| `Complaint ID` | **Verified unique PK** across all 4,826,564 window rows |
-| `Date received` | **Day granularity only** — see the tiebreak trap below |
-| `Date sent to company` | **100% populated** → real event log. Post-intake = leakage if used as a feature |
-| `Product` / `Sub-product` | **14 / 58** in window (21 / 85 is the all-time figure — do not use) |
-| `Issue` / `Sub-issue` | **93 / 212** in window; sub-issue 2.53% null (F1) / 4.17% (F2) |
-| `Company` | 4,950 in window; only 53 in name-collision groups → raw name usable as dim key |
-| `State` | **61** in window, 0.23% null |
-| `Company response to consumer` | **The label source.** Post-intake — never a feature |
-| `Timely response?` | **99.62%** Yes (F1). Post-intake — never a feature |
-| `Tags` | **DROPPED** — 94.49% null in F1, but **87.82% in the training set**; revisit if a sparse flag is wanted |
-| `Submitted via` | Single-valued in F2, but **5 values in F1** (Phone 67,953 · Referral 34,071 · Postal 17,873). Dead for the model, NOT for company-volume features — decide deliberately |
-| `ZIP code` | **DROPPED** — 19% redacted, thousands of levels, `State` alone is only AUC 0.549 |
-
-### Measured baselines to beat (TF-IDF + LR, temporal split, 2024 held out)
-
-| model | pooled AUC | pooled PR | within (Product×Issue) AUC |
-|---|---|---|---|
-| base rate | — | 0.028 | — |
-| text only | 0.9542 | 0.3551 | 0.8905 |
-| metadata only | 0.9533 | 0.3414 | 0.9076 |
-| **fusion** | **0.9634** | **0.4073** | **0.9330** |
-
-Measured on the **shipped v2 artifact** (`training/verify_ablation.py`). An earlier table quoted
-0.898 / 0.940 / 0.945 — those came from a 500k random sample with a *different* split and are not
-the target. **Beat 0.9330.**
-
-Per-product text-only AUC: credit card 0.833 · mortgage 0.809 · vehicle loan 0.771 · checking 0.754 ·
-debt collection 0.879 · credit reporting 0.932.
+**Open, decide before DDL:**
+1. **Product renames vs splits** — the 2023-08-24 CFPB form change produced 1 clean rename (payday),
+   1 rename + split-off (credit reporting → + `Debt or credit management`), and 1 clean split
+   (`Credit card or prepaid card` → `Credit card` + `Prepaid card`). A split cannot simply be merged.
+2. **`Submitted via`** — 1 value in F2, 5 in F1. Dead for the model, not for volume features.
+3. **`Tags`** — 94.49% null in F1, 87.82% in F3. Drop or sparse flag.
+4. **`Date sent to company`** — missing from `meta.parquet`. Rebuild cache or backfill at load.
+5. **NULL outcomes** — 19 in F1; label view must **exclude**, not count as 0.
 
 ---
 
-## 8. Traps — active, carry forward
+## 7. The v2 pivot — history, settled, do not re-litigate
 
-1. **Window frames — three patterns, verified on PostgreSQL 18.4.** `Date received` is
-   day-granularity and 43.5% of company-days hold >1 complaint (max 4,245). Tested consequences:
-   the **default frame includes all tied rows plus the current row**, so a complaint's own outcome
-   lands in its own feature (all five same-day test rows returned 2/5); and without a tiebreak the
-   same query on the same data returns different values when physical row order changes
-   (`NULL,1.0,1.0,0.667,0.5` → `0.25,0,0,0,NULL`). **There is no single correct frame** — adding
-   `complaint_id` to `ORDER BY` is rejected by `RANGE` interval frames
-   (`ERROR: RANGE with offset PRECEDING/FOLLOWING requires exactly one ORDER BY column`), and `ROWS`
-   is not a time window (across an 8-month gap it reported 3 prior vs `RANGE '90 days'` = 0). Use:
-   - **outcome rates** → `ORDER BY date_received RANGE BETWEEN UNBOUNDED PRECEDING AND '60 days' PRECEDING`
-     (excludes the day *and* CFPB's response lag — an outcome isn't knowable for up to 60 days)
-   - **volume counts** → `ORDER BY date_received RANGE BETWEEN '90 days' PRECEDING AND '1 day' PRECEDING`
-   - **sequence (LAG, rank)** → `ORDER BY date_received, complaint_id` (tiebreak required here, no RANGE)
+v1 assumed a **synthetic** customer/transaction world. **Dead** — CFPB has no consumer identity.
 
-   Also: `complaint_id` is stored as **text** — text sort ≠ numeric sort (`'10000000' < '8688670'`),
-   cast to `bigint`. It is a deterministic tiebreak, **not** a clock (Spearman 0.99998 with date, but
-   99.9% of consecutive days have overlapping ID ranges). Use named `WINDOW w AS (...)` clauses so ten
-   features can't drift to nine different frames. `count(*)`=0 vs `avg()`=NULL distinguishes "no
-   history" from "zero rate" — emit both. Full write-up with evidence: `Context/TriageIQ.md` §1.4a.
+**Decisions locked in:**
+1. **No synthetic data.** 100% real, public, verifiable.
+2. **Entity = company / issue**, not customer. Point-in-time window features survive.
+3. **Label = `Closed with monetary relief`** — company cost, not consumer harm (no severity label
+   exists; documented as a limitation).
+4. **All products, no rule tier.** Text ranks complaints *within* low-payout products too.
+5. **Serving the company.** Consumer view comes free via precedent retrieval — same model.
+6. **`any_relief` rejected** — metadata-dominated, would make the transformer decorative.
 
-2. **Two-tier rule: feature population ≠ training sample.** Aggregates computed over all 4,826,564
-   complaints (including the ~3.2M with no text — they still count toward company volume). Training
-   set is a case-control sample of the rows that *have* text. Compute a 90-day company count on a 20%
-   sample and you get ~70 instead of ~350 → training/serving skew.
-3. **Post-intake columns are label material, never features:** `Date sent to company`,
-   `Company response to consumer`, `Timely response?`, `Company public response`.
-4. **Pooled metrics lie.** Pooled 0.979 / within-strata 0.945 / within-company 0.768 are three
-   different claims. Report the honest one prominently and explain the gap.
-5. **Training set is built (v2).** `Data/data/interim/triageiq_training_v2.parquet` — 301,460 rows.
-   Temporal split applied **before** sampling; case-control on train only.
-   | split | period | rows | pos | rate |
-   |---|---|---|---|---|
-   | train | <2023-10-01 | 71,460 | 17,865 | 25.00% (case-control, ALL positives kept) |
-   | val | 2023-10-01..12-31 | 80,000 | 3,102 | 3.88% (natural) |
-   | test | 2024 | 150,000 | 4,164 | 2.78% (natural) |
+*The exploration measurements behind these (Product-alone AUC 0.957, Company-alone 0.976, etc.)
+were taken on various subsets and are **historical**. Current numbers: `FACTS.md` only.*
 
-   **Recalibration is mandatory:** negative keep-fraction 0.104639 → apply logit offset
-   **−2.2572** to return predictions to the true prior. val/test are left at natural prevalence
-   because PR-AUC is base-rate sensitive.
-   No product cap — mix is natural (credit reporting ~62%). Quality filters retain 98.5% of
-   positives while cutting 33% of rows, lifting the eligible base rate 2.16% → 3.15%.
-   Base rate drifts **down** (2022 3.38% / 2023 3.49% / 2024 2.79%) — test is genuinely harder.
-6. **EDA notebook is v2-current.** Cells 8, 9, 10 rewritten; no stale v1 references remain.
-   Cells 19–22 replaced in place; user-added cells (placeholder inspection, long-word check) preserved.
-   `data_profile.md` regenerated, **all TODOs resolved**.
-7. **Notebook hygiene** (low priority): two full 9GB CSV passes; `norm()`/`sents()` defined in Cell 3b
-   but used in Cells 4/10; `datetime.utcnow()` deprecated; `groupby.apply` FutureWarning in Cell 8.
+v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
 
 ---
 
-## 9. Guardrails to check against later
+## 8. Traps — active
+
+1. **Window frames — three patterns, verified on PostgreSQL 18.4** (`TriageIQ.md` §1.4a).
+   `date_received` is day-granularity; 43.46% of company-days hold >1 complaint. The **default frame
+   includes the current row's own label**; without a tiebreak results change between runs; adding
+   `complaint_id` to `ORDER BY` is **rejected** by `RANGE` interval frames; `ROWS` is not a time window.
+   - outcome rates → `ORDER BY date_received RANGE BETWEEN UNBOUNDED PRECEDING AND '60 days' PRECEDING`
+   - volume counts → `ORDER BY date_received RANGE BETWEEN '90 days' PRECEDING AND '1 day' PRECEDING`
+   - sequence (LAG, rank) → `ORDER BY date_received, complaint_id`
+2. **Two-tier rule.** Features computed over F1 (4,826,564); training on F3. The 3.2M no-narrative
+   rows hold 42% of all payout outcomes.
+3. **Target encoding must never be fitted on case-control-resampled data** — it cost the metadata
+   branch 0.032 AUC. Entity rates come from F1 in Postgres.
+4. **Post-intake columns are never features:** `Date sent to company`, `Company response to
+   consumer`, `Timely response?`, `Company public response`.
+5. **Three evaluation frames, three claims** — pooled 0.9634 / within-strata 0.9330 / within-company
+   0.8034 (fusion, F3). Report the honest one; explain the gap.
+6. **Recalibration is mandatory** — case-control keep-fraction 0.104639 → logit offset −2.2572.
+7. **721 narratives straddle splits** (3,120 rows, 1.03%, 3 positives) — dup filter isn't group-aware.
+   Fix before Phase 2: assign each narrative hash to one split.
+8. **Undeclared dependency:** scikit-learn is required but not in `pyproject.toml`.
+
+---
+
+## 9. Phase 2 plan — decided
+
+- **Encoder: DistilBERT**, revisit only if measurement says so. Cheaper upgrade path if needed:
+  DistilRoBERTa (same speed, better pretraining) → DeBERTa-v3-base (strongest at 512).
+- **`max_length=512`** (DistilBERT's hard ceiling). Length correlates with the label — positive rate
+  peaks at 512–1k tokens (39.6%) then declines; 512 reads ~78% of the median doc in that band.
+  First ablation: 256 vs 512. Try head+tail truncation before any long-context model.
+- **Long-context fallback only if 256→512 gain is large:** jina-embeddings-v2-small (~33M, 8192 ctx).
+- **Training speed:** `group_by_length=True` is the big win (2.23× fewer tokens; dynamic padding
+  alone does *nothing* on this data), `fp16` on T4, freeze encoder epoch 1, early stop on val PR-AUC,
+  ≤3 epochs, develop on a 10k subset.
+
+---
+
+## 10. Guardrails
 
 - Every feature computed **as-of complaint receipt**, never as-of today.
-- Window frames must **exclude the current row** — the label lives in the same table.
-- Smoothing priors (`(successes + K·prior)/(n + K)`, K≈50) must **also** be as-of date.
-- Train/test split is **temporal**, never random. Expect worse numbers and say so proudly.
-- Case-control sampling requires **recalibrating** predictions back to the 2.16% prior.
+- Window frames **exclude the current row** — the label lives in the same database.
+- Smoothing priors must **also** be as-of date.
+- Split is **temporal**, never random.
 - Preprocessing fit on train only, persisted, reused verbatim at inference.
-- The API accepts **identifiers + text, never features**. State the trade-off (DB round-trip latency,
-  coupling to DB availability) rather than hiding it.
-- Aggregate-then-join, never join-then-aggregate. **Check row count after every join.**
+- The API accepts **identifiers + text, never features**. State the trade-off.
+- Aggregate-then-join. **Check row count after every join.**
 - Smell test: within-strata AUC materially above ~0.95 → hunt for the leak.
 
 ---
 
-## 10. Optional, cuttable — expected-cost ranking (Phase 2.6)
+## 11. Optional, cuttable — expected-cost ranking (Phase 2.6)
 
-Rank the queue by `expected_cost = P(monetary relief) × claimed_amount`, regex-extracting the amount
-from the narrative with a product-median fallback. Fixes the ordering objection: a $200k student-loan
-disbursement failure at P=0.012 → $2,400 expected; a $10 prepaid recharge at P=0.285 → $3. **800×
-separation, correctly ordered, with no severity label.**
-
-Feasibility measured: 18.5% of narratives carry a usable `$` figure overall, 34–53% in high-value
-products. Median claimed amounts are face-valid (vehicle $5,000 · student loan $4,900 · mortgage
-$4,800 · credit card $900). Limitations: amount is *claimed*, not verified; 81.5% need the fallback.
-Keep this layer outside the model — thin, transparent, business-facing.
+`expected_cost = P(monetary relief) × claimed_amount` (amount regex-extracted, product-median
+fallback). A $200k claim at P=0.012 → $2,400; a $10 claim at P=0.285 → $3. Recovers magnitude
+without a severity label. Amount is *claimed*, not verified; ~81% of complaints need the fallback.

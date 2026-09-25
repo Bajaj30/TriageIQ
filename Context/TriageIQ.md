@@ -9,7 +9,7 @@ fine-tuned transformer fusion model + containerized cloud deployment.
 it, what to expect, and where it will hurt.* When reality contradicts this doc, update the doc —
 that habit is itself a portfolio signal.
 
-**v1 is archived at `Context/TriageIQ_v1_archive.md`.** Do not delete it. The delta between v1 and
+**v1 is archived at `Context/old_context/TriageIQ_v1_archive.md`.** Do not delete it. The delta between v1 and
 v2 is a portfolio artifact in its own right — see §0.5.
 
 ---
@@ -43,7 +43,10 @@ anonymous. Customer-level features — lifetime spend, refund ratio, ticket velo
 escalations — have nothing to attach to. Inventing a synthetic customer layer would have meant the
 fusion model was learning our own generator, which v1 itself flagged as the #1 risk.
 
-**What we measured before deciding** (all temporal splits, train ≤2023 / test 2024):
+**What we measured before deciding** (temporal splits, train ≤2023 / test 2024). *These are
+exploration-phase measurements on **varying subsets** — historical record of the decision, not current
+numbers. The 0.835 → 0.768 row is from a five-product subset; the within-strata rows from a 500k
+random sample. Current numbers on the shipped data: `Context/FACTS.md`.*
 
 | finding | number | consequence |
 |---|---|---|
@@ -109,36 +112,45 @@ Synthetic-vs-real gate **passed** — sentence-length CV 0.94, TTR 0.065, exact-
 apparent red flags were false alarms; both are documented in `Data/docs/data_profile.md` and must not
 be re-litigated. Full profiling lives in `Data/EDA.ipynb`.
 
-> **Note:** `Data/data/interim/triageiq_tickets_v1.parquet` (the 40k product-capped sample) is
-> **obsolete under v2**. Cell 8 of the notebook must be rewritten for case-control sampling (§2.2).
-> Cells 0–7 and 10 remain valid.
+> **Note:** the v1 40k product-capped sample was deleted. Its replacement is
+> `Data/data/interim/triageiq_training_v2.parquet` (301,460 rows, case-control train split),
+> built by EDA Cell 8. See §2.2 and `Context/FACTS.md`.
 
-### 0.3 Schema design — *status: next*
+### 0.3 Schema design — *status: in progress*
 
-**Shape: a star schema over one real fact table.** There is no synthetic transactional world.
+**Shape: a snowflake over one real fact table.** There is no synthetic transactional world. Every
+decision below, with the concept it rests on, is in **`Context/schema_explanation.md`**. Sizes are
+frame **F1** (all 4,826,564 window complaints) from `Context/FACTS.md` — never all-time figures.
 
 | table | grain | notes |
 |---|---|---|
-| `dim_company` | one row per company | 4,950 distinct names in window; only 53 in any name-collision group, most genuinely distinct firms — raw name is a usable key with near-zero cleaning |
-| `dim_product` | product / sub-product | 21 products, 85 sub-products |
-| `dim_issue` | issue / sub-issue | 173 issues, 266 sub-issues; sub-issue 2.5% null |
-| `dim_state` | state code | 63 values, 0.2% null |
-| `fact_complaint` | **one row per complaint** | `complaint_id` PK — verified unique across all 4,826,564 window rows |
-| `complaint_events` | one row per event | append-only log built from `Date received` → `Date sent to company` → response |
+| `fact_complaint` | **one row per complaint** | all 4,826,564 — including the ~3.2M with no narrative, which hold 42% of all payout outcomes. `complaint_id BIGINT` PK, verified unique |
+| `complaint_narrative` | one row per complaint **with text** | **extension** table, 1,639,068 rows. Split out because the feature pipeline never reads text |
+| `complaint_events` | one row per **event** (2–3 per complaint) | append-only: received → sent to company → responded. **The label lives here**, never on the fact |
+| `dim_company` | one row per company | 4,950. Thin: `company_id`, `company_name`, `first_seen_in_window`. No counts or rates |
+| `dim_product` → `dim_sub_product` | product; (product, sub-product) pair | 14 products, 58 sub-products. Child **UNIQUE (product_id, sub_product_name)** |
+| `dim_issue` → `dim_sub_issue` | issue; (issue, sub-issue) pair | 93 issues, 212 sub-issues. Child unique on the pair; NULL → `'(not specified)'` member |
+| `dim_state` | state | 61 values, 0.23% null |
 
-**Why an event log rather than mutable status columns:** it mirrors production systems, preserves
-history, and makes point-in-time correctness *possible*. `Date sent to company` is **100% populated**
-across all 17.3M rows, so this is a real log, not a stub.
+**Surrogate integer keys everywhere**, assigned once and never regenerated. Both `product_id` and
+`sub_product_id` (and the issue pair) sit on the fact — product-level `PARTITION BY` is the hot path.
 
-**The tiebreak decision — settle this before writing any DDL.** `Date received` is **day-granularity
-only**. In the window, **43.5% of company-days carry more than one complaint**, with up to 4,245 in a
-single company-day. Every window function ordering by date alone will tie non-deterministically and
-your features will not be reproducible run-to-run. **Order by `(date_received, complaint_id)`
-everywhere**, and state the convention in the feature dictionary.
+**Three data facts that shape this, all measured:**
+- **Children repeat across parents.** 16 of 58 sub-products sit under more than one product (87.5% of
+  rows); 29 of 212 sub-issues under more than one issue. Unique-on-name would break the load.
+- **Issue is not a child of Product** — 55% of issues span several products. Independent dimensions.
+- **Products were renamed and split** in a CFPB form change around 2023-08-24. Renames map to one
+  canonical `product_id`, or product features reset mid-window; splits need separate handling
+  (open decision — see `schema_explanation.md`).
 
-**Nullability from the data:** `State` 0.2% null · `Sub-issue` 2.5% · `Tags` **94.5% null** (drop or
-treat as a sparse flag) · `Submitted via` is single-valued ("Web") for narrative rows and carries no
-information.
+**Why an event log rather than mutable status columns:** it preserves history, which is what makes
+point-in-time correctness *possible*. `Date sent to company` is 100% populated in the raw CSV — but
+**missing from `meta.parquet`**, so the cache must be rebuilt or the column backfilled at load.
+
+**Ordering convention:** `date_received` is day-granularity and 43.46% of company-days hold more than
+one complaint. **There is no single correct window frame** — a `(date_received, complaint_id)`
+tiebreak is rejected by `RANGE` interval frames. Use the three patterns in **§1.4a**, and record the
+convention in the feature dictionary.
 
 **How:** draw the ERD first (dbdiagram.io or Mermaid), check it against every Phase 1 feature ("can
 this schema answer this question *at a point in time*?"), then write DDL with explicit PKs, FKs, NOT
@@ -163,13 +175,15 @@ distribution sanity against the numbers in §0.2.
 
 ### 0.5 Label construction
 
-**Label:** `Closed with monetary relief` → 1, everything else → 0. **35,375 positives, 2.16%.**
+**Label:** `Closed with monetary relief` → 1, other responses → 0, **NULL response → excluded**
+(unknown is not negative; 19 such rows in F1). **35,375 positives, 2.16% (F2).**
 
 Write it as a **SQL view over the response column**, never a column baked in at load time, so the
 definition is transparent, versioned, and changeable.
 
 **Why this label:** it is the only outcome in CFPB that is (a) real, (b) unambiguous, (c) directly
-answers "did this cost the company money," and (d) **text-predictable** — 0.898 within-strata AUC.
+answers "did this cost the company money," and (d) **text-predictable** — 0.8905 within-strata AUC
+and 0.7900 within-company on the shipped data (F3).
 `any_relief` was measured and rejected: metadata beats text on it (0.702 vs 0.628), which would make
 the transformer decorative.
 
@@ -458,8 +472,8 @@ inference.
 
 ### 2.3 Fusion architecture
 
-- **Text branch:** DistilBERT, fine-tuned, pooled representation. **This is the primary signal** —
-  0.898 within-strata AUC on its own.
+- **Text branch:** DistilBERT, fine-tuned, pooled representation, `max_length=512`. Inside a single
+  company's queue it is **the stronger signal** — 0.7900 within-company AUC vs 0.7463 for metadata (F3).
 - **Tabular branch:** small MLP over the 15–25 standardized point-in-time features → compact vector
   (~64-dim).
 - **Fusion head:** concatenate → dense + dropout → sigmoid.
@@ -472,20 +486,34 @@ then unfreeze with discriminative learning rates (~2e-5 encoder / 1e-3 head). Ha
 imbalance with a positively-weighted loss. Early stopping on validation PR-AUC. Log every run's
 config and metrics.
 
+**Compute budget (MacBook M4 16GB + Kaggle free T4):** real runs go to Kaggle; the Mac does 1k-row
+smoke tests. Levers, measured on this data: **`group_by_length=True`** cuts padded tokens 2.23× —
+dynamic padding *alone* gives 1.00× because nearly every random batch contains a long complaint;
+`fp16` on T4 (~2×; not bf16, Turing can't); freeze the encoder for epoch 1; early stop on val PR-AUC,
+≤3 epochs; develop on a 10k subset.
+
+**Context length:** the positive rate peaks at 512–1k tokens (39.6%) and declines beyond, so 512 is
+the right cap; first ablation is 256 vs 512. Try head+tail truncation before any long-context model.
+Upgrade path if the encoder proves the bottleneck: DistilRoBERTa (same speed, better pretraining) →
+DeBERTa-v3-base. Long-context fallback: jina-embeddings-v2-small (~33M params, 8,192 context).
+
 **Build the cheap baselines first and beat them** — XGBoost on frozen embeddings + tabular is an
 honest, strong baseline. Beating a credible baseline is worth more than any architecture diagram.
 
 ### 2.4 The ablation — the project's centerpiece
 
-**You already have the numbers to beat.** Measured with TF-IDF + logistic regression and smoothed
-point-in-time rate features, temporal split, 2024 held out:
+**You already have the numbers to beat** — measured on the shipped training artifact with TF-IDF +
+logistic regression; reproduce with `training/verify_ablation.py`. Source of truth: `Context/FACTS.md`.
 
-| model | pooled AUC | pooled PR-AUC | within (Product×Issue) AUC |
-|---|---|---|---|
-| base rate | — | 0.017 | — |
-| text only | 0.971 | 0.368 | 0.898 |
-| metadata only | 0.971 | 0.362 | 0.940 |
-| **fusion** | **0.979** | **0.438** | **0.945** |
+| model | pooled AUC | pooled PR-AUC | within (Product×Issue) | **within-company** |
+|---|---|---|---|---|
+| base rate | — | 0.028 | — | — |
+| text only | 0.9542 | 0.3551 | 0.8905 | **0.7900** |
+| metadata only | 0.9533 | 0.3414 | 0.9076 | 0.7463 |
+| **fusion** | **0.9634** | **0.4073** | **0.9330** | **0.8034** |
+
+Note the ordering flip: holding product and issue fixed, metadata beats text; **inside one company's
+queue, text beats metadata.** The within-company column is what a deployed bank experiences.
 
 **Report stratified metrics, not just pooled.** Pooled numbers are inflated by across-product and
 across-company separation. Per-product PR-AUC and within-company AUC are the honest views, and
@@ -610,11 +638,10 @@ v1→v2 pivot. It is the single most senior-reading artifact in the repo.
 
 ### Risk register (v2, ranked by expected pain)
 
-1. **Subtle leakage.** The label lives in the same table as the features. Frame boundaries, the
-   `(date_received, complaint_id)` tiebreak, as-of smoothing priors, and the temporal split are all
-   places it can creep in. *Smell test:* within-strata AUC materially above ~0.95 means hunt for it.
-2. **Pooled metrics mistaken for real performance.** Pooled 0.979 vs within-strata 0.945 vs
-   within-company 0.768 are three different claims. Report the honest one prominently.
+1. **Subtle leakage.** Frame boundaries (§1.4a), as-of smoothing priors, target encoding fitted on
+   resampled data, and the temporal split are all places it can creep in. *Smell test:* within-strata AUC materially above ~0.95 means hunt for it.
+2. **Pooled metrics mistaken for real performance.** Fusion on F3: pooled 0.9634 vs within-strata
+   0.9330 vs within-company 0.8034 are three different claims. Report the honest one prominently.
 3. **Scale friction.** 4.8M rows is ~100× v1's assumption. Bulk COPY, indexes, and materialization
    matter now; naive queries will be painfully slow.
 4. **Scope creep in Phase 3** (Kubernetes, Terraform, feature stores). The stack above is complete;
