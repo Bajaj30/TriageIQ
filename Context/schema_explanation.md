@@ -168,6 +168,34 @@ slice of the training artifact, never the database.
 `sub_product_id` implies the product, but product-level `PARTITION BY` runs constantly and shouldn't
 pay a join each time. Same for `issue_id` / `sub_issue_id`.
 
+
+### D12 — split products route by sub-product (bottom-up)
+**Concept:** generalisation — derive the parent from the child, for this specific case only.
+For the product families changed in the 2023-08-24 CFPB form change, the canonical product is **derived
+from the sub-product** rather than the sub-product hanging under a given product. Verified: every
+affected old sub-product maps to **exactly one** new product.
+
+| raw product | raw sub-product | → canonical product |
+|---|---|---|
+| Credit card or prepaid card | General-purpose credit card or charge card · Store credit card | Credit card |
+| Credit card or prepaid card | General-purpose prepaid card · Government benefit card · Gift card · Payroll card · Student prepaid card | Prepaid card |
+| Credit reporting, credit repair services, … | Credit reporting · Other personal consumer report | Credit reporting or other personal consumer reports |
+| Credit reporting, credit repair services, … | Credit repair services | Debt or credit management |
+| Payday loan, title loan, or personal loan | *(any, incl. NULL)* | Payday loan, title loan, personal loan, or advance loan |
+| Money transfer, virtual currency, or money service | Debt settlement | Debt or credit management |
+| *everything else* | *(any)* | unchanged |
+
+- **Canonical names = the NEW taxonomy**, because the API will receive today's CFPB names.
+- **Two split-offs found that a name-level check would have missed:** `Credit repair services` left credit
+  reporting, and `Debt settlement` (327 rows) left **Money transfer** — a product that otherwise never
+  changed. Both moved cleanly (no overlap in dates).
+- **Scope matters — key on (raw_product, raw_sub_product), never sub-product alone.** Bottom-up is only
+  valid inside these families. Applied globally it collides with D6: `'Credit reporting'` is also a
+  sub-product of *Checking* (1 row), which must stay under Checking.
+- **Result:** 14 raw products → **11 canonical**. 1,334,958 rows (27.7% of F1) re-routed.
+- **5 genuinely new sub-products** (478 rows — e.g. `Earned wage access`) have no history anywhere; their
+  features correctly start from zero on 2023-08-25.
+
 ---
 
 ## The shape so far
@@ -192,7 +220,7 @@ pay a join each time. Same for `issue_id` / `sub_issue_id`.
 
 ## Still open — decide before writing DDL
 
-1. **Product renames vs splits** (D8) — which pairs merge, which can't.
+1. **Where the product crosswalk (D12) lives** — a mapping table in Postgres, or a load-time transformation.
 2. **`Submitted via`** — one value in narrative rows, **five** in F1 (Phone 67,953 · Referral 34,071 ·
    Postal 17,873). Dead for the model; not dead for company-volume features.
 3. **`Tags`** — 94.49% null in F1 but 87.82% in the training set. Drop, or keep as a sparse flag?

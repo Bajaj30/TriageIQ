@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-25 · Phase 0.3 (schema) in progress — 11 decisions made, 5 open
+Last updated: 2026-09-25 · Phase 0.3 (schema) in progress — 12 decisions made, 5 open
 
 ---
 
@@ -143,11 +143,10 @@ Not yet created: `db/`, `sql/`, `etl/`, `api/`, `deploy/`, top-level `README.md`
 | D9 | NULL child → `'(not specified)'` member, never a NULL FK (inner joins drop NULLs silently) |
 | D10 | Keep **all** F1 rows; never store a pre-computed ratio in place of rows |
 | D11 | Both `product_id` and `sub_product_id` (and issue pair) on the fact — hot path |
+| D12 | Split/renamed products **route by sub-product** (bottom-up), keyed on (raw_product, raw_sub_product) — 14 raw → 11 canonical, new taxonomy names |
 
 **Open, decide before DDL:**
-1. **Product renames vs splits** — the 2023-08-24 CFPB form change produced 1 clean rename (payday),
-   1 rename + split-off (credit reporting → + `Debt or credit management`), and 1 clean split
-   (`Credit card or prepaid card` → `Credit card` + `Prepaid card`). A split cannot simply be merged.
+1. **Where the D12 product crosswalk lives** — mapping table in Postgres vs load-time transformation.
 2. **`Submitted via`** — 1 value in F2, 5 in F1. Dead for the model, not for volume features.
 3. **`Tags`** — 94.49% null in F1, 87.82% in F3. Drop or sparse flag.
 4. **`Date sent to company`** — missing from `meta.parquet`. Rebuild cache or backfill at load.
