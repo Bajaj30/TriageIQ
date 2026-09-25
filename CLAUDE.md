@@ -108,7 +108,8 @@ training/verify_ablation.py   reproduces every baseline number
 training/canonical_facts.py   regenerates FACTS.md
 claude_agent/                 CLI agent on the Anthropic API (used for the audit)
 docker-compose.yml            Postgres 16 + pgvector, host port **5433** (Postgres.app owns 5432)
-sql/                          numbered SQL pipeline, run in pgAdmin — see sql/README.md
+sql/                          numbered SQL pipeline, run in pgAdmin — every folder has a log.md
+                              (1–2 lines per file). **Update the log.md whenever a file is added or done.**
 ```
 
 Not yet created: `api/`, `deploy/`, top-level `README.md`.
