@@ -1,0 +1,12 @@
+-- ============================================================
+-- 00_staging/01_load_raw.sql
+-- PURPOSE : copy the CSV into Postgres exactly as-is. No cleaning, no filtering.
+-- INPUT   : /import/complaints.csv  (path INSIDE the container = Data/complaints.csv on your Mac)
+-- OUTPUT  : table stg_complaints_raw
+-- GRAIN   : one row per CSV row
+-- EXPECT  : 17,355,295 rows, 16 columns, every column TEXT
+-- NOTES   : COPY matches columns by POSITION, so column order must match the CSV header.
+--           Runs several minutes. Re-runnable: drop the table first if it exists.
+-- ============================================================
+
+-- your query here

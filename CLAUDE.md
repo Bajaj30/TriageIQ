@@ -107,9 +107,15 @@ Data/data/interim/            meta.parquet · narratives.parquet · triageiq_tra
 training/verify_ablation.py   reproduces every baseline number
 training/canonical_facts.py   regenerates FACTS.md
 claude_agent/                 CLI agent on the Anthropic API (used for the audit)
+docker-compose.yml            Postgres 16 + pgvector, host port **5433** (Postgres.app owns 5432)
+sql/                          numbered SQL pipeline, run in pgAdmin — see sql/README.md
 ```
 
-Not yet created: `db/`, `sql/`, `etl/`, `api/`, `deploy/`, top-level `README.md`.
+Not yet created: `api/`, `deploy/`, top-level `README.md`.
+
+**Postgres:** container `triageiq-postgres`, database `triageiq`, user `triageiq`, `localhost:5433`,
+password in `.env`. CSV mounted read-only at `/import/complaints.csv`. **Division of labour:** I do
+infrastructure and dependencies; **Shivam writes every query** in `sql/`, I explain and review.
 
 ---
 
@@ -117,7 +123,7 @@ Not yet created: `db/`, `sql/`, `etl/`, `api/`, `deploy/`, top-level `README.md`
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0.1 | Docker + Compose, `pgvector/pgvector:pg16` | **Partial** — concepts learned, no compose file yet |
+| 0.1 | Docker + Compose, pgvector Postgres 16 | **Complete** — running on port 5433 |
 | 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
 | 0.3 | **Schema + DDL** | **In progress** — see §6 |
 | 0.4 | Bulk load 4.8M rows | Not started |
