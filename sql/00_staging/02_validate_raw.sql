@@ -5,5 +5,13 @@
 --           rows in 2022-01-01..2024-12-31 = 4,826,564 (F1 in Context/FACTS.md)
 --           rows in window with a narrative = 1,639,068 (F2)
 -- ============================================================
+-- STEPS
+--  1. Count all rows in stg_complaints_raw.                      expect 17,355,295
+--  2. Count DISTINCT complaint_id. Must equal step 1 — proves it can be a primary key.
+--  3. Count rows with date_received between 2022-01-01 and 2024-12-31.   expect 4,826,564 (F1)
+--     (dates are ISO text 'YYYY-MM-DD', so cast with ::date)
+--  4. Of those, count rows whose narrative is not NULL and not blank.       expect 1,639,068 (F2)
+--  5. Count window rows per product (GROUP BY) — you should see 14 raw product names.
+-- If any number is off, STOP. Every later step inherits the error.
 
 -- your query here

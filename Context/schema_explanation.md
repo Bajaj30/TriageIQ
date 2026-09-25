@@ -196,6 +196,27 @@ affected old sub-product maps to **exactly one** new product.
 - **5 genuinely new sub-products** (478 rows — e.g. `Earned wage access`) have no history anywhere; their
   features correctly start from zero on 2023-08-25.
 
+### D13 — the crosswalk is a table in Postgres
+**Concept:** mappings are data, not hidden code (same reasoning as the label view).
+`product_crosswalk` holds the 12 D12 rules; anything not listed keeps its raw name. Seeded in the DDL
+file because the rows *are* the design decision. Every rule was verified against staging row counts.
+
+### D14 — `date_received` is `DATE`, not `TIMESTAMPTZ`
+**Concept:** don't store precision you don't have.
+The source has no time of day. A timestamp would invent "midnight UTC" and suggest an ordering within
+the day that doesn't exist. `RANGE` interval window frames work on `DATE` (verified in §1.4a tests).
+
+### D15 — the `responded` event has no date
+**Finding, not a choice:** CFPB records when a complaint was received and sent to the company — **never
+when the company responded.** So `complaint_events.event_date` is NULL for `responded`, enforced by a
+`CHECK`. This is exactly why the 60-day outcome lag in §1.4a is an *assumption*.
+
+### D16 — the database enforces the denormalisation
+**Concept:** composite foreign keys.
+D11 puts `product_id` next to `sub_product_id` on the fact. A composite FK
+`(sub_product_id, product_id) → dim_sub_product` makes it **impossible** to store a sub-product under
+the wrong product. Same for issues. Verified: a Credit-card product with a Mortgage sub-product is rejected.
+
 ---
 
 ## The shape so far
@@ -220,11 +241,10 @@ affected old sub-product maps to **exactly one** new product.
 
 ## Still open — decide before writing DDL
 
-1. **Where the product crosswalk (D12) lives** — a mapping table in Postgres, or a load-time transformation.
-2. **`Submitted via`** — one value in narrative rows, **five** in F1 (Phone 67,953 · Referral 34,071 ·
+1. ~~Where the crosswalk lives~~ — **resolved: D13**, a table.
+2. **`Submitted via`** — *kept as a fact column for now (cheap to drop)*. One value in narrative rows, **five** in F1 (Phone 67,953 · Referral 34,071 ·
    Postal 17,873). Dead for the model; not dead for company-volume features.
-3. **`Tags`** — 94.49% null in F1 but 87.82% in the training set. Drop, or keep as a sparse flag?
-4. **`Date sent to company`** — needed for `complaint_events`, but **missing from `meta.parquet`**.
-   Rebuild the cache (~15 min) or backfill at load.
+3. **`Tags`** — *kept as a nullable fact column for now*. 94.49% null in F1 but 87.82% in the training set. Drop, or keep as a sparse flag?
+4. ~~`Date sent to company`~~ — **resolved**: loaded straight from the CSV into staging; no cache rebuild needed.
 5. **NULL outcome** — 19 complaints in F1 have no response at all. Unknown ≠ negative: the label view
    must exclude them, not count them as 0.

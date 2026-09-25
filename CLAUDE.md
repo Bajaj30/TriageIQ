@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-25 · Phase 0.3 (schema) in progress — 12 decisions made, 5 open
+Last updated: 2026-09-25 · DDL complete · staging loaded · next: Shivam writes the load queries
 
 ---
 
@@ -125,8 +125,8 @@ infrastructure and dependencies; **Shivam writes every query** in `sql/`, I expl
 |---|---|---|
 | 0.1 | Docker + Compose, pgvector Postgres 16 | **Complete** — running on port 5433 |
 | 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
-| 0.3 | **Schema + DDL** | **In progress** — see §6 |
-| 0.4 | Bulk load 4.8M rows | Not started |
+| 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
+| 0.4 | Bulk load | **Staging loaded** (17,355,295 rows). Next: Shivam writes `sql/02_load/` |
 | 0.5 | Label as a SQL view | Not started |
 | 1 | Layered CTE point-in-time pipeline | Not started |
 | 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |
@@ -150,6 +150,10 @@ infrastructure and dependencies; **Shivam writes every query** in `sql/`, I expl
 | D10 | Keep **all** F1 rows; never store a pre-computed ratio in place of rows |
 | D11 | Both `product_id` and `sub_product_id` (and issue pair) on the fact — hot path |
 | D12 | Split/renamed products **route by sub-product** (bottom-up), keyed on (raw_product, raw_sub_product) — 14 raw → 11 canonical, new taxonomy names |
+| D13 | Crosswalk is a **table** (`product_crosswalk`, 12 rules seeded in DDL) |
+| D14 | `date_received` is `DATE` — source has no time of day |
+| D15 | `responded` event has **no date** — CFPB never records it; the 60-day lag is an assumption |
+| D16 | Composite FKs make the database reject a sub-product under the wrong product |
 
 **Open, decide before DDL:**
 1. **Where the D12 product crosswalk lives** — mapping table in Postgres vs load-time transformation.

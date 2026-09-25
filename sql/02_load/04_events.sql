@@ -3,5 +3,13 @@
 -- PURPOSE : fill complaint_events from the date and response columns
 -- SOURCE  : stg_complaints_raw  ->  modelled tables
 -- ============================================================
+-- STEPS    three INSERTs, one per event type, from window rows in staging
+--  1. 'received'        : event_date = date_received::date                          expect 4,826,564
+--  2. 'sent_to_company' : event_date = date_sent_to_company::date                   expect 4,826,564
+--  3. 'responded'       : event_date = NULL (CFPB never records it),
+--                         company_response, timely_response, public_response from staging
+--                                                                                   expect 4,826,564
+--  4. Total rows.                                                                   expect 14,479,692
+-- Keep NULL responses as NULL — 19 complaints have no outcome. Unknown is not negative.
 
 -- your query here

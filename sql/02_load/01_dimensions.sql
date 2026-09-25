@@ -3,5 +3,18 @@
 -- PURPOSE : fill the dimension tables from stg_complaints_raw (window rows only)
 -- SOURCE  : stg_complaints_raw  ->  modelled tables
 -- ============================================================
+-- STEPS    (always work from WINDOW rows only: date_received::date between 2022-01-01 and 2024-12-31)
+--  1. dim_state   — DISTINCT state. NULL -> '(not specified)'.                       expect 62
+--  2. dim_company — DISTINCT company, ONE row per lower(company) (4 case-variant pairs -> keep one
+--                   spelling). first_seen_in_window = MIN(date_received) for that company.
+--  3. dim_product — the CANONICAL product per row:
+--                   LEFT JOIN product_crosswalk ON raw_product = product
+--                        AND (raw_sub_product = sub_product OR raw_sub_product IS NULL)
+--                   canonical = COALESCE(canonical_product, product). DISTINCT of that.   expect 11
+--  4. dim_sub_product — DISTINCT (canonical product_id, COALESCE(sub_product,'(not specified)')).
+--  5. dim_issue   — DISTINCT issue. 6 window rows have NULL issue -> '(not specified)'.   expect 94
+--  6. dim_sub_issue — DISTINCT (issue_id, COALESCE(sub_issue,'(not specified)')).
+-- Never INSERT an id — they are GENERATED. Insert names; Postgres assigns ids.
+-- Tip: the crosswalk join in step 3 is needed again in 02_fact — consider a VIEW for it.
 
 -- your query here

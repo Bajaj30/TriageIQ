@@ -3,5 +3,17 @@
 -- PURPOSE : fill fact_complaint — resolve names to ids via dimensions + crosswalk
 -- SOURCE  : stg_complaints_raw  ->  modelled tables
 -- ============================================================
+-- STEPS
+--  1. From window rows in staging, JOIN every dimension to turn names into ids:
+--       company  -> dim_company     ON lower(company_name) = lower(company)
+--       state    -> dim_state       (COALESCE NULL to '(not specified)' first)
+--       product  -> canonical name via product_crosswalk (same logic as 01_dimensions step 3)
+--                   -> dim_product, then dim_sub_product on (product_id, sub_product name)
+--       issue / sub_issue -> dim_issue, dim_sub_issue the same way
+--  2. Cast: complaint_id::bigint, date_received::date.
+--  3. raw_product = the product name BEFORE the crosswalk. submitted_via, tags copied as-is.
+--  4. INSERT INTO fact_complaint.                                               expect 4,826,564
+-- THE TRAP: these are INNER joins. If the count comes out LOWER, some name found no dimension
+-- row and those complaints silently vanished (D9). Find them with a LEFT JOIN ... WHERE id IS NULL.
 
 -- your query here
