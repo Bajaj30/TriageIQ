@@ -4,7 +4,7 @@
 - `02_dim_state.sql` — inserts the 62 states into `dim_state`. ✅
 - `03_dim_company.sql` — inserts companies into `dim_company`, merging case-only duplicates. ✅
 - `04_dim_issue.sql` — inserts the 94 issues into `dim_issue`. ✅
-- `05_dim_product.sql` — inserts the 11 canonical products into `dim_product`.
+- `05_dim_product.sql` — inserts the 11 canonical products into `dim_product`. ✅
 - `06_dim_sub_issue.sql` — inserts (issue, sub-issue) pairs into `dim_sub_issue`.
 - `07_dim_sub_product.sql` — inserts (product, sub-product) pairs into `dim_sub_product`.
 - `08_fact_complaint.sql` — inserts every complaint into `fact_complaint`, with names swapped for ids.

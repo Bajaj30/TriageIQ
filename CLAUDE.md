@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-25 · DDL complete · staging loaded · next: Shivam writes the load queries
+Last updated: 2026-09-26 · loading dimensions (4 of 6 done) · then fact, narrative, events
 
 ---
 
@@ -62,8 +62,9 @@ gets the next step.
   reason (e.g. "surrogate keys are more readable"), say so — wrong reasons resurface later.
 
 **Boundaries**
-- **Do not hand over finished code for the curriculum**: SQL, Docker, schema design, DDL. Explain,
-  review, ask hard questions. He draws the ERD and writes the DDL.
+- **Division of labour (current, agreed 2026-09-25):** I write infrastructure, DDL and the `02_load/`
+  queries — **one file per "go N"**, with reasoning in the SQL comments. He reviews each before the
+  next. Chat replies stay short and only add what the comments don't say.
 - Analysis / verification / profiling code on his behalf is fine and expected.
 - He values honesty about limitations over polish; diagnosing a flaw is an explicit project goal.
 
@@ -129,7 +130,7 @@ work) come after all tables are loaded.
 | 0.1 | Docker + Compose, pgvector Postgres 16 | **Complete** — running on port 5433 |
 | 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
 | 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
-| 0.4 | Bulk load | **Staging loaded** (17,355,295 rows). Next: Shivam writes `sql/02_load/` |
+| 0.4 | Bulk load | **In progress** — staging + 4 of 6 dimensions loaded; see `sql/02_load/log.md` |
 | 0.5 | Label as a SQL view | Not started |
 | 1 | Layered CTE point-in-time pipeline | Not started |
 | 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |
@@ -158,12 +159,12 @@ work) come after all tables are loaded.
 | D15 | `responded` event has **no date** — CFPB never records it; the 60-day lag is an assumption |
 | D16 | Composite FKs make the database reject a sub-product under the wrong product |
 
-**Open, decide before DDL:**
-1. **Where the D12 product crosswalk lives** — mapping table in Postgres vs load-time transformation.
-2. **`Submitted via`** — 1 value in F2, 5 in F1. Dead for the model, not for volume features.
-3. **`Tags`** — 94.49% null in F1, 87.82% in F3. Drop or sparse flag.
-4. **`Date sent to company`** — missing from `meta.parquet`. Rebuild cache or backfill at load.
-5. **NULL outcomes** — 19 in F1; label view must **exclude**, not count as 0.
+**Still open (none block the load):**
+1. **`Submitted via`** — kept as a fact column for now. 1 value in F2, 5 in F1.
+2. **`Tags`** — kept as a nullable fact column for now. 94.49% null in F1, 87.82% in F3.
+3. **NULL outcomes** — 19 in F1; the label view must **exclude**, not count as 0.
+
+*Resolved:* crosswalk location → D13 (a table); `Date sent to company` → loaded straight from the CSV.
 
 ---
 
