@@ -95,6 +95,8 @@ updates. Personal documents (`Context/*.docx`, `*.pages`) are gitignored — nev
 
 ```
 CLAUDE.md                     this file
+README.md                     public, plain-language (non-technical reader), Mermaid diagrams.
+                              **Fill its ⏳ placeholders as phases finish; numbers must match FACTS.md.**
 Context/FACTS.md              every number, three frames — generated, never hand-edit
 Context/schema_explanation.md Phase 0.3 decisions, each tied to a concept   ← current work
 Context/TriageIQ.md           full engineering spec (bible v2); §1.4a = verified window-frame rules
@@ -116,7 +118,7 @@ sql/                          numbered SQL pipeline, run in pgAdmin — every fo
                               (1–2 lines per file). **Update the log.md whenever a file is added or done.**
 ```
 
-Not yet created: `api/`, `deploy/`, top-level `README.md`.
+Not yet created: `api/`, `deploy/`.
 
 **Postgres:** container `triageiq-postgres`, database `triageiq`, user `triageiq`, `localhost:5433`,
 password in `.env`. CSV mounted read-only at `/import/complaints.csv`. **Division of labour:** I do
