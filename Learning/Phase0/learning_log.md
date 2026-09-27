@@ -94,5 +94,5 @@ thin `dim_company` · parent-child dims unique on the pair · Issue independent 
 renamed products -> one id · NULL children -> '(not specified)' member · keep all 4.8M rows
 
 ### Still open
-Product renames vs splits · `Submitted via` · `Tags` · rebuild cache for `Date sent to company` · NULL outcomes
+~~Product renames vs splits~~ (→ D12) · `Submitted via` · `Tags` · ~~rebuild cache for `Date sent to company`~~ (loaded from the CSV) · NULL outcomes
 

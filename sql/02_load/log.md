@@ -5,8 +5,8 @@
 - `03_dim_company.sql` — inserts companies into `dim_company`, merging case-only duplicates. ✅
 - `04_dim_issue.sql` — inserts the 94 issues into `dim_issue`. ✅
 - `05_dim_product.sql` — inserts the 11 canonical products into `dim_product`. ✅
-- `06_dim_sub_issue.sql` — inserts (issue, sub-issue) pairs into `dim_sub_issue`.
-- `07_dim_sub_product.sql` — inserts (product, sub-product) pairs into `dim_sub_product`.
+- `06_dim_sub_issue.sql` — inserts the 298 (issue, sub-issue) pairs into `dim_sub_issue`. ✅
+- `07_dim_sub_product.sql` — inserts the 62 (product, sub-product) pairs into `dim_sub_product`. ✅
 - `08_fact_complaint.sql` — inserts every complaint into `fact_complaint`, with names swapped for ids.
 - `09_complaint_narrative.sql` — inserts complaint text into `complaint_narrative`.
 - `10_complaint_events.sql` — inserts the 3 events per complaint into `complaint_events`.

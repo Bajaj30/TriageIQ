@@ -36,7 +36,7 @@ CREATE TABLE dim_sub_product (
     sub_product_id    INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     product_id        INTEGER NOT NULL REFERENCES dim_product (product_id),
     sub_product_name  TEXT NOT NULL,      -- '(not specified)' when the complaint had none
-    -- The same name exists under several products ('Credit reporting' under 3): unique on the PAIR.
+    -- The same name exists under several products ('Title loan': Payday + Vehicle loan): unique on the PAIR.
     UNIQUE (product_id, sub_product_name),
     -- Lets fact_complaint prove its product_id agrees with its sub_product_id (see 03_fact).
     UNIQUE (sub_product_id, product_id)

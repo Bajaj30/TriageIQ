@@ -13,7 +13,7 @@ guessing from the text alone.
 **What it does:** Runs PostgreSQL 16 (pgvector image) locally via Docker Compose, so the database is
 reproducible from day one and Phase 2 needs no migration.
 
-*Status: partial — concepts learned, compose file not yet written. No issues logged yet.*
+*Status: complete — Postgres 16 + pgvector in Docker, host port 5433 (Postgres.app already owns 5432).*
 
 ---
 
@@ -127,7 +127,7 @@ scores $3 — 800× separation, correctly ordered, without inventing a label.
 
 ---
 
-## Phase 0.3 — Schema design *(in progress)*
+## Phase 0.3 — Schema design *(DDL done)*
 **What it does:** A snowflake schema over one real fact table — `fact_complaint` plus company / product /
 issue / state dimensions, and an append-only `complaint_events` log (received → sent to company →
 responded).

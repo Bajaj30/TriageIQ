@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-26 · loading dimensions (4 of 6 done) · then fact, narrative, events
+Last updated: 2026-09-27 · all 6 dimensions loaded · next: fact, narrative, events
 
 ---
 
@@ -66,6 +66,9 @@ gets the next step.
   queries — **one file per "go N"**, with reasoning in the SQL comments. He reviews each before the
   next. Chat replies stay short and only add what the comments don't say.
 - Analysis / verification / profiling code on his behalf is fine and expected.
+- **Blog log (standing duty):** he is writing a blog about the project. Whenever something blog-worthy
+  happens — an idea discarded (and why), a realisation, textbook theory used in practice, a SQL
+  technique — add a line to `Context/blog_log.md`, with its frame on every number.
 - He values honesty about limitations over polish; diagnosing a flaw is an explicit project goal.
 
 **Machine:** MacBook M4, 16GB. Mac does SQL, data prep, and 1k-row training smoke tests on MPS.
@@ -97,6 +100,7 @@ Context/schema_explanation.md Phase 0.3 decisions, each tied to a concept   ← 
 Context/TriageIQ.md           full engineering spec (bible v2); §1.4a = verified window-frame rules
 Context/WHAT_WHY.md           pitch and positioning
 Context/interview.md          per-phase: what broke, how it was fixed
+Context/blog_log.md           blog raw material: discarded ideas, realisations, theory used, SQL — keep adding
 Context/audit.md              prompt for an independent audit
 Context/audit_findings_2026-09-12.md   audit results + resolution status
 Context/old_context/          v1 archives (synthetic-customer design) — do not delete
@@ -130,7 +134,7 @@ work) come after all tables are loaded.
 | 0.1 | Docker + Compose, pgvector Postgres 16 | **Complete** — running on port 5433 |
 | 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
 | 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
-| 0.4 | Bulk load | **In progress** — staging + 4 of 6 dimensions loaded; see `sql/02_load/log.md` |
+| 0.4 | Bulk load | **In progress** — staging + all 6 dimensions loaded; next the fact; see `sql/02_load/log.md` |
 | 0.5 | Label as a SQL view | Not started |
 | 1 | Layered CTE point-in-time pipeline | Not started |
 | 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |
@@ -209,6 +213,9 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
 7. **721 narratives straddle splits** (3,120 rows, 1.03%, 3 positives) — dup filter isn't group-aware.
    Fix before Phase 2: assign each narrative hash to one split.
 8. **Undeclared dependency:** scikit-learn is required but not in `pyproject.toml`.
+9. **A global average is a credit-reporting average.** Credit reporting is 83.2% of F1 rows but 3.3% of
+   payouts, so the global rate (1.26%, F1) is mostly its number. Smooth entity rates toward the
+   **product** rate, not the global one — proposed, decide in Phase 1.
 
 ---
 
