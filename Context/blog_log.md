@@ -250,6 +250,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **Change the design early** — the issue fix meant rebuilding every table, which took minutes. Later, the
   same change would break everything built on top.
 - **The database refuses bad data** — 12 out of 12 deliberately wrong inserts were rejected.
+- **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
+  one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
+  translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it
+  one wrong expected number and it flags FAIL. A check that can't fail proves nothing.
 - **Why a database at all?** One source of truth: training and the live service read the same numbers
   from the same place. The heavy work on 4.8 million complaints stays in the database; the GPU only sees
   the 301,460-complaint training set.

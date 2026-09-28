@@ -10,5 +10,5 @@
 - `08_fact_complaint.sql` — inserts all 4,826,564 complaints into `fact_complaint`, with names swapped for ids. ✅
 - `09_complaint_narrative.sql` — inserts the 1,639,068 complaint texts into `complaint_narrative`. ✅
 - `10_complaint_events.sql` — inserts the 3 events per complaint (14,479,692 rows) into `complaint_events`. ✅
-- `11_validate.sql` — checks every count before moving on.
+- `11_validate.sql` — one grid of 21 cross-table checks (counts, grain, 3 events each, label, crosswalks, dims); all PASS. ✅
 - `12_indexes.sql` — creates the indexes; runs last.

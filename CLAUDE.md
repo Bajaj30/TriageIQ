@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-28 · all tables loaded (fact, narrative, events, D17 issue crosswalk) · next: 11_validate, 12_indexes
+Last updated: 2026-09-28 · all tables loaded and validated (21/21 checks) · next: 12_indexes
 
 ---
 
@@ -140,7 +140,7 @@ work) come after all tables are loaded.
 | 0.1 | Docker + Compose, pgvector Postgres 16 | **Complete** — running on port 5433 |
 | 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
 | 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
-| 0.4 | Bulk load | **In progress** — all tables loaded — fact 4,826,564 · narrative 1,639,068 · events 14,479,692; next 11_validate, 12_indexes; see `sql/02_load/log.md` |
+| 0.4 | Bulk load | **In progress** — all tables loaded — fact 4,826,564 · narrative 1,639,068 · events 14,479,692; validated 21/21; next 12_indexes; see `sql/02_load/log.md` |
 | 0.5 | Label as a SQL view | Not started |
 | 1 | Layered CTE point-in-time pipeline | Not started |
 | 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |
