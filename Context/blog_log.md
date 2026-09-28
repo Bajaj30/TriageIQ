@@ -144,6 +144,11 @@ narrative · F3 = the 301,460-row training set. Source of numbers: `Context/FACT
 - **LEFT JOIN + NOT NULL = a loud failure.** Loading the fact, a name with no dimension match would vanish
   under an INNER JOIN. With LEFT JOIN its id is NULL, and the NOT NULL column stops the whole insert.
   4,826,564 rows went in (F1) in 81 seconds on a laptop.
+- **Unpivot in one pass:** `CROSS JOIN LATERAL (VALUES ...)` turns each complaint into its 3 event rows
+  while reading the 17M-row staging table once — 14,479,692 rows in 1m45s. Three INSERTs would read it 3 times.
+- **`ON CONFLICT DO NOTHING` still spends ids.** Re-running the events load inserted 0 rows but used up
+  14,479,692 identity values — the id is drawn before the conflict is found. Harmless with BIGINT; one more
+  reason never to rely on an id value.
 - **Schema changes are cheap early.** Adding the issue crosswalk meant editing the DDL and rebuilding
   every table from staging — possible in minutes because every file is numbered, idempotent and
   self-checking. After features exist, the same change would break every stored id.

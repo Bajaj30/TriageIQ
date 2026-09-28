@@ -261,3 +261,5 @@ predecessor; smoothing toward the product rate handles their cold start (Phase 1
 4. ~~`Date sent to company`~~ — **resolved**: loaded straight from the CSV into staging; no cache rebuild needed.
 5. **NULL outcome** — 19 complaints in F1 have no response at all. Unknown ≠ negative: the label view
    must exclude them, not count them as 0.
+6. **`Untimely response`** — 2,785 complaints in F1 (found at load time): the company didn't answer in
+   time, so no relief was recorded. Count as 0, or exclude like NULL? Decide with the label view (0.5).

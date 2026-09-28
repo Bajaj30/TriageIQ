@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-28 · dimensions + fact loaded, issue crosswalk added (D17) · next: narrative, events
+Last updated: 2026-09-28 · all tables loaded (fact, narrative, events, D17 issue crosswalk) · next: 11_validate, 12_indexes
 
 ---
 
@@ -135,7 +135,7 @@ work) come after all tables are loaded.
 | 0.1 | Docker + Compose, pgvector Postgres 16 | **Complete** — running on port 5433 |
 | 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
 | 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
-| 0.4 | Bulk load | **In progress** — staging + 6 dimensions + fact (4,826,564) loaded; next narrative, events; see `sql/02_load/log.md` |
+| 0.4 | Bulk load | **In progress** — all tables loaded — fact 4,826,564 · narrative 1,639,068 · events 14,479,692; next 11_validate, 12_indexes; see `sql/02_load/log.md` |
 | 0.5 | Label as a SQL view | Not started |
 | 1 | Layered CTE point-in-time pipeline | Not started |
 | 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |
@@ -169,6 +169,7 @@ work) come after all tables are loaded.
 1. **`Submitted via`** — kept as a fact column for now. 1 value in F2, 5 in F1.
 2. **`Tags`** — kept as a nullable fact column for now. 94.49% null in F1, 87.82% in F3.
 3. **NULL outcomes** — 19 in F1; the label view must **exclude**, not count as 0.
+4. **`Untimely response`** — 2,785 in F1: the company never answered in time. Label 0, or exclude? Decide in 0.5.
 
 *Resolved:* crosswalk location → D13 (a table); `Date sent to company` → loaded straight from the CSV.
 
