@@ -1,189 +1,264 @@
 # TriageIQ — Blog log
 
-Raw material for the project blog. **Pointer style:** what happened → why it's interesting → where the
-detail lives. Updated as we go; new entries go at the bottom of their section.
+Raw material for the project blog, written for **readers with little tech background**: plain words,
+everyday comparisons, and the reason behind every choice. Technical names appear only as small
+*(tech: …)* tags, so the blog can keep or drop them. New entries go at the bottom of their section.
 
-**Every number carries its frame.** F1 = all 4,826,564 complaints (2022–24) · F2 = the 1,639,068 with a
-narrative · F3 = the 301,460-row training set. Source of numbers: `Context/FACTS.md`.
+**How numbers are described.** Every number says which group of complaints it comes from:
+- **all complaints** — the 4,826,564 complaints from 2022–2024
+- **complaints with a story** — the 1,639,068 where the customer's own written account is published
+- **the training set** — the 301,460 complaints used to train and test the AI
 
-> **Naming note for the blog:** don't write "F1 / F2 / F3" there — readers will read "F1" as F1-score.
-> Say "all complaints / complaints with text / training set".
+*(Internally these are called F1 / F2 / F3 — never use those names in the blog; readers will think of
+the "F1-score".)*
 
----
-
-## 1. The arc
-
-| phase | one line |
-|---|---|
-| 0.2 EDA | Streamed a 9.2 GB CSV in chunks, proved the text is human-written, built a training set |
-| v1 → v2 pivot | Dropped invented customers; the thing with history became the company × issue |
-| Evaluation | Found the headline AUC was mostly "which product / which company"; switched to within-group metrics |
-| 0.3 Schema | Snowflake schema, 16 decisions (D1–D16), each tied to a concept |
-| 0.4 Load | Docker Postgres → raw staging → 6 dimensions ✅ → fact, text, events (in progress) |
-| next | Point-in-time features in SQL (Phase 1) → DistilBERT + fusion (Phase 2) → API (Phase 3) |
+**How scores are described.** "Score out of 100" = take one complaint that ended with a payout and one
+that didn't; how often does the model rank the payout one higher? 50 is a coin flip, 100 is perfect.
+*(tech: ROC-AUC × 100)*
 
 ---
 
-## 2. Discarded ideas — and why
+## 1. The story so far
 
-| # | idea | why it died | replaced by |
-|---|---|---|---|
-| 1 | Synthetic customers + transactions (v1) | CFPB has no consumer identity — the customer branch had nothing to attach to; invented data can't be verified | Real data only; entity = company × issue |
-| 2 | Cap each product at 16k rows to "balance" | Silently raised the payout rate from the true 2.16% (F2) to 7.5% — the sampler was editing the label | Natural mix + case-control sampling with a recorded correction |
-| 3 | Full de-duplication | Real consumers copy the same forum templates; full dedup erases a true property of the data | Cap each duplicate cluster at 25 (dup rate 19.8% → 0.3%) |
-| 4 | Rule tier: auto-template low-payout products | A $200k student-loan failure gets a template reply (student loans pay out 1.11%, F1), yet text still ranked well inside such products (exploration: Mortgage 0.809, Vehicle loan 0.771 AUC) | Model every product |
-| 5 | `any_relief` label (money + non-money relief) | Metadata-dominated — the transformer would be decorative | `Closed with monetary relief` |
-| 6 | Predict consumer severity | CFPB publishes no severity label — nothing to validate against | Company cost; optional `P × claimed amount` layer |
-| 7 | Drop the 3.2M complaints with no text, keep a count/ratio column | They hold 25,577 payouts = 42% of all positives (F1). A rate differs on every date, so one column either leaks the future or becomes the feature table | Keep every row; compute rates as-of date |
-| 8 | Move `date_received` off the fact ("repeated dates break grain") | Grain is about rows, not repeated values | Date on the fact **and** in the event log |
-| 9 | Narrative as a dimension | It describes one complaint at the same grain → an extension, not a dimension | `complaint_narrative` table |
-| 10 | Child tables unique on the name | Names repeat across parents — 29 sub-issue names sit under 2–3 issues (F1) | Unique on (parent_id, name) |
-| 11 | Issue as a child of Product | 51 of 93 issues span several products (F1) | Two independent dimensions |
-| 12 | Map renamed/split products by name, top-down | One old product can't map to two new ones by name alone | Route bottom-up by sub-product; crosswalk table (14 raw → 11) |
-| 13 | NULL foreign key for "no sub-issue" | Any inner join silently drops those 122,207 complaints (F1) | A `'(not specified)'` member per parent |
-| 14 | `TIMESTAMPTZ` for the complaint date | The source has no time of day | `DATE` |
-| 15 | SQL's default window frame | It includes rows tied on the same date → a complaint's own label leaks into its own feature | Three explicit frame patterns (`TriageIQ.md` §1.4a) |
-| 16 | Tiebreak `(date, complaint_id)` everywhere | Postgres rejects two ORDER BY columns with interval `RANGE` frames | Frame chosen by what the feature means |
-| 17 | Target encoding fitted on the resampled train set | Train is 25% positive vs ~3.4% real → cost the metadata branch 0.032 AUC | Entity rates computed over F1 in Postgres |
-| 18 | A long-context encoder now (ModernBERT, Longformer, BigBird) | ModernBERT's speed needs FlashAttention-2 (Ampere+ GPUs); free T4/P100 and Mac MPS lack it; 2.3× DistilBERT's parameters. And payout rate peaks at 512–1k tokens, then falls | DistilBERT @512; test 256 vs 512 first; head+tail truncation before any bigger model |
-| 19 | Dynamic padding as the speed-up | Measured **1.00×** — with long-tailed lengths almost every batch holds one long complaint | Group similar lengths per batch: 2.23× fewer padded tokens |
-| 20 | Google Cloud $300 credits for GPUs | Free-trial accounts have historically blocked GPUs; upgrading allows real charges → breaks "no GPU bills" (not re-verified) | Kaggle free T4 |
-| 21 | Reuse the local Postgres.app on port 5432 | Port clash; the project must rebuild from one compose file | Docker container on 5433, fresh database |
-| 22 | Handle the issue rename later, inside the feature queries | "Issue" would mean two things in two places, and every feature query would have to remember the mapping. Nothing used the ids yet, so fixing it at the source cost minutes | Issue crosswalk table in the schema (D17) |
+1. **Getting to know the data.** The file was 9.2 GB — too big to open at once — so we read it in
+   slices. We proved the complaints were written by real people, not a machine, and built a first
+   training set.
+2. **The big change of plan.** The original design invented customers with purchase histories. The
+   public data has no customers at all — every complaint is anonymous — so the plan switched to tracking
+   *companies* and how they handle each kind of problem.
+3. **The honest-score moment.** The first scores looked amazing, but mostly because the model knew
+   *which product* or *which company* a complaint was about. We changed how we test.
+4. **Designing the database.** 17 decisions, each tied to one idea you could explain on a whiteboard.
+5. **Loading the data.** 17.4 million raw complaints copied in, then sorted into linked tables. ✅ Done.
+6. **Next:** build every company's track record in the database → train the AI reader → put it online.
 
 ---
 
-## 3. Realisations
+## 2. Ideas we threw away — and why
 
-1. **One model, three honest-sounding numbers.** Fusion (F3): 0.9634 pooled · 0.9330 within product×issue ·
-   0.8034 within one company. Pooled is inflated by "which product / which company".
-2. **The winner flips with the frame.** Holding product and issue fixed, metadata beats text (0.9076 vs
-   0.8905). Inside one company — what a bank actually sees — text wins (0.7900 vs 0.7463). A model
-   comparison means nothing without its frame.
-3. **The label was nearly decided at intake.** Product alone gave 0.957 AUC, company alone 0.976
-   (exploration subsets, historical). That is why within-group evaluation exists.
-4. **Most complaints aren't where the money is.** Credit reporting = 83.2% of complaints but 3.3% of payouts
-   (F1). Credit card + checking = 6.4% of complaints but 76.2% of payouts.
-5. **Rows the model never reads still matter.** 42% of payouts sit in complaints with no narrative (F1).
-   The model trains on text rows; the features need every row.
-6. **The future is harder than the past.** Payout rate by year (F2): 2022 2.74% → 2023 2.51% → 2024 1.71%.
-   A temporal split shows this; a random split would hide it.
-7. **The source changed its own categories mid-dataset.** Around 2023-08-24 CFPB renamed and split
-   products. Loaded naively, credit-reporting history restarts from zero weeks before validation. The
-   crosswalk reroutes 1,334,958 complaints (F1).
-8. **Same-day ties are the norm.** 43.46% of company-days hold more than one complaint; max 4,245 in one
-   day (F1). "The complaints before this one" is undefined without a rule.
-9. **Repetition was evidence of real people.** The most repeated opener was FCRA legal boilerplate that
-   consumers copy from credit-repair forums — not an LLM template.
-10. **SQL doesn't make fine-tuning faster — it makes it easier.** Token counts are the same, so GPU time is
-    the same. What SQL saves is a learning problem: without it, DistilBERT would have to infer the company
-    from the text and memorise the payout history of 4,946 companies from 71,460 examples.
-11. **"Reproducible" was a claim, not a property.** Headline numbers came from throwaway scripts, and the
-    repo had no git history for weeks. Re-running on the shipped data dropped metadata within-strata AUC
-    0.9400 → 0.9076.
-12. **Company names hide case-only duplicates.** 4 companies appear twice with different capitalisation
-    (`'ATM OPS Inc'` / `'ATM OPS INC'`) → merged to one id each.
-13. **"Missing" wasn't missing.** All 122,207 complaints with no sub-issue (F1) have a structural cause:
-    45 issues never have one, 3 only lack it under Payday loans, and 4 mortgage/payment issues only got
-    sub-issues with the Aug-2023 form change. For those 4, a blank sub-issue secretly means "old" — a
-    feature built on it would learn the date, not the problem.
-14. **The window we chose had a trap inside it.** We picked 2022–2024 to balance volume against recency
-    (payout rates fall every year: 9.09% of all complaints in 2012 → 0.48% in 2025, all-time data), not
-    because it had the most payouts — 2025 has more. But the CFPB changed its complaint form on
-    2023-08-24/25, right inside the window. Products were renamed and split (1,334,958 complaints
-    rerouted, F1), and — found only after the fact table was loaded — an **issue** was renamed too:
-    "…a credit reporting company's investigation…" became "…a company's investigation…". Same day, same
-    7 products, same 5 sub-issues: 893,566 complaints under the two names (18.5% of F1).
-    **It was not a leak** — both names are known when a complaint arrives. It was a *history reset*: the
-    most common issue's company track record would restart from zero 5 weeks before validation.
-    **The patch was a DDL change:** a 1-rule `issue_crosswalk` table, a `raw_issue` column on the fact,
-    then a full rebuild of schema + load (94 → 93 issues, 298 → 293 sub-issue pairs, 337,252 rows
-    rerouted). It cost minutes only because nothing depended on the ids yet.
-
----
-
-## 4. Theory that came in clutch
-
-| concept | textbook version | where it showed up here |
-|---|---|---|
-| Type-token ratio (TTR) | unique words ÷ total words; generated text reuses vocabulary | Real-vs-synthetic gate in EDA, on a fixed 100k-token budget. Twist: raw TTR 0.065 sat **below** our own 0.08 "suspicious" line; it rose to 0.081 after capping duplicate clusters. The "real" verdict rested on the other metrics |
-| Heaps' law | vocabulary grows slower than text length, so TTR falls as you count more words | Why TTR is only comparable at a fixed token count (the notebook uses 100k) |
-| Coefficient of variation | std ÷ mean | Sentence-length CV 0.94 vs < 0.35 = suspiciously uniform (LLM-like) |
-| Accuracy paradox; ROC-AUC vs PR-AUC | with rare positives accuracy is useless; ROC-AUC ignores the base rate, PR-AUC moves with it | Base rate 2.16% (F2). PR-AUC is a headline metric; val/test kept at the natural rate so PR-AUC isn't inflated |
-| Precision/recall trade-off; F-beta | F1-score weights both equally; F2-score weights recall 2× | Recall matters more here — a missed payout costs more than an extra senior review. So far expressed as PR-AUC and recall at a fixed precision; **no F-score used yet** — F2-score is a candidate when the routing threshold is picked |
-| Case-control sampling + prior correction (King & Zeng 2001) | sample on the outcome, then shift the intercept by log(keep-fraction) | All positives + 3 negatives each → keep-fraction 0.104639 → logit offset ln(0.104639) = −2.2572 |
-| Between- vs within-group variation (cousin of Simpson's paradox) | a pooled result can be driven by group membership alone | Pooled vs within-strata vs within-company AUC |
-| Data leakage; point-in-time correctness | use only what existed at prediction time | Post-intake columns banned; window frames exclude the current day |
-| Temporal validation; drift | split by time, never randomly | train < 2023-10-01 · val Q4 2023 · test 2024 |
-| Leakage vs dataset shift | leakage = using what wasn't known at prediction time; shift = train and test look different | The Aug-2023 form change looked like a leak but wasn't: every value is known at arrival. It was a shift plus a history reset, fixed by mapping old names to new ones (D17) |
-| Target encoding + smoothing (empirical Bayes) | shrink small-group rates toward a prior | Broke when fitted on resampled data. The prior must be as-of date — and product-level, not global: the global rate (1.26%, F1) is mostly a credit-reporting number |
-| Dimensional modelling (Kimball) | grain, fact vs dimension, star vs snowflake, surrogate keys | D1–D16 in `Context/schema_explanation.md` |
-| Three-valued logic (NULL) | NULL = unknown; `NULL = NULL` isn't true; inner joins drop NULL keys | Placeholder members; `UNIQUE NULLS NOT DISTINCT` on the crosswalk; 19 NULL outcomes (F1) excluded, not counted as 0 |
-| Referential integrity; composite FKs | a foreign key over several columns | The database rejects a sub-product under the wrong product (D16) |
-| Window frames: ROWS vs RANGE, peers | default frame = `RANGE … CURRENT ROW`, which includes every tied row | The label-leak trap; `ROWS` is not a time window |
-| Idempotency | running twice = running once | `ON CONFLICT DO NOTHING`; every load re-run inserts 0 |
-| Transformer length limits | learned position embeddings cap the input length; attention cost grows with length² | DistilBERT's 512 ceiling; the 256-vs-512 ablation; head+tail truncation |
-| Heavy-tailed distributions | a few extreme values dominate | A 30,110-copy duplicate cluster; the length tail that made dynamic padding useless |
-| Mixed precision (fp16 vs bf16) | bf16 needs Ampere-or-newer GPUs | T4 → fp16 only |
+1. **Inventing customers.** The complaints are anonymous, so there was no customer to attach a history
+   to — and invented data can't be checked by anyone. → *Real data only; history is tracked per company
+   and per kind of problem.*
+2. **"Balancing" the data by capping each product at 16,000 complaints.** It quietly more than tripled
+   the payout rate, from 2.16% to 7.5% (complaints with a story) — like judging how often people win the
+   lottery by only asking people outside the lottery office. → *Keep the natural mix. When we need more
+   payout examples, we sample in a way we can mathematically undo later.* (tech: case-control sampling)
+3. **Deleting every duplicate complaint.** Real people copy-paste the same templates from online forums —
+   that's genuine behaviour, not an error. But one template appeared 30,110 times. → *Keep at most 25
+   copies of any text* (duplicates fell from 19.8% to 0.3%).
+4. **A simple rule: "products that rarely pay out get a template reply".** Student-loan complaints pay
+   out only about 1 in 90 times (all complaints), so the rule would send a template to someone whose
+   $200,000 loan was never paid out. And the written words still sorted complaints well *inside* such
+   products (early tests: mortgages 81, vehicle loans 77 out of 100). → *Score every complaint.*
+5. **Predicting "any relief" — money or not.** The company's history alone predicted it so well that the
+   AI reader would have been decoration. → *Predict money relief only.*
+6. **Predicting how badly the customer was hurt.** No such label exists anywhere, so there's nothing to
+   check the model against. → *Predict the company's cost instead — optionally multiplied by the amount
+   the customer claims.*
+7. **Throwing away the 3.2 million complaints with no written story.** They hold 25,577 payouts — 42% of
+   all payouts (all complaints). Without them every company's track record is wrong, by a different amount
+   for each company. A single summary number can't replace them either, because a track record is
+   different on every date. → *Keep every complaint.*
+8. **Moving the complaint date out of the main table because thousands of complaints share a date.** The
+   table's rule is "one row per complaint" — that's about rows, not about values repeating. Company names
+   repeat too. → *The date stays, and is also copied into the event history.* (tech: grain)
+9. **Treating the complaint text like a lookup list.** Each text belongs to exactly one complaint — it's
+   an attachment, not a list. → *A side table that holds the text.* (tech: extension table, not a dimension)
+10. **Assuming each sub-category belongs to one category.** False: the same sub-category name appears
+    under several categories (29 sub-issue names sit under 2 or more issues; 87.5% of all complaints carry
+    a sub-product name that's shared). → *A sub-category is identified by its name AND its parent.*
+11. **Treating "issue" as a sub-category of "product".** 51 of 93 issues show up under several products.
+    → *Two separate lists.*
+12. **Matching renamed products by name.** One old product ("Credit card or prepaid card") split into two
+    new ones — a name alone can't say which. → *Route each complaint by its sub-product; 14 product names
+    become 11.*
+13. **Leaving "no sub-issue" blank.** Blanks make 122,207 complaints silently vanish whenever tables are
+    combined. → *An explicit "(not specified)" entry.*
+14. **Storing the complaint date with a time of day.** The source only records the day; a time would
+    invent a fake "midnight". → *Day only.*
+15. **Trusting the database's default "look back" setting.** When many complaints share a day, the
+    default quietly includes the complaint's *own* outcome in its own history — the answer key leaks into
+    the exam. → *Three explicit look-back rules, chosen by what each number means.* (tech: window frames)
+16. **One tie-breaking rule for every look-back.** The database refuses it for date-range look-backs.
+    → *Pick the rule per feature.*
+17. **Working out company payout rates from the training sample.** The sample is 25% payouts, reality
+    is about 3.4% — the rates came out distorted and the history-only score lost about 3 points out of 100.
+    → *Compute rates in the database, over all 4.8 million complaints.*
+18. **Switching now to an AI reader that handles very long texts** (ModernBERT and similar). It's 2.3×
+    bigger, its speed trick needs newer GPUs than the free ones, and payouts peak at medium-length
+    complaints then *fall*. → *DistilBERT, reading up to 512 word-pieces. First test whether 256 vs 512
+    makes a difference; try "beginning + end" of long complaints before any bigger model.*
+19. **The textbook training speed-up** (pad each batch only to its longest text). Measured: no gain at
+    all (1.00×) — almost every batch contains one very long complaint. → *Group similar-length complaints
+    together: 2.23× less wasted work.*
+20. **Google Cloud's $300 free credits for GPUs.** Free-trial accounts have historically been blocked from
+    GPUs, and upgrading allows real charges (not re-checked). → *Kaggle's free GPU.*
+21. **Using the database already installed on the laptop.** It clashed with the new one, and the project
+    must rebuild from a single file. → *A fresh database in Docker.*
+22. **Fixing the renamed issue later, inside the analysis.** "Issue" would then mean two different things
+    in two places. Nothing depended on it yet, so fixing it at the source took minutes. → *A translation
+    table in the database.*
 
 ---
 
-## 5. How we used SQL
+## 3. Surprises
 
-- **Everything lives in PostgreSQL 16**, in Docker (pgvector image, port 5433). Data sits in a named
-  volume — it survived Docker stopping overnight.
-- **Staging first:** one `COPY` loads all 17,355,295 raw rows as TEXT. Load raw, decide types later.
-- **Views as a shared filter:** `stg_window` (2022–24) and `stg_canonical` (crosswalk applied) store
-  nothing, so every load file reads the same definition.
-- **Rules as data:** the product crosswalk is a 12-row table, not CASE logic hidden in code — auditable
-  and joinable. It reroutes 1,334,958 complaints (F1).
-- **One file per table**, each with a TARGET / READS / EXPECT / CONCEPT header and CHECKS at the bottom.
-  Every load proves its count (all 4,826,564 complaints find their dimension row).
-- **Idempotent loads:** `ON CONFLICT DO NOTHING`, so re-runs insert 0.
-- **Aggregate, then join:** child dimensions shrink 4.8M rows to 293 pairs *before* touching the parent.
-- **LEFT JOIN + NOT NULL = a loud failure.** Loading the fact, a name with no dimension match would vanish
-  under an INNER JOIN. With LEFT JOIN its id is NULL, and the NOT NULL column stops the whole insert.
-  4,826,564 rows went in (F1) in 81 seconds on a laptop.
-- **Unpivot in one pass:** `CROSS JOIN LATERAL (VALUES ...)` turns each complaint into its 3 event rows
-  while reading the 17M-row staging table once — 14,479,692 rows in 1m45s. Three INSERTs would read it 3 times.
-- **`ON CONFLICT DO NOTHING` still spends ids.** Re-running the events load inserted 0 rows but used up
-  14,479,692 identity values — the id is drawn before the conflict is found. Harmless with BIGINT; one more
-  reason never to rely on an id value.
-- **Schema changes are cheap early.** Adding the issue crosswalk meant editing the DDL and rebuilding
-  every table from staging — possible in minutes because every file is numbered, idempotent and
-  self-checking. After features exist, the same change would break every stored id.
-- **The database enforces the design:** composite FKs, CHECKs, NOT NULL. 12/12 deliberately bad inserts
-  were rejected.
-- **Coming (Phase 1):** point-in-time features with window functions (3 frame patterns), the label as a
-  view, deterministic training-set sampling, export for Kaggle.
-- **Why SQL at all:** one source of truth — training and serving read the same feature view. The 4.8M-row
-  work stays in the database; the GPU only sees the 301,460-row training set (F3).
+1. **One model, three honest-sounding scores.** On 150,000 complaints from 2024 (the training set's
+   test part): **96** when comparing any two complaints, **93** when both are about the same product and
+   problem, **80** when both come from the same company. The easy test rewards knowing that credit-card
+   complaints pay out more than credit-report ones — true, but useless to a bank sorting its *own* inbox.
+2. **Which matters more — the words or the history? It depends who's asking.** Same product and problem:
+   history wins (91 vs 89). Inside one company: the words win (79 vs 75). Together they beat both (93, 80).
+3. **The answer was almost decided before anyone read the complaint.** In early tests, knowing only the
+   product scored 96; knowing only the company scored 98. That's exactly why we test *inside* groups.
+4. **The complaints aren't where the money is.** Credit reports: 83% of all complaints, 3% of payouts.
+   Credit cards + bank accounts: 6% of complaints, 76% of payouts (all complaints).
+5. **Complaints the AI can't read still matter.** 42% of all payouts sit in complaints with no written story.
+6. **Payouts are getting rarer every year.** 2.7% → 2.5% → 1.7% (complaints with a story, 2022 → 2024).
+   Over the whole public database it's 9.09% in 2012 down to 0.48% in 2025. The final exam is harder than
+   the lessons — a test on the future shows this; a random test would hide it.
+7. **The regulator changed its own categories halfway through.** In August 2023 the CFPB renamed and
+   split products. Loaded naively, credit-report history restarts from zero weeks before our test period.
+   1,334,958 complaints were re-labelled (all complaints).
+8. **Ties everywhere.** On 43% of the days a company received complaints, it received more than one —
+   once, 4,245 in a single day. "The complaints before this one" means nothing without a rule.
+9. **Copy-paste was proof of real people.** The most repeated opening line turned out to be legal wording
+   (from the Fair Credit Reporting Act) that consumers copy from credit-repair forums — not a machine template.
+10. **The database doesn't make the AI faster — it makes its job easier.** Training time is the same. But
+    without the database's company histories, the AI would have to guess the company from the text and
+    memorise the payout habits of 4,946 companies from just 71,460 examples.
+11. **"Reproducible" was a claim, not a fact.** The headline numbers came from scripts nobody saved, and
+    the project had no version history for weeks. Re-running on the real training set dropped the
+    history-only score from 94 to 91.
+12. **Same company, different capital letters.** 4 companies appeared twice ("ATM OPS Inc" / "ATM OPS
+    INC") and were merged.
+13. **"Missing" wasn't really missing.** All 122,207 complaints with no sub-issue (all complaints) have a
+    reason: 45 issues never have one, 3 lack it only for payday loans, and 4 mortgage/payment issues only
+    got sub-issues when the form changed in August 2023. For those 4, a blank secretly means "filed
+    before August 2023" — a model would learn the *date*, not the problem.
+14. **The time window we picked had a trap inside it.** We picked 2022–2024 to balance *how much* data we
+    had against *how recent* it was (payout rates keep falling, so old years look different) — not because
+    it had the most payouts; 2025 has more. But the CFPB changed its complaint form in late August 2023,
+    right in the middle. Products were renamed and split — and, found only *after* loading the main table,
+    an **issue** was renamed too: "…a credit reporting company's investigation…" became "…a company's
+    investigation…". Same day, same products, same sub-issues: 893,566 complaints under the two names
+    (18.5% of all complaints). **It wasn't a leak** — both names are known the moment a complaint arrives.
+    It was a *history reset*: the most common issue's track record would have restarted from zero five
+    weeks before testing began. **The fix was a small design change** — one translation rule, one extra
+    column for the original name — then a full rebuild (337,252 complaints re-labelled). It took minutes,
+    only because nothing depended on the old layout yet.
+15. **Some companies simply ignore the regulator.** 2,785 complaints are marked "Untimely response"
+    (all complaints): the company never answered, so no final outcome exists at all. It's almost entirely
+    tiny companies — those with fewer than 10 complaints ignored 13.27% of them; companies with over 1,000
+    complaints ignored 21 out of 4.6 million. 77 companies with at least 5 complaints never answered a
+    single one. "Late" is different: 18,374 answers came late, and 15,589 of those still closed normally
+    (637 even with money paid).
 
 ---
 
-## 6. Mistakes and corrections — mine and the AI's
+## 4. Classroom ideas that turned out to matter
 
-- **Numbers without a frame.** Stats from all-time vs 2022–24, or a subset vs the shipped data, got mixed
-  in the docs → a full correction round. Fix: `FACTS.md`, generated by a script, is the only source of numbers.
-- **The AI claimed actions it hadn't done** (a file "saved", a git fix "done"). Rule since: never claim an
-  unverified action.
-- **My reasoning errors, caught early:** "surrogate keys are more readable" (backwards — they're *less*
-  readable; the real reasons are speed, size and stable ids); the narrative as a "dimension"; repeated values
-  mistaken for a grain problem; "each sub-product has one parent" (false for 87.5% of rows, F1).
-- **Measurement bugs that looked like data problems:** a regex with `case=False` counted CFPB's `XXXX`
-  redactions as "placeholders"; 40+ character "words" were URLs; one stat was measured on the wrong frame.
-- **Tests that hard-coded ids failed:** identity sequences don't roll back after a failed insert. Look ids
-  up by name.
-- **No git for weeks** while the rules said "reproducible".
+- **Word variety** *(tech: type-token ratio)* — how many *different* words a text uses. Machine-written text
+  tends to reuse the same words. Twist: the raw data scored 0.065, *below* our own 0.08 "suspicious" line;
+  it rose to 0.081 after removing copy-paste floods. The "real people" verdict rested on the other tests.
+- **Longer texts reuse more words** *(tech: Heaps' law)* — so word variety only compares fairly at the same
+  length. We always measured on exactly 100,000 words.
+- **How uneven sentence lengths are** *(tech: coefficient of variation)* — people write unevenly (0.94);
+  machine text is suspiciously regular (below 0.35).
+- **Accuracy lies about rare events.** A model that always says "no payout" is right almost 99% of the
+  time (all complaints) — and useless. We measure how well it *finds* the rare payouts instead, and test on
+  data with the real-world rarity. *(tech: PR-AUC, not accuracy)*
+- **Missing a payout is worse than a wasted review.** So catching payouts ("recall") comes first. A score
+  that weights catching twice as much as precision is a candidate for setting the final cut-off — not used
+  yet. *(tech: F2-score)*
+- **Sampling you can undo** — keep every payout plus 3 non-payouts for each, then correct the predictions by
+  a known amount afterwards. *(tech: case-control sampling; correction −2.2572 on the log-odds scale, from
+  keeping 10.46% of non-payouts)*
+- **A group average can hide what happens inside the group** *(tech: between- vs within-group variation, a
+  cousin of Simpson's paradox)* — the 96 / 93 / 80 scores.
+- **No peeking at the future** *(tech: data leakage)* — use only what was known the day a complaint arrived.
+- **Test on the future, not a random sample** *(tech: temporal split)* — learn on 2022–Sep 2023, tune on
+  late 2023, final exam on 2024.
+- **A leak and a shift are different problems** — a leak uses information you wouldn't have yet; a shift
+  means the future simply looks different from the past. The 2023 form change was a shift, fixed by
+  translating old names into new ones.
+- **Don't trust a small sample's average** *(tech: smoothing)* — a company with 3 complaints and 1 payout
+  isn't really a "33% payer". Pull it toward a sensible default — its product's rate, not the overall rate,
+  because the overall rate is mostly credit reports.
+- **Database design basics** *(tech: dimensional modelling)* — decide what one row means, keep lists apart
+  from events, give every item a stable id number.
+- **"Unknown" is not "no"** *(tech: NULL)* — 19 complaints have no recorded outcome; they get left out, not
+  counted as "no payout".
+- **Let the database refuse nonsense** *(tech: foreign keys, CHECK constraints)* — it rejects, say, a
+  mortgage sub-product filed under credit cards.
+- **Look-back windows** *(tech: window functions)* — "how often did this company pay in everything *before*
+  today?"
+- **Run it twice, get the same result** *(tech: idempotency)* — every load can be safely re-run.
+- **AI readers have a length limit** — DistilBERT reads at most 512 word-pieces.
+- **Long tails** — a few extreme cases (a 30,110-copy template, a few very long complaints) can break
+  methods built for typical cases.
+- **Older free GPUs can't use the newest number format** *(tech: fp16 vs bf16)* — so we use the older one.
 
 ---
 
-## 7. Open threads — possible blog material later
+## 5. How the database does the heavy lifting
 
-- TTR sat below our own threshold on raw data — explain it properly or drop it from the gate.
-- Smoothing prior: product-level vs global — decide in Phase 1.
-- 721 narratives appear in more than one split — needs a group-aware split before Phase 2.
-- Routing threshold: pick it from the desk's capacity; F2-score is a candidate.
-- The 60-day response lag is an assumption — CFPB never records the response date.
-- Length vs label ("payout rate peaks at 512–1k tokens, 39.6%"): the frame wasn't recorded — re-check
+- **Everything lives in one database** (PostgreSQL, in Docker) — it even survived the laptop's Docker
+  stopping overnight.
+- **Copy the raw data first, clean it second** — all 17,355,295 complaints went in untouched, like
+  photocopying documents before marking them up.
+- **Saved filters** *(tech: views)* — "only 2022–2024" and "with names translated" are written once and
+  reused everywhere, so no step can quietly use a different definition.
+- **Rules kept as data, not buried in code** — two small translation tables (12 product rules, 1 issue
+  rule) re-label 1,334,958 and 337,252 complaints. Anyone can open them and check.
+- **Every step proves itself** — one file per table, and each file ends by checking its own numbers.
+- **Run twice, nothing doubles** — every load can be repeated safely.
+- **Shrink first, then match** — 4.8 million rows boil down to 293 unique pairs before any matching.
+- **Fail loudly, never quietly** — if a complaint's category can't be found, the whole load stops with an
+  error instead of silently dropping it. 4,826,564 complaints went in in 81 seconds.
+- **Read once, write three times** — each complaint becomes 3 history rows (received, sent, answered) in
+  a single pass: 14,479,692 rows in under 2 minutes.
+- **"Nothing happened" can still use up ticket numbers** — re-running the history load added 0 rows but
+  used up 14.5 million id numbers, like pulling a deli ticket and then leaving the queue. Harmless — and
+  a reason never to rely on an id number meaning anything.
+- **Change the design early** — the issue fix meant rebuilding every table, which took minutes. Later, the
+  same change would break everything built on top.
+- **The database refuses bad data** — 12 out of 12 deliberately wrong inserts were rejected.
+- **Why a database at all?** One source of truth: training and the live service read the same numbers
+  from the same place. The heavy work on 4.8 million complaints stays in the database; the GPU only sees
+  the 301,460-complaint training set.
+- **Coming next:** company track records built with look-back windows, the "did it pay?" answer as a saved
+  query, and a repeatable way to draw the training sample.
+
+---
+
+## 6. Mistakes and fixes — ours and the AI assistant's
+
+- **Numbers without their group.** Figures from different groups (all years vs 2022–24, a sample vs the
+  real training set) got mixed up in the documents, forcing a full correction round. Fix: one generated
+  file is now the only source of numbers.
+- **The AI assistant said it had done things it hadn't** (a file "saved", a fix "done"). Rule since then:
+  never claim something without checking.
+- **My own wrong reasons, caught early:** "id numbers are easier to read than names" (backwards — they're
+  harder; the real reasons are speed, size and stability); calling the text a "lookup list"; thinking
+  repeated dates broke the table; "each sub-category has one parent" (false for 87.5% of complaints).
+- **Measuring bugs that looked like data problems:** a search pattern counted the CFPB's "XXXX" privacy
+  blanks as template placeholders; 40-character "words" turned out to be web links; one number was measured
+  on the wrong group.
+- **Tests that assumed fixed id numbers failed** — the database never re-uses an id, even after a failed
+  insert. Look things up by name.
+- **No version history for weeks**, while the rules said "reproducible".
+
+---
+
+## 7. Loose ends
+
+- Word variety sat below our own threshold on the raw data — explain it properly, or drop that test.
+- Smoothing: pull small companies toward their product's rate, not the overall rate — decide when
+  building the track records.
+- 721 complaint texts appear in more than one of learn / tune / exam — fix before training the AI.
+- Where to draw the "send to a senior" line — decide from how many complaints the team can handle.
+- "Untimely response" (2,785 complaints): count as "no payout", or leave out like the unknowns?
+- We *assume* outcomes are known within 60 days — the CFPB never records when a company answered.
+- "Payouts peak at medium length (39.6%)" — the group behind that number wasn't recorded; re-check it
   before publishing.

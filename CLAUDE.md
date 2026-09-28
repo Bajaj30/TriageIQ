@@ -69,6 +69,9 @@ gets the next step.
 - **Blog log (standing duty):** he is writing a blog about the project. Whenever something blog-worthy
   happens — an idea discarded (and why), a realisation, textbook theory used in practice, a SQL
   technique — add a line to `Context/blog_log.md`, with its frame on every number.
+  **Write it for readers with little tech knowledge** (his standing rule, also for the README): plain
+  words, everyday comparisons, intuitive and interesting; jargon only as a small *(tech: …)* tag;
+  frames described in words ("all complaints", not "F1").
 - He values honesty about limitations over polish; diagnosing a flaw is an explicit project goal.
 
 **Machine:** MacBook M4, 16GB. Mac does SQL, data prep, and 1k-row training smoke tests on MPS.
@@ -169,7 +172,10 @@ work) come after all tables are loaded.
 1. **`Submitted via`** — kept as a fact column for now. 1 value in F2, 5 in F1.
 2. **`Tags`** — kept as a nullable fact column for now. 94.49% null in F1, 87.82% in F3.
 3. **NULL outcomes** — 19 in F1; the label view must **exclude**, not count as 0.
-4. **`Untimely response`** — 2,785 in F1: the company never answered in time. Label 0, or exclude? Decide in 0.5.
+4. **`Untimely response`** — 2,785 in F1: the company **never answered** — no final outcome exists, no public
+   response. (Different from *late*: 18,374 late answers, 15,589 still closed normally, 637 with money.)
+   Almost all tiny companies: <10 complaints → 13.27% untimely; 1k+ complaints → 21 of 4.6M. Proposal:
+   **exclude** like NULL — the outcome is unknown, and a desk using TriageIQ always answers. Decide in 0.5.
 
 *Resolved:* crosswalk location → D13 (a table); `Date sent to company` → loaded straight from the CSV.
 
