@@ -82,6 +82,10 @@ narrative · F3 = the 301,460-row training set. Source of numbers: `Context/FACT
     0.9400 → 0.9076.
 12. **Company names hide case-only duplicates.** 4 companies appear twice with different capitalisation
     (`'ATM OPS Inc'` / `'ATM OPS INC'`) → merged to one id each.
+13. **"Missing" wasn't missing.** All 122,207 complaints with no sub-issue (F1) have a structural cause:
+    45 issues never have one, 3 only lack it under Payday loans, and 4 mortgage/payment issues only got
+    sub-issues with the Aug-2023 form change. For those 4, a blank sub-issue secretly means "old" — a
+    feature built on it would learn the date, not the problem.
 
 ---
 

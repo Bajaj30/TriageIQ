@@ -217,6 +217,11 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
 9. **A global average is a credit-reporting average.** Credit reporting is 83.2% of F1 rows but 3.3% of
    payouts, so the global rate (1.26%, F1) is mostly its number. Smooth entity rates toward the
    **product** rate, not the global one — proposed, decide in Phase 1.
+10. **Sub-issue changed meaning in Aug 2023.** All 122,207 missing sub-issues (F1) are structural, none
+    skipped: 45 issues never have one (79,614); 3 depend on product — none under Payday (5,334); and
+    **4 mortgage/payment issues got sub-issues only with the Aug-2023 form change (37,259)**. For those 4,
+    `(not specified)` means "filed before Aug 2023": train (<2023-10) mostly sees it, test (2024) almost
+    never. A sub-issue feature there encodes the date — use issue-level features; decide in Phase 1.
 
 ---
 
