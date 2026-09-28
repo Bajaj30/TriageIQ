@@ -280,8 +280,17 @@ to switch to a long-context model.
 
 **Fix:** Checked whether length relates to the label first. The payout rate climbs with length, peaks at
 512–1k tokens (39.6%), then *declines*. Complaints in that band are already ~78% read at 512, and length
-itself is already a structured feature. So 512 stays; a 256-vs-512 run tests whether the tail matters
-before paying for a bigger model.
+itself is already a structured feature. So 512 stays as the baseline. Whether the cut-off tail matters
+is measured by scoring the ~8% of complaints longer than 512 separately — before paying for a bigger model.
+
+### Issue 28 — "Just lemmatize the long complaints to make them fit"
+Shrinking text with classic NLP preprocessing sounded like a free fix for the 8% over the limit.
+
+**Fix:** Measured the best case instead of trying it. Even an *impossible* lemmatizer (every word-ending
+piece removed) only gets 22% of long complaints under 512 tokens — and it feeds the model unnatural text.
+Stopword removal fits 55% but deletes *not / no / never*. Lemmatizing is a tool for word-counting models,
+not transformers. Kept instead: collapsing CFPB's XXXX blanks (meaning-preserving), head+tail
+truncation, and reading long complaints in 2–3 chunks if the long slice underperforms.
 
 ### Issue 26 — The standard speed-up did nothing
 Dynamic padding (pad each batch to its longest item, not to 512) is the usual first optimisation.

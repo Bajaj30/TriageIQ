@@ -86,8 +86,9 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
     → *Compute rates in the database, over all 4.8 million complaints.*
 18. **Switching now to an AI reader that handles very long texts** (ModernBERT and similar). It's 2.3×
     bigger, its speed trick needs newer GPUs than the free ones, and payouts peak at medium-length
-    complaints then *fall*. → *DistilBERT, reading up to 512 word-pieces. First test whether 256 vs 512
-    makes a difference; try "beginning + end" of long complaints before any bigger model.*
+    complaints then *fall*. → *DistilBERT, reading up to 512 word-pieces. For the 8% of complaints that
+    are longer: keep the beginning + the end, and check separately how well the model does on them.
+    Only if they suffer: read them in 2–3 pieces, and as a last resort, a bigger model.*
 19. **The textbook training speed-up** (pad each batch only to its longest text). Measured: no gain at
     all (1.00×) — almost every batch contains one very long complaint. → *Group similar-length complaints
     together: 2.23× less wasted work.*
@@ -102,6 +103,13 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
     outcome is unknown. Rejected: the question is "did this cost the company money?" — and for those
     2,785 complaints no money was paid. → *Count them as "no payout"; only the 19 truly blank outcomes
     are left out.*
+24. **Shrinking long complaints with classic text cleanup** — reducing words to their dictionary form
+    ("charged" → "charge") or deleting common words. We measured before trying: even a *perfect*
+    dictionary-form tool would squeeze only 22% of the long complaints under the limit, and it hands the
+    AI unnatural sentences ("I was charge twice"). Deleting common words fits 55% — but the list of
+    "common words" includes *not, no, never, nothing*: "I did **not** authorise this charge" becomes
+    "authorise charge". → *Only collapse the CFPB's XXXX privacy blanks (meaning survives), keep the
+    beginning + end, and read the longest ones in pieces if needed.* (tech: lemmatization, stopword removal)
 
 ---
 
@@ -203,6 +211,9 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   today?"
 - **Run it twice, get the same result** *(tech: idempotency)* — every load can be safely re-run.
 - **AI readers have a length limit** — DistilBERT reads at most 512 word-pieces.
+- **Old text-cleanup tricks can hurt modern AI readers** *(tech: lemmatization, stopword removal)* —
+  they were made for models that just count words. A modern reader understands "charged" vs "charge"
+  and needs "not"; stripping them saves little and loses meaning.
 - **Long tails** — a few extreme cases (a 30,110-copy template, a few very long complaints) can break
   methods built for typical cases.
 - **Older free GPUs can't use the newest number format** *(tech: fp16 vs bf16)* — so we use the older one.

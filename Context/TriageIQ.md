@@ -493,7 +493,9 @@ dynamic padding *alone* gives 1.00× because nearly every random batch contains 
 ≤3 epochs; develop on a 10k subset.
 
 **Context length:** the positive rate peaks at 512–1k tokens (39.6%) and declines beyond, so 512 is
-the right cap; first ablation is 256 vs 512. Try head+tail truncation before any long-context model.
+the right cap and the baseline (no 256 run). For the ~8% of complaints longer than 512: collapse XXXX
+redactions → head+tail truncation → score the cut vs uncut slices separately → chunk+pool → only then
+a long-context model. Lemmatization and stopword removal were measured and rejected (CLAUDE.md §9).
 Upgrade path if the encoder proves the bottleneck: DistilRoBERTa (same speed, better pretraining) →
 DeBERTa-v3-base. Long-context fallback: jina-embeddings-v2-small (~33M params, 8,192 context).
 

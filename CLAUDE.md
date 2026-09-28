@@ -251,8 +251,18 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
   **Measured 2026-09-28** (DistilBERT tokenizer, 20,000-narrative random sample of F2): 1.24 tokens/word
   median (p90 1.51; XXXX redactions push it up: 1.28 vs 1.17) → 512 tokens ≈ **410 words** (≈ 340 worst
   10%). Fit fully: 72.7% @256 · **91.8% @512** · 98.1% @1024. Tokens p50 149, p99 1,341.
-  First ablation: 256 vs 512. Try head+tail truncation before any long-context model.
-- **Long-context fallback only if 256→512 gain is large:** jina-embeddings-v2-small (~33M, 8192 ctx).
+- **512 is the baseline — no 256 run (Shivam, 2026-09-28).** His concern: long complaints matter
+  (8.2% of the sample exceed 512, median 729 tokens). Order of attack:
+  1. Collapse CFPB redactions (`XX/XX/XXXX`, `XXXX` runs → one special token each) — keeps meaning;
+     70.3% of F2 narratives contain XXXX; alone it makes 18.2% of the long ones fit. *Proposed.*
+  2. Head + tail truncation for the long ones.
+  3. **Slice evaluation:** score the model separately on complaints cut at 512 vs those that fit —
+     this is how we learn whether length matters (replaces the 256 ablation).
+  4. If the cut slice underperforms: chunk + pool with the same DistilBERT (median 2, p90 3 chunks).
+  5. Last resort: a 1024+ model (jina-embeddings-v2-small, ~33M, 8,192 ctx).
+  **Rejected, measured:** lemmatization — even an impossible best case (every `##` piece removed)
+  fits only 22.0% of the long ones, and it feeds DistilBERT unnatural text; stopword removal — fits
+  55.5% but deletes not / no / never / nothing / cannot.
 - **Training speed:** `group_by_length=True` is the big win (2.23× fewer tokens; dynamic padding
   alone does *nothing* on this data), `fp16` on T4, freeze encoder epoch 1, early stop on val PR-AUC,
   ≤3 epochs, develop on a 10k subset.
