@@ -222,6 +222,11 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
     **4 mortgage/payment issues got sub-issues only with the Aug-2023 form change (37,259)**. For those 4,
     `(not specified)` means "filed before Aug 2023": train (<2023-10) mostly sees it, test (2024) almost
     never. A sub-issue feature there encodes the date — use issue-level features; decide in Phase 1.
+    **Bigger: Aug-2023 also RENAMED an issue.** 'Problem with a credit reporting company's investigation…'
+    → 'Problem with a company's investigation…' on 2023-08-25 — same products, same 5 sub-issues:
+    **893,566 complaints (18.5% of F1)**. Unfixed, its company×issue history resets 5 weeks before val.
+    Plus 4 before-only and 14 after-only small issues (≤ 3,980 each). **Not a leak** (known at receipt) —
+    a history reset + shift. Fix pending: issue crosswalk (like D8) vs mapping in the feature layer.
 
 ---
 
