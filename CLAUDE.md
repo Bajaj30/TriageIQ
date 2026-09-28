@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-27 · all 6 dimensions loaded · next: fact, narrative, events
+Last updated: 2026-09-28 · dimensions + fact loaded · next: narrative, events
 
 ---
 
@@ -135,7 +135,7 @@ work) come after all tables are loaded.
 | 0.1 | Docker + Compose, pgvector Postgres 16 | **Complete** — running on port 5433 |
 | 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
 | 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
-| 0.4 | Bulk load | **In progress** — staging + all 6 dimensions loaded; next the fact; see `sql/02_load/log.md` |
+| 0.4 | Bulk load | **In progress** — staging + 6 dimensions + fact (4,826,564) loaded; next narrative, events; see `sql/02_load/log.md` |
 | 0.5 | Label as a SQL view | Not started |
 | 1 | Layered CTE point-in-time pipeline | Not started |
 | 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |

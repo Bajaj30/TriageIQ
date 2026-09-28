@@ -7,7 +7,7 @@
 - `05_dim_product.sql` — inserts the 11 canonical products into `dim_product`. ✅
 - `06_dim_sub_issue.sql` — inserts the 298 (issue, sub-issue) pairs into `dim_sub_issue`. ✅
 - `07_dim_sub_product.sql` — inserts the 62 (product, sub-product) pairs into `dim_sub_product`. ✅
-- `08_fact_complaint.sql` — inserts every complaint into `fact_complaint`, with names swapped for ids.
+- `08_fact_complaint.sql` — inserts all 4,826,564 complaints into `fact_complaint`, with names swapped for ids. ✅
 - `09_complaint_narrative.sql` — inserts complaint text into `complaint_narrative`.
 - `10_complaint_events.sql` — inserts the 3 events per complaint into `complaint_events`.
 - `11_validate.sql` — checks every count before moving on.

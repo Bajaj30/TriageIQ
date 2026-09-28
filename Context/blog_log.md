@@ -123,6 +123,9 @@ narrative · F3 = the 301,460-row training set. Source of numbers: `Context/FACT
   Every load proves its count (all 4,826,564 complaints find their dimension row).
 - **Idempotent loads:** `ON CONFLICT DO NOTHING`, so re-runs insert 0.
 - **Aggregate, then join:** child dimensions shrink 4.8M rows to 298 pairs *before* touching the parent.
+- **LEFT JOIN + NOT NULL = a loud failure.** Loading the fact, a name with no dimension match would vanish
+  under an INNER JOIN. With LEFT JOIN its id is NULL, and the NOT NULL column stops the whole insert.
+  4,826,564 rows went in (F1) in 81 seconds on a laptop.
 - **The database enforces the design:** composite FKs, CHECKs, NOT NULL. 12/12 deliberately bad inserts
   were rejected.
 - **Coming (Phase 1):** point-in-time features with window functions (3 frame patterns), the label as a
