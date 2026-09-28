@@ -72,6 +72,8 @@ gets the next step.
   **Write it for readers with little tech knowledge** (his standing rule, also for the README): plain
   words, everyday comparisons, intuitive and interesting; jargon only as a small *(tech: …)* tag;
   frames described in words ("all complaints", not "F1").
+  **Future deliverable (promised 2026-09-28):** a good-looking, working **web-page blog** built from
+  `blog_log.md` — plan for it when the project nears its end.
 - He values honesty about limitations over polish; diagnosing a flaw is an explicit project goal.
 
 **Machine:** MacBook M4, 16GB. Mac does SQL, data prep, and 1k-row training smoke tests on MPS.
@@ -174,8 +176,9 @@ work) come after all tables are loaded.
 3. **NULL outcomes** — 19 in F1; the label view must **exclude**, not count as 0.
 4. **`Untimely response`** — 2,785 in F1: the company **never answered** — no final outcome exists, no public
    response. (Different from *late*: 18,374 late answers, 15,589 still closed normally, 637 with money.)
-   Almost all tiny companies: <10 complaints → 13.27% untimely; 1k+ complaints → 21 of 4.6M. Proposal:
-   **exclude** like NULL — the outcome is unknown, and a desk using TriageIQ always answers. Decide in 0.5.
+   Almost all tiny companies: <10 complaints → 13.27% untimely; 1k+ complaints → 21 of 4.6M.
+   **DECIDED (Shivam, 2026-09-28): label 0** — no money left the company, and the target is company cost.
+   (My proposal to exclude was rejected.) Only the 19 NULL outcomes are excluded.
 
 *Resolved:* crosswalk location → D13 (a table); `Date sent to company` → loaded straight from the CSV.
 
@@ -245,6 +248,9 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
   DistilRoBERTa (same speed, better pretraining) → DeBERTa-v3-base (strongest at 512).
 - **`max_length=512`** (DistilBERT's hard ceiling). Length correlates with the label — positive rate
   peaks at 512–1k tokens (39.6%) then declines; 512 reads ~78% of the median doc in that band.
+  **Measured 2026-09-28** (DistilBERT tokenizer, 20,000-narrative random sample of F2): 1.24 tokens/word
+  median (p90 1.51; XXXX redactions push it up: 1.28 vs 1.17) → 512 tokens ≈ **410 words** (≈ 340 worst
+  10%). Fit fully: 72.7% @256 · **91.8% @512** · 98.1% @1024. Tokens p50 149, p99 1,341.
   First ablation: 256 vs 512. Try head+tail truncation before any long-context model.
 - **Long-context fallback only if 256→512 gain is large:** jina-embeddings-v2-small (~33M, 8192 ctx).
 - **Training speed:** `group_by_length=True` is the big win (2.23× fewer tokens; dynamic padding

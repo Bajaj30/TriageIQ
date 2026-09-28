@@ -98,6 +98,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 22. **Fixing the renamed issue later, inside the analysis.** "Issue" would then mean two different things
     in two places. Nothing depended on it yet, so fixing it at the source took minutes. → *A translation
     table in the database.*
+23. **Leaving out complaints the company never answered.** The assistant suggested it, since their final
+    outcome is unknown. Rejected: the question is "did this cost the company money?" — and for those
+    2,785 complaints no money was paid. → *Count them as "no payout"; only the 19 truly blank outcomes
+    are left out.*
 
 ---
 
@@ -153,6 +157,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
     complaints ignored 21 out of 4.6 million. 77 companies with at least 5 complaints never answered a
     single one. "Late" is different: 18,374 answers came late, and 15,589 of those still closed normally
     (637 even with money paid).
+16. **The AI's 512-piece reading limit is roomier than it sounds.** It reads in word-pieces, not words —
+    but the typical complaint needs only 1.24 pieces per word, so 512 pieces ≈ 410 words. 92% of
+    complaints fit completely; only 8% get cut (random sample of 20,000 complaints with a story). The
+    CFPB's "XXXX" privacy blanks cost extra pieces: 1.28 per word with them, 1.17 without.
 
 ---
 
@@ -258,7 +266,6 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   building the track records.
 - 721 complaint texts appear in more than one of learn / tune / exam — fix before training the AI.
 - Where to draw the "send to a senior" line — decide from how many complaints the team can handle.
-- "Untimely response" (2,785 complaints): count as "no payout", or leave out like the unknowns?
 - We *assume* outcomes are known within 60 days — the CFPB never records when a company answered.
 - "Payouts peak at medium length (39.6%)" — the group behind that number wasn't recorded; re-check it
   before publishing.

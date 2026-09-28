@@ -263,4 +263,5 @@ predecessor; smoothing toward the product rate handles their cold start (Phase 1
    must exclude them, not count them as 0.
 6. **`Untimely response`** — 2,785 complaints in F1 (found at load time): the company never answered, so
    no final outcome exists. Concentrated in tiny companies (13.27% of complaints to companies with <10
-   complaints; 21 of 4.6M at companies with 1k+). Proposal: exclude like NULL. Decide with the label view (0.5).
+   complaints; 21 of 4.6M at companies with 1k+). **Decided: label 0** — the target is company cost, and
+   no money was paid. Only the 19 NULL outcomes are excluded.
