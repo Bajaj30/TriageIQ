@@ -65,6 +65,8 @@ gets the next step.
 - **Division of labour (current, agreed 2026-09-25):** I write infrastructure, DDL and the `02_load/`
   queries — **one file per "go N"**, with reasoning in the SQL comments. He reviews each before the
   next. Chat replies stay short and only add what the comments don't say.
+- **From Phase 0.5 on (agreed 2026-09-28): back and forth.** He writes some queries himself (review them
+  properly — correct the reasoning, not just the SQL), I write others on request. He picks per file.
 - Analysis / verification / profiling code on his behalf is fine and expected.
 - **Blog log (standing duty):** he is writing a blog about the project. Whenever something blog-worthy
   happens — an idea discarded (and why), a realisation, textbook theory used in practice, a SQL
