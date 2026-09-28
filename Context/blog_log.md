@@ -169,6 +169,13 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
     but the typical complaint needs only 1.24 pieces per word, so 512 pieces ≈ 410 words. 92% of
     complaints fit completely; only 8% get cut (random sample of 20,000 complaints with a story). The
     CFPB's "XXXX" privacy blanks cost extra pieces: 1.28 per word with them, 1.17 without.
+17. **One in six things the AI reads is a privacy blank.** The CFPB hides names, dates and account
+    numbers as "XXXX" — and the AI splits each one into 2 pieces (a hidden date costs 6). Across a random
+    20,000 complaints with a story, 15.5% of everything the AI would read is blanks; for 8.6% of
+    complaints it's at least 40%. The blanks don't confuse it much — it learns to skip them — but they
+    crowd real words out of its 512-piece window. Fix: one short marker per blank. Not deleting them,
+    because *where* the blanks are is a clue too: a formal dispute full of hidden account numbers reads
+    differently from a short angry story.
 
 ---
 
