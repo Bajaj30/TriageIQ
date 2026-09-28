@@ -258,6 +258,11 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
      Cost today: `XXXX` = 2 tokens, a redacted date = 6; **15.5% of all tokens are blanks** (20k F2
      sample); 20.2% of complaints are ≥20% blanks, 8.6% ≥40%. Collapse to typed markers ([DATE],
      [REDACTED]) — don't delete: where and how many blanks appear is itself signal.
+     **Where:** one SQL function `clean_narrative(text)` — the training export AND the API call it, so
+     train and serve can't drift. **Already in place:** training drops complaints with ≥30% blank words
+     (manifest: 1,569,044 → 1,444,945). Open (decide in `04_training_set`): that filter hides heavy-blank
+     complaints from training though they still arrive in production — after collapsing, loosen it to
+     drop only texts with almost no real words left.
   2. Head + tail truncation for the long ones.
   3. **Slice evaluation:** score the model separately on complaints cut at 512 vs those that fit —
      this is how we learn whether length matters (replaces the 256 ablation).
