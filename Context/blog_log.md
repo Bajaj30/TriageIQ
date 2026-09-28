@@ -250,6 +250,9 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **Change the design early** — the issue fix meant rebuilding every table, which took minutes. Later, the
   same change would break everything built on top.
 - **The database refuses bad data** — 12 out of 12 deliberately wrong inserts were rejected.
+- **An index is a book's index** — instead of reading all 4.8 million complaints to find one company's
+  history on one problem, the database looks it up: 797 complaints found in 0.19 milliseconds, without
+  opening the main table at all. Building all 6 indexes took 11 seconds.
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it
@@ -291,3 +294,37 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - We *assume* outcomes are known within 60 days — the CFPB never records when a company answered.
 - "Payouts peak at medium length (39.6%)" — the group behind that number wasn't recorded; re-check it
   before publishing.
+
+---
+
+## 8. Pictures to build for the web page
+
+> 🔔 **Reminder:** when building the blog web page, turn each draft below into a proper visual —
+> hover or click to see what each table holds, how big it is, and *why* it is kept separate.
+
+### The database's shape — a "snowflake" (draft)
+
+**Why "snowflake":** one big table sits in the middle — one row per complaint. Around it sit short
+lookup lists (companies, states, products, issues). Two of those lists have their own smaller lists
+branching off them (sub-products, sub-issues) — arms branching out, like a snowflake. Two side tables
+hang off each complaint: its written story (only when the customer published one), and its timeline —
+where the "did it pay?" answer is kept, deliberately *away* from the main table so it can never slip into
+the model's inputs by accident. *(tech: snowflake schema — fact table, dimensions, sub-dimensions)*
+
+```mermaid
+flowchart LR
+    F["📨 Complaints<br/>one row per complaint<br/>4,826,564"]
+    CO["🏢 Companies<br/>4,946"] --- F
+    ST["📍 States<br/>62"] --- F
+    P["📦 Products<br/>11"] --- F
+    SP["Sub-products<br/>62"] --- P
+    I["❓ Issues<br/>93"] --- F
+    SI["Sub-issues<br/>293"] --- I
+    F --- N["📝 Written story<br/>1,639,068"]
+    F --- E["🕒 Timeline: received, sent, answered<br/>14,479,692 rows<br/>the payout answer lives here"]
+    PX["🔁 Product translation<br/>12 rules"] -.-> P
+    IX["🔁 Issue translation<br/>1 rule"] -.-> I
+```
+
+Numbers are all complaints (2022–2024). Every company × issue pair — 31,378 of them — will get its own
+track record.

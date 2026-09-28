@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-28 · all tables loaded and validated (21/21 checks) · next: 12_indexes
+Last updated: 2026-09-28 · Phase 0.4 complete (loaded, validated 21/21, indexed) · next: 0.5 label view, then Phase 1
 
 ---
 
@@ -73,7 +73,8 @@ gets the next step.
   words, everyday comparisons, intuitive and interesting; jargon only as a small *(tech: …)* tag;
   frames described in words ("all complaints", not "F1").
   **Future deliverable (promised 2026-09-28):** a good-looking, working **web-page blog** built from
-  `blog_log.md` — plan for it when the project nears its end.
+  `blog_log.md` — plan for it when the project nears its end. Must include an interactive
+  **snowflake-schema visual** (draft + reminder in `blog_log.md` §8).
 - He values honesty about limitations over polish; diagnosing a flaw is an explicit project goal.
 
 **Machine:** MacBook M4, 16GB. Mac does SQL, data prep, and 1k-row training smoke tests on MPS.
@@ -140,7 +141,7 @@ work) come after all tables are loaded.
 | 0.1 | Docker + Compose, pgvector Postgres 16 | **Complete** — running on port 5433 |
 | 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
 | 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
-| 0.4 | Bulk load | **In progress** — all tables loaded — fact 4,826,564 · narrative 1,639,068 · events 14,479,692; validated 21/21; next 12_indexes; see `sql/02_load/log.md` |
+| 0.4 | Bulk load | **Complete** — fact 4,826,564 · narrative 1,639,068 · events 14,479,692 · validated 21/21 · 6 indexes (company×issue lookup 0.19 ms, index-only); 31,378 company×issue pairs (F1) |
 | 0.5 | Label as a SQL view | Not started |
 | 1 | Layered CTE point-in-time pipeline | Not started |
 | 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |

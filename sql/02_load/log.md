@@ -11,4 +11,4 @@
 - `09_complaint_narrative.sql` — inserts the 1,639,068 complaint texts into `complaint_narrative`. ✅
 - `10_complaint_events.sql` — inserts the 3 events per complaint (14,479,692 rows) into `complaint_events`. ✅
 - `11_validate.sql` — one grid of 21 cross-table checks (counts, grain, 3 events each, label, crosswalks, dims); all PASS. ✅
-- `12_indexes.sql` — creates the indexes; runs last.
+- `12_indexes.sql` — builds 6 indexes (incl. company×issue×date and a covering 'responded' index), then VACUUM ANALYZE; runs last. ✅
