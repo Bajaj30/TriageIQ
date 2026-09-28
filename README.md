@@ -168,7 +168,8 @@ different amount for each company.
 **The categories changed halfway through.** In August 2023 the CFPB renamed and split some product
 categories. Loaded as-is, a company's history would reset to zero overnight. A translation table fixes
 this: 14 names become 11 consistent categories, and **1.3 million complaints** are re-labelled so their
-history carries over. One example:
+history carries over. The same day, one of the most common *problem types* was renamed too — another
+337,252 complaints re-labelled the same way. One product example:
 
 ```mermaid
 flowchart LR

@@ -8,7 +8,7 @@
 -- STEPS
 --  1. JOIN each dimension on the same expression used to build it (lower(), COALESCE(...))
 --  2. sub-dimensions join on BOTH parent id and name
---  3. cast complaint_id::bigint, date_received::date; raw_product = original product name
+--  3. cast complaint_id::bigint, date_received::date; raw_product / raw_issue = original names
 --  4. if short: switch joins to LEFT JOIN one at a time, look for WHERE <id> IS NULL
 
 -- LEFT JOIN, not INNER, on purpose: every id column is NOT NULL, so a complaint whose name finds no
@@ -20,7 +20,7 @@ INSERT INTO fact_complaint (complaint_id, date_received,
                             company_id, state_id,
                             product_id, sub_product_id,
                             issue_id,   sub_issue_id,
-                            raw_product, submitted_via, tags)
+                            raw_product, raw_issue, submitted_via, tags)
 SELECT s.complaint_id::bigint,                              -- step 3: text -> real types
        s.date_received::date,
        c.company_id,
@@ -28,6 +28,7 @@ SELECT s.complaint_id::bigint,                              -- step 3: text -> r
        p.product_id,  sp.sub_product_id,
        i.issue_id,    si.sub_issue_id,
        s.product,                                           -- raw name, before the crosswalk (D8)
+       s.issue,                                             -- raw issue name, before the crosswalk (D17)
        s.submitted_via,
        s.tags                                               -- stays NULL when absent (open decision)
 FROM   stg_canonical   s
@@ -36,7 +37,7 @@ LEFT   JOIN dim_state       st ON st.state_code   = COALESCE(s.state, '(not spec
 LEFT   JOIN dim_product     p  ON p.product_name  = s.canonical_product           -- canonical, not raw
 LEFT   JOIN dim_sub_product sp ON sp.product_id   = p.product_id                   -- step 2: parent id
                               AND sp.sub_product_name = COALESCE(s.sub_product, '(not specified)')
-LEFT   JOIN dim_issue       i  ON i.issue_name    = COALESCE(s.issue, '(not specified)')
+LEFT   JOIN dim_issue       i  ON i.issue_name    = COALESCE(s.canonical_issue, '(not specified)')  -- canonical
 LEFT   JOIN dim_sub_issue   si ON si.issue_id     = i.issue_id
                               AND si.sub_issue_name   = COALESCE(s.sub_issue, '(not specified)')
 ON CONFLICT (complaint_id) DO NOTHING;
@@ -55,7 +56,13 @@ FROM   fact_complaint f
 JOIN   dim_product    p ON p.product_id = f.product_id
 WHERE  f.raw_product <> p.product_name;
 
--- 4. placeholder members in use. Expect: sub-product 32, issue 6, sub-issue 122,207.
+-- 3b. the issue crosswalk survived too. Expect 337,252 (D17).
+SELECT count(*) AS issue_rerouted
+FROM   fact_complaint f
+JOIN   dim_issue      i ON i.issue_id = f.issue_id
+WHERE  f.raw_issue <> i.issue_name;
+
+-- 4. placeholder members in use. Expect: sub-product 32, issue 6, sub-issue 122,207, state 11,222.
 SELECT 'sub_product' AS placeholder, count(*) FROM fact_complaint f
   JOIN dim_sub_product x ON x.sub_product_id = f.sub_product_id WHERE x.sub_product_name = '(not specified)'
 UNION ALL

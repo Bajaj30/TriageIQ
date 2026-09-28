@@ -204,6 +204,22 @@ the sub-issue table drops all of them — no error, just fewer rows.
 
 ---
 
+## Phase 0.4 — Bulk load *(in progress)*
+**What it does:** Loads the 17.4M-row CSV into a raw staging table, then fills the modelled tables from
+it — one numbered, idempotent, self-checking SQL file per table.
+
+### Issue 27 — The form change had renamed an issue too, found after the fact table was loaded
+Investigating why 122,207 complaints lacked a sub-issue showed the Aug-2023 form change hit issues as
+well as products: "…a credit reporting company's investigation…" became "…a company's investigation…"
+on 2023-08-25 — same products, same 5 sub-issues, 893,566 complaints (18.5% of F1). The most common
+issue's company history would have reset 5 weeks before validation.
+
+**Fix:** Same pattern as products — a 1-rule `issue_crosswalk` table and a `raw_issue` column, then a full
+rebuild from staging (337,252 rows rerouted). Worth saying clearly: it was *not* a leak, because both
+names are known at receipt; it was a history reset. And it was cheap only because nothing used the ids yet.
+
+---
+
 ## Audit (2026-09-12)
 **What it does:** An adversarial audit of every quantitative claim, run partly by an independent
 model and partly as a self-audit (disclosed). Full report: `Context/audit_findings_2026-09-12.md`.

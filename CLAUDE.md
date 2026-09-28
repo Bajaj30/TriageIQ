@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-28 · dimensions + fact loaded · next: narrative, events
+Last updated: 2026-09-28 · dimensions + fact loaded, issue crosswalk added (D17) · next: narrative, events
 
 ---
 
@@ -163,6 +163,7 @@ work) come after all tables are loaded.
 | D14 | `date_received` is `DATE` — source has no time of day |
 | D15 | `responded` event has **no date** — CFPB never records it; the 60-day lag is an assumption |
 | D16 | Composite FKs make the database reject a sub-product under the wrong product |
+| D17 | Renamed **issue** → one canonical `issue_id` via `issue_crosswalk` (1 rule, 337,252 F1 rows rerouted); fact keeps `raw_issue` |
 
 **Still open (none block the load):**
 1. **`Submitted via`** — kept as a fact column for now. 1 value in F2, 5 in F1.
@@ -226,7 +227,8 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
     → 'Problem with a company's investigation…' on 2023-08-25 — same products, same 5 sub-issues:
     **893,566 complaints (18.5% of F1)**. Unfixed, its company×issue history resets 5 weeks before val.
     Plus 4 before-only and 14 after-only small issues (≤ 3,980 each). **Not a leak** (known at receipt) —
-    a history reset + shift. Fix pending: issue crosswalk (like D8) vs mapping in the feature layer.
+    a history reset + shift. **Fixed by D17** (issue crosswalk, 2026-09-28). The small ones and the 4
+    sub-issue cases are still open → smoothing toward the parent rate, Phase 1.
 
 ---
 

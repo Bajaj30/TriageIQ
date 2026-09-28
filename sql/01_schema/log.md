@@ -5,3 +5,4 @@
 - `03_fact_complaint.sql` — creates the fact table: one row per complaint, ids only. ✅
 - `04_complaint_narrative.sql` — creates the table holding complaint text, split out from the fact. ✅
 - `05_complaint_events.sql` — creates the event log (received / sent / responded) where the label lives. ✅
+- `06_issue_crosswalk.sql` — creates the issue mapping table and seeds its 1 rename rule (D17). ✅

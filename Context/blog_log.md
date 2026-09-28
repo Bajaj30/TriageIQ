@@ -49,6 +49,7 @@ narrative · F3 = the 301,460-row training set. Source of numbers: `Context/FACT
 | 19 | Dynamic padding as the speed-up | Measured **1.00×** — with long-tailed lengths almost every batch holds one long complaint | Group similar lengths per batch: 2.23× fewer padded tokens |
 | 20 | Google Cloud $300 credits for GPUs | Free-trial accounts have historically blocked GPUs; upgrading allows real charges → breaks "no GPU bills" (not re-verified) | Kaggle free T4 |
 | 21 | Reuse the local Postgres.app on port 5432 | Port clash; the project must rebuild from one compose file | Docker container on 5433, fresh database |
+| 22 | Handle the issue rename later, inside the feature queries | "Issue" would mean two things in two places, and every feature query would have to remember the mapping. Nothing used the ids yet, so fixing it at the source cost minutes | Issue crosswalk table in the schema (D17) |
 
 ---
 
@@ -86,6 +87,18 @@ narrative · F3 = the 301,460-row training set. Source of numbers: `Context/FACT
     45 issues never have one, 3 only lack it under Payday loans, and 4 mortgage/payment issues only got
     sub-issues with the Aug-2023 form change. For those 4, a blank sub-issue secretly means "old" — a
     feature built on it would learn the date, not the problem.
+14. **The window we chose had a trap inside it.** We picked 2022–2024 to balance volume against recency
+    (payout rates fall every year: 9.09% of all complaints in 2012 → 0.48% in 2025, all-time data), not
+    because it had the most payouts — 2025 has more. But the CFPB changed its complaint form on
+    2023-08-24/25, right inside the window. Products were renamed and split (1,334,958 complaints
+    rerouted, F1), and — found only after the fact table was loaded — an **issue** was renamed too:
+    "…a credit reporting company's investigation…" became "…a company's investigation…". Same day, same
+    7 products, same 5 sub-issues: 893,566 complaints under the two names (18.5% of F1).
+    **It was not a leak** — both names are known when a complaint arrives. It was a *history reset*: the
+    most common issue's company track record would restart from zero 5 weeks before validation.
+    **The patch was a DDL change:** a 1-rule `issue_crosswalk` table, a `raw_issue` column on the fact,
+    then a full rebuild of schema + load (94 → 93 issues, 298 → 293 sub-issue pairs, 337,252 rows
+    rerouted). It cost minutes only because nothing depended on the ids yet.
 
 ---
 
@@ -102,6 +115,7 @@ narrative · F3 = the 301,460-row training set. Source of numbers: `Context/FACT
 | Between- vs within-group variation (cousin of Simpson's paradox) | a pooled result can be driven by group membership alone | Pooled vs within-strata vs within-company AUC |
 | Data leakage; point-in-time correctness | use only what existed at prediction time | Post-intake columns banned; window frames exclude the current day |
 | Temporal validation; drift | split by time, never randomly | train < 2023-10-01 · val Q4 2023 · test 2024 |
+| Leakage vs dataset shift | leakage = using what wasn't known at prediction time; shift = train and test look different | The Aug-2023 form change looked like a leak but wasn't: every value is known at arrival. It was a shift plus a history reset, fixed by mapping old names to new ones (D17) |
 | Target encoding + smoothing (empirical Bayes) | shrink small-group rates toward a prior | Broke when fitted on resampled data. The prior must be as-of date — and product-level, not global: the global rate (1.26%, F1) is mostly a credit-reporting number |
 | Dimensional modelling (Kimball) | grain, fact vs dimension, star vs snowflake, surrogate keys | D1–D16 in `Context/schema_explanation.md` |
 | Three-valued logic (NULL) | NULL = unknown; `NULL = NULL` isn't true; inner joins drop NULL keys | Placeholder members; `UNIQUE NULLS NOT DISTINCT` on the crosswalk; 19 NULL outcomes (F1) excluded, not counted as 0 |
@@ -126,10 +140,13 @@ narrative · F3 = the 301,460-row training set. Source of numbers: `Context/FACT
 - **One file per table**, each with a TARGET / READS / EXPECT / CONCEPT header and CHECKS at the bottom.
   Every load proves its count (all 4,826,564 complaints find their dimension row).
 - **Idempotent loads:** `ON CONFLICT DO NOTHING`, so re-runs insert 0.
-- **Aggregate, then join:** child dimensions shrink 4.8M rows to 298 pairs *before* touching the parent.
+- **Aggregate, then join:** child dimensions shrink 4.8M rows to 293 pairs *before* touching the parent.
 - **LEFT JOIN + NOT NULL = a loud failure.** Loading the fact, a name with no dimension match would vanish
   under an INNER JOIN. With LEFT JOIN its id is NULL, and the NOT NULL column stops the whole insert.
   4,826,564 rows went in (F1) in 81 seconds on a laptop.
+- **Schema changes are cheap early.** Adding the issue crosswalk meant editing the DDL and rebuilding
+  every table from staging — possible in minutes because every file is numbered, idempotent and
+  self-checking. After features exist, the same change would break every stored id.
 - **The database enforces the design:** composite FKs, CHECKs, NOT NULL. 12/12 deliberately bad inserts
   were rejected.
 - **Coming (Phase 1):** point-in-time features with window functions (3 frame patterns), the label as a

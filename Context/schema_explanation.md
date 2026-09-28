@@ -217,6 +217,19 @@ D11 puts `product_id` next to `sub_product_id` on the fact. A composite FK
 `(sub_product_id, product_id) → dim_sub_product` makes it **impossible** to store a sub-product under
 the wrong product. Same for issues. Verified: a Credit-card product with a Mortgage sub-product is rejected.
 
+### D17 — the renamed issue maps to one canonical id (`issue_crosswalk`)
+**Concept:** same as D8 — two names for one thing → one id. Found *after* the fact table was loaded.
+The 2023-08-25 form change renamed an issue too: 'Problem with a **credit reporting company's**
+investigation…' → 'Problem with a **company's** investigation…'. Proof it's a rename: the old name stops
+and the new one starts the same day, under the same 7 products, with the same 5 sub-issues. Together
+**893,566 complaints (18.5% of F1)**; unfixed, the company × issue history of the most common issue
+resets 5 weeks before validation. **Not a leak** — both names are known at receipt; it's a history reset.
+Fix: a 1-rule `issue_crosswalk` table (like D13), `canonical_issue` in `stg_canonical`, and a nullable
+`raw_issue` column on the fact (like `raw_product`). Result: 94 → 93 issues, 298 → 293 sub-issue pairs,
+337,252 rows rerouted. Done before anything used the ids, so a full rebuild cost minutes.
+Not mapped: 4 before-only and 14 after-only small issues (≤ 3,980 complaints each) — no proven
+predecessor; smoothing toward the product rate handles their cold start (Phase 1).
+
 ---
 
 ## The shape so far

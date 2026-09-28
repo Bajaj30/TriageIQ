@@ -5,6 +5,7 @@
 --           date_received here as the point-in-time anchor (D3)
 --           product_id AND sub_product_id, issue_id AND sub_issue_id (D11 — hot path)
 --           NO outcome columns here — the label lives in complaint_events (D2)
+--           product_id and issue_id are CANONICAL (crosswalked); raw_product / raw_issue keep the originals
 -- REF     : Context/schema_explanation.md
 -- EXPECT  (after load): 4,826,564 rows
 -- ============================================================
@@ -21,6 +22,8 @@ CREATE TABLE fact_complaint (
     issue_id        INTEGER NOT NULL,
     sub_issue_id    INTEGER NOT NULL,
     raw_product     TEXT    NOT NULL,                  -- pre-crosswalk name, kept for traceability (D8)
+    raw_issue       TEXT,                              -- pre-crosswalk issue name (D17); NULL for the
+                                                       -- 6 complaints that have no issue at all
     submitted_via   TEXT    NOT NULL,                  -- OPEN decision: 5 values in F1, 1 in F2
     tags            TEXT,                              -- OPEN decision: 94.5% NULL in F1
 

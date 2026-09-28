@@ -8,7 +8,8 @@
 -- REF     : Context/schema_explanation.md — D12
 -- EXPECT  : 12 rules · 1,334,958 F1 rows re-routed · 14 raw products -> 11 canonical
 -- ============================================================
-DROP TABLE IF EXISTS product_crosswalk;
+DROP TABLE IF EXISTS product_crosswalk CASCADE;   -- CASCADE: view stg_canonical depends on it;
+                                                  -- 02_load/01_views.sql rebuilds the view
 
 CREATE TABLE product_crosswalk (
     raw_product        TEXT NOT NULL,
