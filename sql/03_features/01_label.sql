@@ -4,6 +4,9 @@
 -- READS   : complaint_events ('responded' rows only)
 -- EXPECT  : 4,826,564 rows · paid = 1 for 60,952 · paid never NULL
 -- CONCEPT : The label is a VIEW, not a stored column: its definition is visible and changeable in one place.
+-- PROBLEM : "Did this complaint cost the company money?" — the answer the model learns to predict.
+--           Why: every outcome feature (04) and every training row needs it, meaning the SAME thing everywhere.
+--           Without it: each query writes its own CASE; one day two definitions disagree, and train and serve drift.
 -- ============================================================
 -- STEPS
 --  1. keep event_type = 'responded' — exactly one row per complaint, so no fan-out

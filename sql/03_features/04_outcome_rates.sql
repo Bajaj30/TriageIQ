@@ -4,6 +4,10 @@
 -- READS   : v_base (paid, untimely)
 -- EXPECT  : 4,826,564 rows · rates in [0, 1] or NULL (no known history yet) · counts >= 0
 -- CONCEPT : FRAME A — RANGE BETWEEN UNBOUNDED PRECEDING AND '60 days' PRECEDING. The leak-prone file.
+-- PROBLEM : "Before this complaint, how often did this company — on this kind of problem — end up paying?"
+--           Why: the track record is the strongest non-text answer to the SOP's question "is it money-bearing?";
+--                company x issue is the project's main unit.
+--           Without the 60-day lag: the answer key leaks — recent outcomes weren't known yet when it arrived.
 -- ============================================================
 -- STEPS
 --  1. payout rate to date: company · company x issue · issue · product   (avg(paid) OVER ...)

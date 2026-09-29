@@ -4,6 +4,9 @@
 -- READS   : fact_complaint, v_label
 -- EXPECT  : 4,826,564 rows — exactly the fact's count. A different count means the join broke the grain.
 -- CONCEPT : One row per complaint, only the columns features need. Check the row count after EVERY join.
+-- PROBLEM : "One clean starting table: each complaint exactly once, with its ids and its answer."
+--           Why: every feature file reads from here, so the row count is proven ONCE, in one place.
+--           Without it: each file repeats the join; one bad join silently duplicates or drops complaints.
 -- ============================================================
 -- STEPS
 --  1. from fact_complaint: complaint_id, date_received, company_id, product_id, issue_id, state_id

@@ -4,6 +4,9 @@
 -- READS   : v_base
 -- EXPECT  : 4,826,564 rows · no divide-by-zero · ratio NULL only when the earlier period was empty
 -- CONCEPT : Two frames on one row: last 90 days vs the 90 before. NULLIF for zero denominators.
+-- PROBLEM : "Is this company's (or issue's) complaint volume rising or falling?"
+--           Why: direction matters, not just level — a company whose complaints doubled is getting worse.
+--           Without zero handling: divide-by-zero, or huge fake 'trends' for companies with an empty past.
 -- ============================================================
 -- STEPS
 --  1. company: count 1-90 days ago and 91-180 days ago

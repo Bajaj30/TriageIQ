@@ -4,6 +4,9 @@
 -- READS   : v_outcome_rates
 -- EXPECT  : 4,826,564 rows · smoothed rates in [0, 1], never NULL
 -- CONCEPT : Shrinkage: (payouts + K x prior) / (n + K) — small samples pulled toward a sensible default.
+-- PROBLEM : "How far can we trust a rate built from only a few complaints?"
+--           Why: 1 payout in 3 complaints is not a real '33% payer', and most of the 4,946 companies are small.
+--           Without it: the model over-reacts to tiny samples — noise dressed up as signal.
 -- ============================================================
 -- STEPS
 --  1. prior = the PRODUCT's payout rate to date (from 04) — itself as-of date   (trap #9)

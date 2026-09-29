@@ -4,6 +4,11 @@
 -- READS   : v_base + 03 .. 07
 -- EXPECT  : 4,826,564 rows · complaint_id unique · 15-25 features
 -- CONCEPT : A MATERIALIZED view is computed once and stored: the training export and the API read the same rows.
+-- PROBLEM : "One row per complaint with every feature, stored and ready" — the exact table the model trains
+--           on AND the API reads.
+--           Why: one source of truth (ground rule 4) — training and serving see identical numbers.
+--           Without it: recompute ~20 window features over 4.8M rows per request (too slow), or copy the
+--           logic into Python and let the two drift apart.
 -- ============================================================
 -- STEPS
 --  1. join every layer ON complaint_id — each is one row per complaint, so the count stays 4,826,564

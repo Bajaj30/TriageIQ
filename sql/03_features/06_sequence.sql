@@ -4,6 +4,10 @@
 -- READS   : v_base, dim_company
 -- EXPECT  : 4,826,564 rows · identical results on every run
 -- CONCEPT : FRAME C — ORDER BY date_received, complaint_id: here row order matters, so the tiebreak is required.
+-- PROBLEM : "Where does this complaint sit in the company's own timeline?" — first in months, or the 50th
+--           this month; a new company or an old one.
+--           Why: back-to-back bursts and brand-new companies behave differently from steady ones.
+--           Without the tiebreak: numbers change between runs, so the training data can't be reproduced.
 -- ============================================================
 -- STEPS
 --  1. days since this company's previous complaint — lag(date_received); same day -> 0; first -> NULL

@@ -4,6 +4,9 @@
 -- READS   : v_base
 -- EXPECT  : 4,826,564 rows · every count >= 0, never NULL
 -- CONCEPT : FRAME B — RANGE BETWEEN 'N days' PRECEDING AND '1 day' PRECEDING, declared once as a named WINDOW.
+-- PROBLEM : "How busy was this company — and this issue, and the whole system — just before this complaint?"
+--           Why: a sudden flood of complaints signals trouble at a company, and arrivals are known at intake.
+--           Without it: the model can't tell a company having a bad month from a quiet one.
 -- ============================================================
 -- STEPS
 --  1. company: complaints before today — all-time, last 30 days, last 90 days
