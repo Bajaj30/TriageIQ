@@ -178,7 +178,9 @@ work) come after all tables are loaded.
 2. **`Tags`** — kept as a nullable fact column. 94.49% null in F1, 87.82% in F3. **NULL = "no tag", not
    missing** (a form checkbox, known at intake). Payout rate F1: no tag 1.06% · Servicemember 2.43% ·
    **Older American 10.08%** · both 8.54%. Holds within product (credit card 26.41% vs 13.81%; credit
-   reports 0.74% vs 0.04%) — not just mix. **Proposal: two 0/1 flags in `02_base`** — awaiting Shivam.
+   reports 0.74% vs 0.04%) — not just mix. **DECIDED (2026-09-29): encode it — as two 0/1 flags**
+   (`is_older_american`, `is_servicemember`) computed in `02_base`, not a 4-way one-hot: the value is a
+   list, so 'both' must share what each flag learns. No schema change — a view reads the column.
 3. **NULL outcomes** — 19 in F1. **DECIDED (Shivam, 2026-09-29): label 0**, like untimely. 8 have text;
    1 is in the shipped training set (test) and already has y = 0. The events table still stores NULL
    (raw truth); only the label view maps it to 0. Every complaint now has a label: 4,826,564 rows.

@@ -223,6 +223,9 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **Look-back windows** *(tech: window functions)* — "how often did this company pay in everything *before*
   today?"
 - **Run it twice, get the same result** *(tech: idempotency)* — every load can be safely re-run.
+- **When one box can hold two answers** *(tech: one-hot vs multi-hot encoding)* — the tags column can say
+  "Older American", "Servicemember", or both. Treating "both" as a separate, unrelated category would
+  hide that it *is* an older American. Two yes/no switches — one per fact — let "both" simply flip both.
 - **AI readers have a length limit** — DistilBERT reads at most 512 word-pieces.
 - **Old text-cleanup tricks can hurt modern AI readers** *(tech: lemmatization, stopword removal)* —
   they were made for models that just count words. A modern reader understands "charged" vs "charge"

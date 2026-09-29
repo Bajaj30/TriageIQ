@@ -13,5 +13,8 @@
 --  2. JOIN v_label USING (complaint_id) — one-to-one
 --  3. check: count = 4,826,564 · sum(paid) = 60,952
 --  4. NO post-intake columns (sent date, response, timely, public response) — trap #4
+--  5. tags -> TWO 0/1 flags: is_older_american, is_servicemember (a complaint can have both)
+--     values: NULL (no tag) · 'Servicemember' · 'Older American' · 'Older American, Servicemember'
+--     Hint: NULL LIKE '%x%' is NULL, not false — wrap the test so 'no tag' becomes 0.
 
 -- query goes here
