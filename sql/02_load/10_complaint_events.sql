@@ -40,7 +40,7 @@ ON CONFLICT (complaint_id, event_type) DO NOTHING;
 -- 1. expect 3 rows of 4,826,564 each. Uneven = some complaint lost an event.
 SELECT event_type, count(*) AS events FROM complaint_events GROUP BY 1 ORDER BY 1;
 
--- 2. THE LABEL. Expect 60,952 monetary relief · 19 NULL (unknown — to be EXCLUDED by the label view).
+-- 2. THE LABEL. Expect 60,952 monetary relief · 19 NULL (stored as NULL here; the label view counts them as 0).
 SELECT coalesce(company_response, '(NULL = unknown)') AS outcome, count(*)
 FROM   complaint_events
 WHERE  event_type = 'responded'

@@ -51,7 +51,7 @@ WITH checks (n, check_name, expected, actual) AS (
                                                               WHERE company_response_to_consumer = 'Closed with monetary relief'),
                          (SELECT count(*) FROM complaint_events
                           WHERE  event_type = 'responded' AND company_response = 'Closed with monetary relief')
-    UNION ALL SELECT 12, 'NULL outcomes (excluded later)',   19,
+    UNION ALL SELECT 12, 'NULL outcomes (label 0)',          19,
                          (SELECT count(*) FROM complaint_events
                           WHERE  event_type = 'responded' AND company_response IS NULL)
     UNION ALL SELECT 13, 'Untimely response (label 0)',      2785,

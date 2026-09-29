@@ -128,7 +128,7 @@ w(f"- `Complaint ID` unique across F1: **{s['pk_unique_F1']}**; all numeric: **{
   f"range {s['id_min']:,} .. {s['id_max']:,} → **BIGINT** (text sort ≠ numeric sort)")
 w(f"- Company-days: {s['company_days']:,}; **{pc(s['company_day_multi'])} hold >1 complaint**; "
   f"max **{s['company_day_max']:,}** in one company-day")
-w(f"- NULL `Company response to consumer` in F1: **{s['null_response_F1']}** — unknown, not negative; exclude")
+w(f"- NULL `Company response to consumer` in F1: **{s['null_response_F1']}** — unknown; **label 0** (decided 2026-09-29 — the shipped training set already does this)")
 w(f"- `Submitted via`: 1 value in F2, **{a['n_Submitted_via']} in F1** — "
   + ", ".join(f"{k} {v:,}" for k, v in F["submitted_via_F1"].items()) + "\n")
 sp = F["splits_F3"]

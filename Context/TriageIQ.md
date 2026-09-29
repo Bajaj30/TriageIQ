@@ -175,8 +175,9 @@ distribution sanity against the numbers in §0.2.
 
 ### 0.5 Label construction
 
-**Label:** `Closed with monetary relief` → 1, other responses → 0, **NULL response → excluded**
-(unknown is not negative; 19 such rows in F1). **35,375 positives, 2.16% (F2).**
+**Label:** `Closed with monetary relief` → 1, everything else → 0 — **including** `Untimely response`
+(2,785) and the 19 NULL responses (decided 2026-09-29: no money was paid / too few to matter; the
+shipped training set already treats NULL as 0). **35,375 positives, 2.16% (F2).**
 
 Write it as a **SQL view over the response column**, never a column baked in at load time, so the
 definition is transparent, versioned, and changeable.

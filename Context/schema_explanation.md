@@ -259,9 +259,10 @@ predecessor; smoothing toward the product rate handles their cold start (Phase 1
    Postal 17,873). Dead for the model; not dead for company-volume features.
 3. **`Tags`** — *kept as a nullable fact column for now*. 94.49% null in F1 but 87.82% in the training set. Drop, or keep as a sparse flag?
 4. ~~`Date sent to company`~~ — **resolved**: loaded straight from the CSV into staging; no cache rebuild needed.
-5. **NULL outcome** — 19 complaints in F1 have no response at all. Unknown ≠ negative: the label view
-   must exclude them, not count them as 0.
+5. **NULL outcome** — 19 complaints in F1 have no response at all. **Decided: label 0** (2026-09-29).
+   In principle unknown ≠ no, but 19 of 4.8M changes nothing, it keeps every complaint labelled, and the
+   shipped training set already did it. `complaint_events` still stores NULL; the label view maps it.
 6. **`Untimely response`** — 2,785 complaints in F1 (found at load time): the company never answered, so
    no final outcome exists. Concentrated in tiny companies (13.27% of complaints to companies with <10
    complaints; 21 of 4.6M at companies with 1k+). **Decided: label 0** — the target is company cost, and
-   no money was paid. Only the 19 NULL outcomes are excluded.
+   no money was paid.

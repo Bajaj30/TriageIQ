@@ -1,0 +1,13 @@
+-- ============================================================
+-- 03_features/07_trends.sql
+-- TARGET  : view v_trends
+-- READS   : v_base
+-- EXPECT  : 4,826,564 rows · no divide-by-zero · ratio NULL only when the earlier period was empty
+-- CONCEPT : Two frames on one row: last 90 days vs the 90 before. NULLIF for zero denominators.
+-- ============================================================
+-- STEPS
+--  1. company: count 1-90 days ago and 91-180 days ago
+--  2. trend = recent / NULLIF(earlier, 0), plus a flag for 'earlier period was empty'
+--  3. same for issue, system-wide
+
+-- query goes here

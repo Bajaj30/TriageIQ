@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-28 · Phase 0.4 complete (loaded, validated 21/21, indexed) · next: 0.5 label view, then Phase 1
+Last updated: 2026-09-29 · Phase 0.4 complete · `sql/03_features/` mapped (8 stub files) · next: 01_label
 
 ---
 
@@ -144,8 +144,8 @@ work) come after all tables are loaded.
 | 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
 | 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
 | 0.4 | Bulk load | **Complete** — fact 4,826,564 · narrative 1,639,068 · events 14,479,692 · validated 21/21 · 6 indexes (company×issue lookup 0.19 ms, index-only); 31,378 company×issue pairs (F1) |
-| 0.5 | Label as a SQL view | Not started |
-| 1 | Layered CTE point-in-time pipeline | Not started |
+| 0.5 | Label as a SQL view | Stub ready — `sql/03_features/01_label.sql`; NULL + untimely → 0 |
+| 1 | Layered point-in-time pipeline | Mapped — 8 files in `sql/03_features/` (see its log.md): label → base → volume (frame B) → outcome rates (frame A) → smoothing → sequence (frame C) → trends → `mv_features` |
 | 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |
 | 3 | FastAPI, Docker, Cloud Run, CI/CD, monitoring | Not started |
 
@@ -176,12 +176,14 @@ work) come after all tables are loaded.
 **Still open (none block the load):**
 1. **`Submitted via`** — kept as a fact column for now. 1 value in F2, 5 in F1.
 2. **`Tags`** — kept as a nullable fact column for now. 94.49% null in F1, 87.82% in F3.
-3. **NULL outcomes** — 19 in F1; the label view must **exclude**, not count as 0.
+3. **NULL outcomes** — 19 in F1. **DECIDED (Shivam, 2026-09-29): label 0**, like untimely. 8 have text;
+   1 is in the shipped training set (test) and already has y = 0. The events table still stores NULL
+   (raw truth); only the label view maps it to 0. Every complaint now has a label: 4,826,564 rows.
 4. **`Untimely response`** — 2,785 in F1: the company **never answered** — no final outcome exists, no public
    response. (Different from *late*: 18,374 late answers, 15,589 still closed normally, 637 with money.)
    Almost all tiny companies: <10 complaints → 13.27% untimely; 1k+ complaints → 21 of 4.6M.
    **DECIDED (Shivam, 2026-09-28): label 0** — no money left the company, and the target is company cost.
-   (My proposal to exclude was rejected.) Only the 19 NULL outcomes are excluded.
+   (My proposal to exclude was rejected.)
 
 *Resolved:* crosswalk location → D13 (a table); `Date sent to company` → loaded straight from the CSV.
 

@@ -1,0 +1,20 @@
+-- ============================================================
+-- 03_features/03_volume.sql
+-- TARGET  : view v_volume
+-- READS   : v_base
+-- EXPECT  : 4,826,564 rows · every count >= 0, never NULL
+-- CONCEPT : FRAME B — RANGE BETWEEN 'N days' PRECEDING AND '1 day' PRECEDING, declared once as a named WINDOW.
+-- ============================================================
+-- STEPS
+--  1. company: complaints before today — all-time, last 30 days, last 90 days
+--     PARTITION BY company_id ORDER BY date_received
+--  2. company x issue: last 90 days   — PARTITION BY company_id, issue_id
+--  3. issue, system-wide: last 90 days — PARTITION BY issue_id
+--  4. national: last 7 days            — no PARTITION
+--  5. every frame stops at '1 day' PRECEDING: arrival is known at intake, same-day ORDER is not
+
+-- No label here, so no leak risk — the safe place to learn frames.
+-- 'All-time' starts 2022-01-01: early-2022 rows have short histories (a warm-up period — note it).
+-- Proof: hand-count one busy company in sql/tests/.
+
+-- query goes here

@@ -81,7 +81,7 @@ A product that stops on the day another starts is a **rename**, and must map to 
 
 - `Complaint ID` unique across F1: **True**; all numeric: **True**; range 5,059,826 .. 25,594,248 → **BIGINT** (text sort ≠ numeric sort)
 - Company-days: 280,846; **43.46% hold >1 complaint**; max **4,245** in one company-day
-- NULL `Company response to consumer` in F1: **19** — unknown, not negative; exclude
+- NULL `Company response to consumer` in F1: **19** — unknown; **label 0** (decided 2026-09-29 — the shipped training set already does this)
 - `Submitted via`: 1 value in F2, **5 in F1** — Web 4,706,666, Phone 67,953, Referral 34,071, Postal mail 17,873, Email 1
 
 ## Splits (F3)

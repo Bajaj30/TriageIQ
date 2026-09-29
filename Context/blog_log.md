@@ -210,8 +210,9 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   because the overall rate is mostly credit reports.
 - **Database design basics** *(tech: dimensional modelling)* — decide what one row means, keep lists apart
   from events, give every item a stable id number.
-- **"Unknown" is not "no"** *(tech: NULL)* — 19 complaints have no recorded outcome; they get left out, not
-  counted as "no payout".
+- **"Unknown" is not "no" — usually** *(tech: NULL)* — the database keeps blanks as blanks. For the label we
+  made a deliberate exception: 19 complaints with no recorded outcome count as "no payout" — 19 out of
+  4.8 million can't move anything, and it keeps the rule simple: every complaint gets an answer.
 - **Let the database refuse nonsense** *(tech: foreign keys, CHECK constraints)* — it rejects, say, a
   mortgage sub-product filed under credit cards.
 - **Look-back windows** *(tech: window functions)* — "how often did this company pay in everything *before*

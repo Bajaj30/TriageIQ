@@ -1,0 +1,14 @@
+-- ============================================================
+-- 03_features/02_base.sql
+-- TARGET  : view v_base
+-- READS   : fact_complaint, v_label
+-- EXPECT  : 4,826,564 rows — exactly the fact's count. A different count means the join broke the grain.
+-- CONCEPT : One row per complaint, only the columns features need. Check the row count after EVERY join.
+-- ============================================================
+-- STEPS
+--  1. from fact_complaint: complaint_id, date_received, company_id, product_id, issue_id, state_id
+--  2. JOIN v_label USING (complaint_id) — one-to-one
+--  3. check: count = 4,826,564 · sum(paid) = 60,952
+--  4. NO post-intake columns (sent date, response, timely, public response) — trap #4
+
+-- query goes here
