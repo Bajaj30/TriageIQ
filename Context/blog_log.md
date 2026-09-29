@@ -177,6 +177,11 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
     because *where* the blanks are is a clue too: a formal dispute full of hidden account numbers reads
     differently from a short angry story.
 
+18. **"Mostly empty" doesn't mean useless.** The tags column is blank for 94.49% of all complaints —
+    it looks like junk. But blank means "no tag", not "missing": consumers tick a box if they're a
+    servicemember or an older American (62+). Older Americans' complaints end in a payout 10.08% of the
+    time vs 1.06% untagged — and it isn't just which products they complain about: on credit cards it's
+    26.41% vs 13.81%. Always ask what a blank *means* before throwing a column away.
 ---
 
 ## 4. Classroom ideas that turned out to matter

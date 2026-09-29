@@ -175,7 +175,10 @@ work) come after all tables are loaded.
 
 **Still open (none block the load):**
 1. **`Submitted via`** — kept as a fact column for now. 1 value in F2, 5 in F1.
-2. **`Tags`** — kept as a nullable fact column for now. 94.49% null in F1, 87.82% in F3.
+2. **`Tags`** — kept as a nullable fact column. 94.49% null in F1, 87.82% in F3. **NULL = "no tag", not
+   missing** (a form checkbox, known at intake). Payout rate F1: no tag 1.06% · Servicemember 2.43% ·
+   **Older American 10.08%** · both 8.54%. Holds within product (credit card 26.41% vs 13.81%; credit
+   reports 0.74% vs 0.04%) — not just mix. **Proposal: two 0/1 flags in `02_base`** — awaiting Shivam.
 3. **NULL outcomes** — 19 in F1. **DECIDED (Shivam, 2026-09-29): label 0**, like untimely. 8 have text;
    1 is in the shipped training set (test) and already has y = 0. The events table still stores NULL
    (raw truth); only the label view maps it to 0. Every complaint now has a label: 4,826,564 rows.
