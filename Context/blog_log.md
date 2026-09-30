@@ -308,32 +308,19 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 
 ## 8. Pictures to build for the web page
 
-> 🔔 **Reminder:** when building the blog web page, turn each draft below into a proper visual —
-> hover or click to see what each table holds, how big it is, and *why* it is kept separate.
+> 🔔 **Reminder:** when building the blog web page, turn each diagram into a proper visual —
+> hover or click to see what each table or step holds, how big it is, and *why* it exists.
 
-### The database's shape — a "snowflake" (draft)
+**Source of truth: [`README.md`](../README.md).** Copy the diagrams from there when building the page —
+never keep a second copy here; two copies drift apart. What to reuse, by README section:
 
-**Why "snowflake":** one big table sits in the middle — one row per complaint. Around it sit short
-lookup lists (companies, states, products, issues). Two of those lists have their own smaller lists
-branching off them (sub-products, sub-issues) — arms branching out, like a snowflake. Two side tables
-hang off each complaint: its written story (only when the customer published one), and its timeline —
-where the "did it pay?" answer is kept, deliberately *away* from the main table so it can never slip into
-the model's inputs by accident. *(tech: snowflake schema — fact table, dimensions, sub-dimensions)*
-
-```mermaid
-flowchart LR
-    F["📨 Complaints<br/>one row per complaint<br/>4,826,564"]
-    CO["🏢 Companies<br/>4,946"] --- F
-    ST["📍 States<br/>62"] --- F
-    P["📦 Products<br/>11"] --- F
-    SP["Sub-products<br/>62"] --- P
-    I["❓ Issues<br/>93"] --- F
-    SI["Sub-issues<br/>293"] --- I
-    F --- N["📝 Written story<br/>1,639,068"]
-    F --- E["🕒 Timeline: received, sent, answered<br/>14,479,692 rows<br/>the payout answer lives here"]
-    PX["🔁 Product translation<br/>12 rules"] -.-> P
-    IX["🔁 Issue translation<br/>1 rule"] -.-> I
-```
-
-Numbers are all complaints (2022–2024). Every company × issue pair — 31,378 of them — will get its own
-track record.
+| README section | visual |
+|---|---|
+| 1. The problem | the routing decision · "needle in a haystack" pie · complaints vs payouts pies |
+| 2. The idea | two readers, one score |
+| 3. Playing fair | no peeking at the future · learn → tune → final exam |
+| 4. The data | 17.4M → 301k funnel · the category translation example |
+| **5. Under the hood** | **the snowflake** · the journey from raw file to score · the seven track-record steps |
+| 6. Results so far | the three tests (bar chart) · words vs track record |
+| 7. What changes | without vs with TriageIQ |
+| 8. Where the project is | the roadmap |

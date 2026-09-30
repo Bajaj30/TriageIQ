@@ -181,7 +181,76 @@ flowchart LR
 
 ---
 
-## 5. Results so far
+## 5. Under the hood — how the data is organised and how it flows
+
+### The shape: a "snowflake"
+
+One big table sits in the middle — **one row per complaint**. Around it sit short lookup lists:
+companies, states, products, issues. Two of those lists have smaller lists branching off them
+(sub-products, sub-issues) — arms branching out, like a snowflake. Two side tables hang off each
+complaint: its **written story** (only when the customer published one) and its **timeline** — where
+the "did it pay?" answer is kept, deliberately *away* from the main table, so it can never slip into
+the model's inputs by accident.
+
+```mermaid
+flowchart LR
+    F["📨 Complaints<br/>one row per complaint<br/>4,826,564"]
+    CO["🏢 Companies<br/>4,946"] --- F
+    ST["📍 States<br/>62"] --- F
+    P["📦 Products<br/>11"] --- F
+    SP["Sub-products<br/>62"] --- P
+    I["❓ Issues<br/>93"] --- F
+    SI["Sub-issues<br/>293"] --- I
+    F --- N["📝 Written story<br/>1,639,068"]
+    F --- E["🕒 Timeline: received, sent, answered<br/>14,479,692 rows<br/>the payout answer lives here"]
+    PX["🔁 Product translation<br/>12 rules"] -.-> P
+    IX["🔁 Issue translation<br/>1 rule"] -.-> I
+```
+
+All numbers are for 2022–2024. Together the companies and issues form **31,378 company × problem
+pairs** — each one gets its own track record.
+
+### The journey: from a raw file to a score
+
+```mermaid
+flowchart TD
+    A["📦 Raw file from the CFPB<br/>17.4 million complaints, 9 GB"] --> B["🧾 Untouched copy<br/>inside the database"]
+    B --> C["🧹 Keep 2022 to 2024,<br/>translate renamed categories"]
+    C --> D["🗂️ Organised tables<br/>the snowflake above"]
+    D --> E["🧮 Track records,<br/>as of each complaint's date"]
+    E --> F["📋 One row per complaint,<br/>every clue ready to use"]
+    F --> G["🎓 Train and test the AI<br/>301,460 complaints"]
+    F --> H["⚡ Live service<br/>scores each new complaint"]
+    classDef done fill:#d1fae5,stroke:#059669,color:#064e3b
+    classDef doing fill:#fef3c7,stroke:#d97706,color:#78350f
+    classDef todo fill:#f3f4f6,stroke:#9ca3af,color:#374151
+    class A,B,C,D done
+    class E doing
+    class F,G,H todo
+```
+
+Training and the live service read **the same rows** — so the model is never tested on numbers
+computed differently from the ones it learned from.
+
+### How a track record is built — seven small steps
+
+```mermaid
+flowchart LR
+    L["✅ Did it pay?<br/>1 or 0"] --> V["📈 How busy,<br/>before today"] --> R["💸 How often it paid,<br/>up to 60 days ago"] --> S["⚖️ Steady the<br/>small numbers"] --> Q["🕒 Place in the<br/>company's timeline"] --> T["↗️ Rising or<br/>falling"] --> A["📋 One row<br/>per complaint"]
+```
+
+1. **Did it pay?** — every complaint gets a 1 or a 0. This is the answer the AI learns to predict.
+2. **How busy** was this company, this problem type, the whole system — counting only days *before* today.
+3. **How often it paid** — counting only complaints at least 60 days old, whose outcomes were really known.
+4. **Steady the small numbers** — 1 payout in 3 complaints isn't a real "33% payer"; pull it toward its
+   product's usual rate.
+5. **Place in the timeline** — first complaint in months, or the 50th this month? A brand-new company?
+6. **Rising or falling** — the last 90 days against the 90 before.
+7. **One row per complaint** — every clue side by side, stored, ready for the AI and the live service.
+
+---
+
+## 6. Results so far
 
 The AI model isn't trained yet. These scores come from a **simple starting model** (word counts plus
 track record) — the bar the AI has to beat. It was tested on **150,000 complaints from 2024** that it
@@ -225,7 +294,7 @@ more than the history.** Together they do best.
 
 ---
 
-## 6. What changes for a complaints team
+## 7. What changes for a complaints team
 
 ```mermaid
 flowchart TB
@@ -248,31 +317,31 @@ flowchart TB
 
 ---
 
-## 7. Where the project is
+## 8. Where the project is
 
 ```mermaid
 flowchart LR
-    A["✅ Understand<br/>the data"] --> B["✅ Design<br/>the database"] --> C["🔄 Load the<br/>complaints"] --> D["⏳ Build the<br/>track record"] --> E["⏳ Train the<br/>AI reader"] --> F["⏳ Put it<br/>online"]
+    A["✅ Understand<br/>the data"] --> B["✅ Design<br/>the database"] --> C["✅ Load the<br/>complaints"] --> D["🔄 Build the<br/>track record"] --> E["⏳ Train the<br/>AI reader"] --> F["⏳ Put it<br/>online"]
     classDef done fill:#d1fae5,stroke:#059669,color:#064e3b
     classDef doing fill:#fef3c7,stroke:#d97706,color:#78350f
     classDef todo fill:#f3f4f6,stroke:#9ca3af,color:#374151
-    class A,B done
-    class C doing
-    class D,E,F todo
+    class A,B,C done
+    class D doing
+    class E,F todo
 ```
 
 | step | status | what it produces |
 |---|---|---|
 | Understand the data | ✅ done | proof the complaints were written by real people; the training set |
-| Design the database | ✅ done | 10 linked tables, with rules the database enforces itself |
-| Load the complaints | 🔄 in progress | reference tables loaded; the 4.8 million complaints go in next |
-| Build the track record | ⏳ | each company's history, as of every complaint's date |
+| Design the database | ✅ done | 11 linked tables, with rules the database enforces itself |
+| Load the complaints | ✅ done | 4.8M complaints, 1.6M stories, 14.5M timeline rows — 21 of 21 checks pass |
+| Build the track record | 🔄 in progress | the seven steps in section 5; step 1 being written |
 | Train the AI reader | ⏳ | the fine-tuned model, and the ⏳ scores above |
 | Put it online | ⏳ | a live link anyone can try: ⏳ |
 
 ---
 
-## 8. Honest limits
+## 9. Honest limits
 
 - **It predicts cost to the company, not harm to the customer.** The CFPB publishes no "how badly was
   this person hurt" label, so that can't be tested.
@@ -290,7 +359,7 @@ flowchart LR
 | part | tool | status |
 |---|---|---|
 | Database | PostgreSQL 16 + pgvector, in Docker Compose (port 5433) | ✅ running |
-| Track record | SQL window functions — point-in-time, as-of each complaint's date | ⏳ Phase 1 |
+| Track record | SQL window functions — point-in-time, as-of each complaint's date | 🔄 Phase 1 |
 | Text model | DistilBERT fine-tuned on Kaggle's free T4 GPU | ⏳ Phase 2 |
 | Fusion | text model + SQL features combined | ⏳ Phase 2 |
 | Serving | FastAPI on Google Cloud Run | ⏳ Phase 3 |

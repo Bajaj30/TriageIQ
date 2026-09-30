@@ -76,7 +76,8 @@ gets the next step.
   frames described in words ("all complaints", not "F1").
   **Future deliverable (promised 2026-09-28):** a good-looking, working **web-page blog** built from
   `blog_log.md` — plan for it when the project nears its end. Must include an interactive
-  **snowflake-schema visual** (draft + reminder in `blog_log.md` §8).
+  **snowflake-schema visual**. Diagrams live ONLY in `README.md` (§5 = snowflake, journey,
+  track-record steps); `blog_log.md` §8 lists what to reuse. Never duplicate a diagram.
 - He values honesty about limitations over polish; diagnosing a flaw is an explicit project goal.
 
 **Machine:** MacBook M4, 16GB. Mac does SQL, data prep, and 1k-row training smoke tests on MPS.
