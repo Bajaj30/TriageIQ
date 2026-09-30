@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-01 · 03_features 01–04 done (label, base, volume, outcome rates; leak test 3/3) · next: `05_smoothing.sql`
+Last updated: 2026-10-01 · 03_features 01–05 done (label, base, volume, outcome rates, smoothing K=5) · next: `06_sequence.sql`
 
 ---
 
@@ -244,7 +244,11 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
    payouts, so the global rate (1.26%, F1) is mostly its number. Smooth entity rates toward the
    **product** rate, not the global one. **K measured (2026-10-01, `05a_choose_k.sql`, tuning period
    Oct–Dec 2023, F1):** company × issue, history < 200 — AUC K=0 0.8690 · K=5 0.8901 · K=50 0.8754 ·
-   K=500 0.8495; Brier best at K=5. Flat from 2 to 7. **Recommended K = 5** — awaiting Shivam's OK.
+   K=500 0.8495; Brier best at K=5. Flat from 2 to 7. **DECIDED (Shivam, 2026-10-01): K = 5 — with a
+   grain of salt:** (a) measured on each rate ALONE, not inside the fusion model — re-check K in the
+   Phase 2 ablation; (b) one quarter of tuning data (Oct–Dec 2023); (c) differences are small overall
+   (0.9777 vs 0.9769 at K=50, all complaints) — the gain is mainly for small-history pairs. K lives in
+   ONE place, table `feature_params` — changing it is one UPDATE, never an edit to the view.
 10. **Sub-issue changed meaning in Aug 2023.** All 122,207 missing sub-issues (F1) are structural, none
     skipped: 45 issues never have one (79,614); 3 depend on product — none under Payday (5,334); and
     **4 mortgage/payment issues got sub-issues only with the Aug-2023 form change (37,259)**. For those 4,

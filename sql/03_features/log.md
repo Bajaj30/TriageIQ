@@ -14,7 +14,7 @@ Each file builds one view; 08 stitches them into the materialized view the model
   (0.10% in 2023, 0.06% in 2024) — the first 60 days of data see no outcomes at all. Consider starting
   training rows later than 2022-01-01, or rely on the no-history flags.
 - `05a_choose_k.sql` — tuning: AUC + Brier of the smoothed rate for 12 values of K on Oct–Dec 2023; best K ≈ 5. ✅
-- `05_smoothing.sql` — view `v_smoothed`: small-sample rates pulled toward the product's rate.
+- `05_smoothing.sql` — table `feature_params` (K = 5, 2021 fallback 2.86%) + view `v_smoothed`: every 04 column plus 4 smoothed rates, never NULL. ✅
 - `06_sequence.sql` — view `v_sequence`: gaps, ranks and tenure (frame C, deterministic tiebreak).
 - `07_trends.sql` — view `v_trends`: last 90 days vs the 90 before.
 - `08_assembly.sql` — materialized view `mv_features`: every feature, one row per complaint.

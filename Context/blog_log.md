@@ -234,6 +234,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   those that didn't? For companies with little history, raw rates scored 87 out of 100; smoothing with K = 5
   scored 89; K = 50 (our first guess) 88; K = 500 only 85. Anything from 2 to 7 was about equally good —
   the big win is smoothing *at all*. We picked **K = 5**: just 5 imaginary complaints are enough.
+
+  One puzzle left: on the very first days of 2022, *no* outcome is known yet — not even a product's rate.
+  So the default for the default is last year's overall payout rate (2.86% in 2021), which was public
+  before our data starts — it can't give anything away. After 60 days every product has its own rate.
 - **A translation dictionary for renamed categories** *(tech: crosswalk / mapping table)* — the same tool
   governments use when medical or industry codes get renumbered. A two-column list "old name → new name";
   every complaint looks itself up in it: found → take the new name, not found → keep its own.
