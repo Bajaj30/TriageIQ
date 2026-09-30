@@ -276,6 +276,13 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   produced by a *separate* program that re-does the whole load in a different language (Python instead of
   SQL). Both arrive at the same 10 load numbers independently — much stronger evidence than one program
   checking itself. And the docs and the checks read the same file, so they can never disagree.
+- **The database was doing its homework on the floor** — the first volume check ran for over 11 minutes.
+  The reason: by default Postgres gets only 4 MB of memory to sort with, so each sort of 4.8 million
+  complaints spilled onto the disk — 28 GB of scratch files. Giving it 256 MB brought the same check down
+  to 16 seconds. Same answers, same code — one setting. *(tech: work_mem)*
+- **Two methods, one answer** — each volume number was recounted a second, completely different way
+  (plain counting instead of window functions) for 22 complaints, including both ends of the busiest
+  company-day in the data (4,245 complaints). All 22 matched.
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it

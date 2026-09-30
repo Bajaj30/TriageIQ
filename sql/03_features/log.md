@@ -5,7 +5,10 @@ Each file builds one view; 08 stitches them into the materialized view the model
 
 - `01_label.sql` — view `v_label`: did the complaint pay (1/0) and was it untimely; Phase 0.5. ✅
 - `02_base.sql` — view `v_base`: fact + label + 2 tag flags, one row per complaint, feature columns only. ✅
-- `03_volume.sql` — view `v_volume`: how many complaints before today (frame B).
+- `03_volume.sql` — view `v_volume`: how many complaints before today (frame B); 6 counts, test 22/22. ✅
+  **Drift, decide in 08:** counts grow with calendar time (avg company all-time count, all complaints:
+  2022 63,274 → 2024 751,264). `company_n_prior` mostly measures *how far into the data we are* — a clock.
+  Candidates: drop it, or use ratios (company 30d ÷ 90d, company ÷ national) that don't grow with time.
 - `04_outcome_rates.sql` — view `v_outcome_rates`: payout / untimely rates to date, 60-day lag (frame A).
 - `05_smoothing.sql` — view `v_smoothed`: small-sample rates pulled toward the product's rate.
 - `06_sequence.sql` — view `v_sequence`: gaps, ranks and tenure (frame C, deterministic tiebreak).

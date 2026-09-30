@@ -32,6 +32,12 @@ VACUUM (ANALYZE) fact_complaint;
 VACUUM (ANALYZE) complaint_events;
 VACUUM (ANALYZE) complaint_narrative;
 
+-- Sort memory for EVERY future session on this database (pgAdmin included; new connections only).
+-- The default 4MB made each window-function sort over 4.8M rows spill to disk: v_volume's first
+-- check ran 11+ minutes with 28 GB of temp files; with 256MB the same check takes 16 seconds.
+-- Docker has 8 GB; one query can hold several sorts at once, so don't raise this much further.
+ALTER DATABASE triageiq SET work_mem = '256MB';
+
 -- CHECKS
 -- 1. the indexes and their sizes
 SELECT indexrelname AS index_name, relname AS on_table,

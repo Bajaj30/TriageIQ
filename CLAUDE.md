@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-30 · `v_label` + `v_base` done · next: `03_features/03_volume.sql` (frame B)
+Last updated: 2026-10-01 · `v_label`, `v_base`, `v_volume` done (test 22/22) · next: `04_outcome_rates.sql` (frame A)
 
 ---
 
@@ -255,6 +255,9 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
     a history reset + shift. **Fixed by D17** (issue crosswalk, 2026-09-28). The small ones and the 4
     sub-issue cases are still open → smoothing toward the parent rate, Phase 1.
 
+11. **Sort memory.** Default `work_mem` 4MB made window sorts over 4.8M rows spill to disk (28 GB temp,
+    11+ min). Set `ALTER DATABASE triageiq SET work_mem = '256MB'` (in `12_indexes.sql`): same check 16 s.
+    Docker VM has 8 GB — don't raise much further; a query can hold several sorts at once.
 ---
 
 ## 9. Phase 2 plan — decided
