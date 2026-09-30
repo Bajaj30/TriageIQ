@@ -223,6 +223,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **Look-back windows** *(tech: window functions)* — "how often did this company pay in everything *before*
   today?"
 - **Run it twice, get the same result** *(tech: idempotency)* — every load can be safely re-run.
+- **Names that change over time** *(tech: crosswalk / concordance table; slowly changing dimension, type 1)* —
+  when the regulator renamed categories mid-way, we kept a small translation table (old name → today's
+  name) so every complaint shows today's name and each company's history stays in one piece. The
+  original name is kept alongside, so nothing is lost.
 - **When one box can hold two answers** *(tech: one-hot vs multi-hot encoding)* — the tags column can say
   "Older American", "Servicemember", or both. Treating "both" as a separate, unrelated category would
   hide that it *is* an older American. Two yes/no switches — one per fact — let "both" simply flip both.
