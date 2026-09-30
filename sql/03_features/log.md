@@ -15,6 +15,10 @@ Each file builds one view; 08 stitches them into the materialized view the model
   training rows later than 2022-01-01, or rely on the no-history flags.
 - `05a_choose_k.sql` — tuning: AUC + Brier of the smoothed rate for 12 values of K on Oct–Dec 2023; best K ≈ 5. ✅
 - `05_smoothing.sql` — table `feature_params` (K = 5, 2021 fallback 2.86%) + view `v_smoothed`: every 04 column plus 4 smoothed rates, never NULL. ✅
-- `06_sequence.sql` — view `v_sequence`: gaps, ranks and tenure (frame C, deterministic tiebreak).
+- `06_sequence.sql` — view `v_sequence`: gaps, ranks and tenure (frame C, deterministic tiebreak); exact counts 4,946 / 50,827, test 22/22. ✅
+  **Clocks, decide in 08:** `days_since_start` is the calendar itself, and `company_tenure_days` equals it for
+  91.68% of complaints (111 companies present on 2022-01-01). Together with `company_n_prior` (03), these
+  mostly tell the model *when*, not *what* — candidates to drop, or replace with a 'new company' flag.
+  Gap signal is weak: same-day 1.18% payout (busy companies) vs 1.79–3.82% otherwise (all complaints).
 - `07_trends.sql` — view `v_trends`: last 90 days vs the 90 before.
 - `08_assembly.sql` — materialized view `mv_features`: every feature, one row per complaint.

@@ -182,6 +182,22 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
     servicemember or an older American (62+). Older Americans' complaints end in a payout 10.08% of the
     time vs 1.06% untagged — and it isn't just which products they complain about: on credit cards it's
     26.41% vs 13.81%. Always ask what a blank *means* before throwing a column away.
+19. **The AI studies only 71,460 complaints — but the history never shrinks.**
+    *Why we shrank:* free GPU time is limited, and payouts are rare (2.16% of complaints with a story).
+    Training on all 1.6 million would take far too long, and the AI would see almost nothing but "no
+    payout". So we kept **every** payout and 3 non-payouts for each — 71,460 complaints, a quarter of
+    them payouts. *(tech: case-control sampling)*
+    *What it costs:* that's thin, company by company. In the training set's learning part, only 410 of
+    1,627 companies have even one payout, only 70 have ten or more, and the top 10 companies hold 69.6%
+    of all payouts. From that, the AI could never learn each company's habits by itself.
+    *How the history stays safe:* every company's track record is built in the database from **all 4.8
+    million complaints — before any sampling happens.** Each training complaint then carries a summary
+    card about its company, written from the full history. Sampling decides how many complaints the AI
+    *reads*; it never changes how much the history *knows*. *(tech: the two-tier rule — features over the
+    full population, training on a sample)*
+    *Proof it matters:* early on, the company rates were computed from the sample itself. The sample is a
+    quarter payouts instead of about 3%, so every rate came out inflated — and the history-only score lost
+    about 3 points out of 100 (idea #17 above).
 ---
 
 ## 4. Classroom ideas that turned out to matter

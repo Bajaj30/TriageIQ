@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-01 · 03_features 01–05 done (label, base, volume, outcome rates, smoothing K=5) · next: `06_sequence.sql`
+Last updated: 2026-10-01 · 03_features 01–06 done (… smoothing K=5, sequence) · next: `07_trends.sql`
 
 ---
 
