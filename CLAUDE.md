@@ -121,7 +121,10 @@ Data/docs/data_profile.md     dataset profile
 Data/complaints.csv           9.2GB raw — gitignored
 Data/data/interim/            meta.parquet · narratives.parquet · triageiq_training_v2.parquet — gitignored
 training/verify_ablation.py   reproduces every baseline number
-training/canonical_facts.py   regenerates FACTS.md
+training/canonical_facts.py   regenerates FACTS.md, canonical_facts.json AND sql/02_load/00_expected_facts.sql
+                              (generated — never hand-edit). It re-implements the load rules in pandas; the
+                              SQL load must match it (11_validate reads expected('key')). Change a crosswalk
+                              rule in BOTH places, or validation fails — on purpose.
 docker-compose.yml            Postgres 16 + pgvector, host port **5433** (Postgres.app owns 5432)
 sql/                          numbered SQL pipeline, run in pgAdmin — every folder has a log.md
                               (1–2 lines per file). **Update the log.md whenever a file is added or done.**

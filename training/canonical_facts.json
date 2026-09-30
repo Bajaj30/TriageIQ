@@ -248,5 +248,17 @@
       "_n_train": 71460,
       "_n_test": 150000
     }
+  },
+  "load": {
+    "events": 14479692,
+    "untimely": 2785,
+    "products_rerouted": 1334958,
+    "issues_rerouted": 337252,
+    "dim_company": 4946,
+    "dim_state": 62,
+    "dim_product": 11,
+    "dim_sub_product": 62,
+    "dim_issue": 93,
+    "dim_sub_issue": 293
   }
 }

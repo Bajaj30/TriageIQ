@@ -272,6 +272,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **An index is a book's index** — instead of reading all 4.8 million complaints to find one company's
   history on one problem, the database looks it up: 797 complaints found in 0.19 milliseconds, without
   opening the main table at all. Building all 6 indexes took 11 seconds.
+- **The answer sheet lives in one place** — the numbers the final exam checks against come from one file,
+  produced by a *separate* program that re-does the whole load in a different language (Python instead of
+  SQL). Both arrive at the same 10 load numbers independently — much stronger evidence than one program
+  checking itself. And the docs and the checks read the same file, so they can never disagree.
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it

@@ -5,7 +5,8 @@ population they came from, so all-time figures stood in for windowed ones.
 There are exactly three populations and they are not interchangeable.
 
 Run:  python training/canonical_facts.py
-      -> training/canonical_facts.json  and  Context/FACTS.md
+      -> training/canonical_facts.json, Context/FACTS.md and sql/02_load/00_expected_facts.sql
+The SQL file loads every number into Postgres, so 11_validate.sql checks against the SAME numbers.
 Baselines are read from training/ablation_results.json (run verify_ablation.py first).
 """
 import json
@@ -77,6 +78,49 @@ F["splits_F3"] = {s: {"rows": int(len(g)), "positives": int(g.y.sum()), "rate": 
                       "from": str(g["Date received"].min().date()), "to": str(g["Date received"].max().date())}
                   for s, g in f3.groupby("split")}
 F["baselines"] = json.loads(ABL.read_text()) if ABL.exists() else None
+
+# ------------------------------------------------ load expectations (independent of the SQL load)
+# A SECOND implementation of the load rules, in pandas. sql/02_load must agree with it: if a crosswalk
+# rule changes in only one place, 11_validate.sql FAILS — on purpose, so the change is deliberate.
+PX = {  # (raw product, raw sub-product; None = any) -> canonical — mirrors sql/01_schema/02_product_crosswalk.sql
+    ("Credit card or prepaid card", "General-purpose credit card or charge card"): "Credit card",
+    ("Credit card or prepaid card", "Store credit card"): "Credit card",
+    ("Credit card or prepaid card", "General-purpose prepaid card"): "Prepaid card",
+    ("Credit card or prepaid card", "Government benefit card"): "Prepaid card",
+    ("Credit card or prepaid card", "Gift card"): "Prepaid card",
+    ("Credit card or prepaid card", "Payroll card"): "Prepaid card",
+    ("Credit card or prepaid card", "Student prepaid card"): "Prepaid card",
+    ("Credit reporting, credit repair services, or other personal consumer reports", "Credit reporting"):
+        "Credit reporting or other personal consumer reports",
+    ("Credit reporting, credit repair services, or other personal consumer reports", "Other personal consumer report"):
+        "Credit reporting or other personal consumer reports",
+    ("Credit reporting, credit repair services, or other personal consumer reports", "Credit repair services"):
+        "Debt or credit management",
+    ("Payday loan, title loan, or personal loan", None): "Payday loan, title loan, personal loan, or advance loan",
+    ("Money transfer, virtual currency, or money service", "Debt settlement"): "Debt or credit management",
+}
+IX = {  # raw issue -> canonical — mirrors sql/01_schema/06_issue_crosswalk.sql
+    "Problem with a credit reporting company's investigation into an existing problem":
+        "Problem with a company's investigation into an existing problem",
+}
+NS = "(not specified)"
+g = f1[["Product", "Sub-product", "Issue", "Sub-issue", "Company", "State"]].astype(object)
+cp = pd.Series([PX.get((p, sp), PX.get((p, None), p)) for p, sp in zip(g["Product"], g["Sub-product"])],
+               index=g.index)
+ci = g["Issue"].map(lambda i: IX.get(i, i))
+resp = f1["Company response to consumer"].astype(object)
+F["load"] = {
+    "events": 3 * len(f1),                                         # received + sent + responded
+    "untimely": int((resp == "Untimely response").sum()),
+    "products_rerouted": int((cp != g["Product"]).sum()),
+    "issues_rerouted": int((g["Issue"].notna() & (ci != g["Issue"])).sum()),
+    "dim_company": int(g["Company"].str.lower().nunique()),        # case-only duplicates merge
+    "dim_state": int(g["State"].fillna(NS).nunique()),
+    "dim_product": int(cp.nunique()),
+    "dim_sub_product": int(pd.DataFrame({"p": cp, "s": g["Sub-product"].fillna(NS)}).drop_duplicates().shape[0]),
+    "dim_issue": int(ci.fillna(NS).nunique()),
+    "dim_sub_issue": int(pd.DataFrame({"i": ci.fillna(NS), "s": g["Sub-issue"].fillna(NS)}).drop_duplicates().shape[0]),
+}
 Path("training/canonical_facts.json").write_text(json.dumps(F, indent=2))
 
 # ---------------------------------------------------------------- render FACTS.md
@@ -131,6 +175,13 @@ w(f"- Company-days: {s['company_days']:,}; **{pc(s['company_day_multi'])} hold >
 w(f"- NULL `Company response to consumer` in F1: **{s['null_response_F1']}** — unknown; **label 0** (decided 2026-09-29 — the shipped training set already does this)")
 w(f"- `Submitted via`: 1 value in F2, **{a['n_Submitted_via']} in F1** — "
   + ", ".join(f"{k} {v:,}" for k, v in F["submitted_via_F1"].items()) + "\n")
+ld = F["load"]
+w("## Load expectations — what the SQL load must produce (F1, after the crosswalks)\n")
+w("Computed here in pandas, independently of the SQL load; `sql/02_load/11_validate.sql` checks against them.\n")
+w("| fact | value |\n|---|---|")
+for k, v in ld.items():
+    w(f"| `load.{k}` | {v:,} |")
+w("")
 sp = F["splits_F3"]
 w("## Splits (F3)\n\n| split | period | rows | positives | rate | sampling |\n|---|---|---|---|---|---|")
 for k, samp in [("train","case-control, ALL positives kept"),("val","natural"),("test","natural")]:
@@ -154,4 +205,40 @@ if F["baselines"]:
       "case-control-resampled train data (25% positive vs ~3.4%). **Entity rates must be computed over F1 "
       "in Postgres, never over resampled training rows.**")
 Path("Context/FACTS.md").write_text("\n".join(L) + "\n")
-print("wrote training/canonical_facts.json and Context/FACTS.md")
+
+# ---------------------------------------------------------------- render the SQL seed
+def leaves(o, prefix=""):
+    """Every NUMERIC leaf of the JSON as (dotted key, value). Booleans and strings are skipped."""
+    if isinstance(o, dict):
+        for k, v in o.items():
+            yield from leaves(v, f"{prefix}.{k}" if prefix else str(k))
+    elif isinstance(o, (int, float)) and not isinstance(o, bool):
+        yield prefix, o
+rows = sorted(leaves(F))
+q = lambda t: t.replace("'", "''")
+sql = ["-- GENERATED by training/canonical_facts.py from training/canonical_facts.json — DO NOT HAND-EDIT.",
+       "-- Re-generate:  python training/canonical_facts.py",
+       "-- ============================================================",
+       "-- 02_load/00_expected_facts.sql",
+       "-- TARGET  : table expected_facts  +  function expected(fact)",
+       "-- PURPOSE : ONE source for every expected number. 11_validate.sql reads its expectations from here,",
+       "--           so Context/FACTS.md and the SQL checks can never disagree.",
+       "-- USE     : SELECT expected('F1.rows');   -- keys are the JSON paths, e.g. 'load.dim_company'",
+       "--           A missing key returns NULL, which 11_validate shows as FAIL — never a silent PASS.",
+       "-- ============================================================",
+       "DROP TABLE IF EXISTS expected_facts;",
+       "CREATE TABLE expected_facts (",
+       "    fact   TEXT    PRIMARY KEY,",
+       "    value  NUMERIC NOT NULL",
+       ");",
+       "INSERT INTO expected_facts (fact, value) VALUES",
+       ",\n".join(f" ('{q(k)}', {v!r})" for k, v in rows) + ";",
+       "",
+       "CREATE OR REPLACE FUNCTION expected(k TEXT) RETURNS NUMERIC",
+       "LANGUAGE sql STABLE AS $$ SELECT value FROM expected_facts WHERE fact = k $$;",
+       "",
+       f"-- sanity: expect {len(rows)} facts",
+       "SELECT count(*) AS facts FROM expected_facts;",
+       ""]
+Path("sql/02_load/00_expected_facts.sql").write_text("\n".join(sql))
+print(f"wrote training/canonical_facts.json, Context/FACTS.md and sql/02_load/00_expected_facts.sql ({len(rows)} facts)")

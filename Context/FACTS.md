@@ -84,6 +84,23 @@ A product that stops on the day another starts is a **rename**, and must map to 
 - NULL `Company response to consumer` in F1: **19** — unknown; **label 0** (decided 2026-09-29 — the shipped training set already does this)
 - `Submitted via`: 1 value in F2, **5 in F1** — Web 4,706,666, Phone 67,953, Referral 34,071, Postal mail 17,873, Email 1
 
+## Load expectations — what the SQL load must produce (F1, after the crosswalks)
+
+Computed here in pandas, independently of the SQL load; `sql/02_load/11_validate.sql` checks against them.
+
+| fact | value |
+|---|---|
+| `load.events` | 14,479,692 |
+| `load.untimely` | 2,785 |
+| `load.products_rerouted` | 1,334,958 |
+| `load.issues_rerouted` | 337,252 |
+| `load.dim_company` | 4,946 |
+| `load.dim_state` | 62 |
+| `load.dim_product` | 11 |
+| `load.dim_sub_product` | 62 |
+| `load.dim_issue` | 93 |
+| `load.dim_sub_issue` | 293 |
+
 ## Splits (F3)
 
 | split | period | rows | positives | rate | sampling |
