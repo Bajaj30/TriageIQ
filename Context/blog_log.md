@@ -213,6 +213,9 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **Don't trust a small sample's average** *(tech: smoothing)* — a company with 3 complaints and 1 payout
   isn't really a "33% payer". Pull it toward a sensible default — its product's rate, not the overall rate,
   because the overall rate is mostly credit reports.
+- **A translation dictionary for renamed categories** *(tech: crosswalk / mapping table)* — the same tool
+  governments use when medical or industry codes get renumbered. A two-column list "old name → new name";
+  every complaint looks itself up in it: found → take the new name, not found → keep its own.
 - **Database design basics** *(tech: dimensional modelling)* — decide what one row means, keep lists apart
   from events, give every item a stable id number.
 - **"Unknown" is not "no" — usually** *(tech: NULL)* — the database keeps blanks as blanks. For the label we
