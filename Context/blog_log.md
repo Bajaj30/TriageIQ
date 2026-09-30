@@ -225,7 +225,7 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   | 3 complaints, 1 paid, a credit card company (product rate ≈ 15%) | smoothed rate |
   |---|---|
   | K = 0 — trust the 3 complaints completely | 33.3% |
-  | K = 5 | 20.9% |
+  | K = 5 | 21.9% |
   | K = 50 | 16.0% |
   | K = 200 — ignore the company's own history | 15.3% |
 
