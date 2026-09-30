@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-01 · 03_features 01–06 done (… smoothing K=5, sequence) · next: `07_trends.sql`
+Last updated: 2026-10-01 · **Phase 1 complete** — `mv_features` + `v_model_input` (19 inputs) · next: `04_training_set` + Kaggle setup
 
 ---
 
@@ -107,6 +107,7 @@ CLAUDE.md                     this file
 README.md                     public, plain-language (non-technical reader), Mermaid diagrams.
                               **Fill its ⏳ placeholders as phases finish; numbers must match FACTS.md.**
 Context/FACTS.md              every number, three frames — generated, never hand-edit
+sql/03_features/feature_dictionary.md   every feature: meaning, frame, model input yes/no and why
 Context/schema_explanation.md Phase 0.3 decisions, each tied to a concept   ← current work
 Context/TriageIQ.md           full engineering spec (bible v2); §1.4a = verified window-frame rules
 Context/WHAT_WHY.md           pitch and positioning
@@ -149,7 +150,7 @@ work) come after all tables are loaded.
 | 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
 | 0.4 | Bulk load | **Complete** — fact 4,826,564 · narrative 1,639,068 · events 14,479,692 · validated 21/21 · 6 indexes (company×issue lookup 0.19 ms, index-only); 31,378 company×issue pairs (F1) |
 | 0.5 | Label as a SQL view | **Complete** — `v_label`: 4,826,564 rows · paid 60,952 · untimely 2,785 · 19 unknown → 0 · base rate 1.26% (F1); reads the partial index, 1 s |
-| 1 | Layered point-in-time pipeline | Mapped — 8 files in `sql/03_features/` (see its log.md): label → base → volume (frame B) → outcome rates (frame A) → smoothing → sequence (frame C) → trends → `mv_features` |
+| 1 | Layered point-in-time pipeline | **Complete** — `sql/03_features/` 01–08: `mv_features` (4,826,564 rows × 40 cols, ~80 s build) → `v_model_input` (**19 inputs**, see `sql/03_features/feature_dictionary.md`); recount tests + leak test pass (`sql/tests/`) |
 | 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |
 | 3 | FastAPI, Docker, Cloud Run, CI/CD, monitoring | Not started |
 

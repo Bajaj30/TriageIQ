@@ -23,4 +23,5 @@ Each file builds one view; 08 stitches them into the materialized view the model
 - `07_trends.sql` — view `v_trends`: v_volume + log-ratio trends (last 90 vs the 90 before) + shares of national volume; test 21/21. ✅
   Shares fix most of the count drift: avg company 90d count ×5.5 from 2022 to 2024, avg share ×1.5
   (15.6% → 23.4%, a real shift toward the bureaus). Trends read high in 2022 (avg 1.968) — warm-up.
-- `08_assembly.sql` — materialized view `mv_features`: every feature, one row per complaint.
+- `08_assembly.sql` — materialized view `mv_features` (40 columns, 1.75 GB, ~80 s build) + view `v_model_input` (the 19 model inputs); leak guard 0 label columns; lookup 0.036 ms. ✅
+- `feature_dictionary.md` — every stored column: meaning, frame, and why it is (or is not) a model input.

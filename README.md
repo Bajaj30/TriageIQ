@@ -393,12 +393,11 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    A["✅ Understand<br/>the data"] --> B["✅ Design<br/>the database"] --> C["✅ Load the<br/>complaints"] --> D["🔄 Build the<br/>track record"] --> E["⏳ Train the<br/>AI reader"] --> F["⏳ Put it<br/>online"]
+    A["✅ Understand<br/>the data"] --> B["✅ Design<br/>the database"] --> C["✅ Load the<br/>complaints"] --> D["✅ Build the<br/>track record"] --> E["⏳ Train the<br/>AI reader"] --> F["⏳ Put it<br/>online"]
     classDef done fill:#d1fae5,stroke:#059669,color:#064e3b
     classDef doing fill:#fef3c7,stroke:#d97706,color:#78350f
     classDef todo fill:#f3f4f6,stroke:#9ca3af,color:#374151
-    class A,B,C done
-    class D doing
+    class A,B,C,D done
     class E,F todo
 ```
 
@@ -407,7 +406,7 @@ flowchart LR
 | Understand the data | ✅ done | proof the complaints were written by real people; the training set |
 | Design the database | ✅ done | 11 linked tables, with rules the database enforces itself |
 | Load the complaints | ✅ done | 4.8M complaints, 1.6M stories, 14.5M timeline rows — 21 of 21 checks pass |
-| Build the track record | 🔄 in progress | the seven steps in section 5; step 1 (did it pay?) done |
+| Build the track record | ✅ done | 19 clues per complaint, stored for all 4.8 million complaints; the no-peeking test passed |
 | Train the AI reader | ⏳ | the fine-tuned model, and the ⏳ scores above |
 | Put it online | ⏳ | a live link anyone can try: ⏳ |
 
@@ -431,7 +430,7 @@ flowchart LR
 | part | tool | status |
 |---|---|---|
 | Database | PostgreSQL 16 + pgvector, in Docker Compose (port 5433) | ✅ running |
-| Track record | SQL window functions — point-in-time, as-of each complaint's date | 🔄 Phase 1 |
+| Track record | SQL window functions — point-in-time, as-of each complaint's date; materialized view `mv_features` | ✅ Phase 1 |
 | Text model | DistilBERT fine-tuned on Kaggle's free T4 GPU | ⏳ Phase 2 |
 | Fusion | text model + SQL features combined | ⏳ Phase 2 |
 | Serving | FastAPI on Google Cloud Run | ⏳ Phase 3 |

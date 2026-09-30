@@ -336,6 +336,11 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   from 2022 to 2024. A model trained on 2022–23 would think every 2024 company is unusually busy. So we
   also measure each company's *share* of all complaints — that rose only 1.5×. Like comparing a shop's
   share of the market instead of its raw sales in a growing economy.
+- **Building 40 clues, using 19** — the finished table stores 40 facts about every complaint, but the model
+  reads only 19. The other 21 aren't wrong — they're *clocks* ("how far into the data are we?") or raw
+  counts that swell as complaint volume grows. A model trained on 2022–23 would read them as "this is
+  2024" rather than "this complaint is risky". Choosing what *not* to feed a model is half the job. The
+  list of 19 lives in one saved query, so training and the live service can never disagree about it.
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it
