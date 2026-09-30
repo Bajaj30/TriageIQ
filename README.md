@@ -185,26 +185,98 @@ flowchart LR
 
 ### The shape: a "snowflake"
 
-One big table sits in the middle — **one row per complaint**. Around it sit short lookup lists:
-companies, states, products, issues. Two of those lists have smaller lists branching off them
+One big table sits in the middle — **`fact_complaint`, one row per complaint**. Around it sit lookup
+tables (companies, states, products, issues). Two of those have smaller tables branching off them
 (sub-products, sub-issues) — arms branching out, like a snowflake. Two side tables hang off each
 complaint: its **written story** (only when the customer published one) and its **timeline** — where
-the "did it pay?" answer is kept, deliberately *away* from the main table, so it can never slip into
-the model's inputs by accident.
+the "did it pay?" answer is kept, deliberately *away* from the main table, so it can never slip into the
+model's inputs by accident.
+
+**How to read it:** each box is a table — its name on top, its columns below. **PK** = the table's own
+id; **FK** = a pointer to another table's id. On a line, the forked end means "many": one company has
+many complaints. Dashed lines are the two translation tables that fix renamed categories.
 
 ```mermaid
-flowchart LR
-    F["📨 Complaints<br/>one row per complaint<br/>4,826,564"]
-    CO["🏢 Companies<br/>4,946"] --- F
-    ST["📍 States<br/>62"] --- F
-    P["📦 Products<br/>11"] --- F
-    SP["Sub-products<br/>62"] --- P
-    I["❓ Issues<br/>93"] --- F
-    SI["Sub-issues<br/>293"] --- I
-    F --- N["📝 Written story<br/>1,639,068"]
-    F --- E["🕒 Timeline: received, sent, answered<br/>14,479,692 rows<br/>the payout answer lives here"]
-    PX["🔁 Product translation<br/>12 rules"] -.-> P
-    IX["🔁 Issue translation<br/>1 rule"] -.-> I
+erDiagram
+    fact_complaint {
+        bigint complaint_id PK "4,826,564 rows"
+        date   date_received
+        int    company_id FK
+        int    state_id FK
+        int    product_id FK
+        int    sub_product_id FK
+        int    issue_id FK
+        int    sub_issue_id FK
+        text   raw_product "name before translation"
+        text   raw_issue "name before translation"
+        text   submitted_via
+        text   tags
+    }
+    dim_company {
+        int  company_id PK "4,946 rows"
+        text company_name
+        date first_seen_in_window
+    }
+    dim_state {
+        int  state_id PK "62 rows"
+        text state_code
+    }
+    dim_product {
+        int  product_id PK "11 rows"
+        text product_name
+    }
+    dim_sub_product {
+        int  sub_product_id PK "62 rows"
+        int  product_id FK
+        text sub_product_name
+    }
+    dim_issue {
+        int  issue_id PK "93 rows"
+        text issue_name
+    }
+    dim_sub_issue {
+        int  sub_issue_id PK "293 rows"
+        int  issue_id FK
+        text sub_issue_name
+    }
+    complaint_narrative {
+        bigint complaint_id PK, FK "1,639,068 rows"
+        text   narrative
+        int    n_words
+    }
+    complaint_events {
+        bigint event_id PK "14,479,692 rows"
+        bigint complaint_id FK
+        text   event_type "received, sent_to_company, responded"
+        date   event_date
+        text   company_response "the payout answer"
+        text   timely_response
+        text   public_response
+    }
+    product_crosswalk {
+        text raw_product UK "12 rules"
+        text raw_sub_product UK
+        text canonical_product
+        text reason
+    }
+    issue_crosswalk {
+        text raw_issue PK "1 rule"
+        text canonical_issue
+        text reason
+    }
+
+    dim_company     ||--o{ fact_complaint      : "receives"
+    dim_state       ||--o{ fact_complaint      : "locates"
+    dim_product     ||--o{ fact_complaint      : "classifies"
+    dim_sub_product ||--o{ fact_complaint      : "classifies"
+    dim_issue       ||--o{ fact_complaint      : "classifies"
+    dim_sub_issue   ||--o{ fact_complaint      : "classifies"
+    dim_product     ||--o{ dim_sub_product     : "branches into"
+    dim_issue       ||--o{ dim_sub_issue       : "branches into"
+    fact_complaint  ||--o| complaint_narrative : "may have a story"
+    fact_complaint  ||--|{ complaint_events    : "has 3 events"
+    product_crosswalk }o..|| dim_product       : "translates into"
+    issue_crosswalk   }o..|| dim_issue         : "translates into"
 ```
 
 All numbers are for 2022–2024. Together the companies and issues form **31,378 company × problem
