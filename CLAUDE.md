@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-30 · Phase 0.5 done (`v_label`) · next: `03_features/02_base.sql`
+Last updated: 2026-09-30 · `v_label` + `v_base` done · next: `03_features/03_volume.sql` (frame B)
 
 ---
 
@@ -175,7 +175,8 @@ work) come after all tables are loaded.
 | D17 | Renamed **issue** → one canonical `issue_id` via `issue_crosswalk` (1 rule, 337,252 F1 rows rerouted); fact keeps `raw_issue` |
 
 **Still open (none block the load):**
-1. **`Submitted via`** — kept as a fact column for now. 1 value in F2, 5 in F1.
+1. **`Submitted via`** — **CLOSED (2026-09-30): not a model input.** 1 value (Web) among complaints with
+   text (F2) — constant on every training row. Stays in the fact table; left out of `v_base`.
 2. **`Tags`** — kept as a nullable fact column. 94.49% null in F1, 87.82% in F3. **NULL = "no tag", not
    missing** (a form checkbox, known at intake). Payout rate F1: no tag 1.06% · Servicemember 2.43% ·
    **Older American 10.08%** · both 8.54%. Holds within product (credit card 26.41% vs 13.81%; credit
