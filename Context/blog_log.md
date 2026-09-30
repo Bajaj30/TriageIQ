@@ -332,6 +332,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **The track record works before the AI reads a word** — complaints whose company had paid out over 15%
   of the time on that kind of problem really paid 28.74% of the time; where it had paid up to 1%, only
   0.03% did (all complaints).
+- **Share, not size** — complaint volume grew so fast that an average company's 90-day count rose 5.5×
+  from 2022 to 2024. A model trained on 2022–23 would think every 2024 company is unusually busy. So we
+  also measure each company's *share* of all complaints — that rose only 1.5×. Like comparing a shop's
+  share of the market instead of its raw sales in a growing economy.
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it

@@ -20,5 +20,7 @@ Each file builds one view; 08 stitches them into the materialized view the model
   91.68% of complaints (111 companies present on 2022-01-01). Together with `company_n_prior` (03), these
   mostly tell the model *when*, not *what* — candidates to drop, or replace with a 'new company' flag.
   Gap signal is weak: same-day 1.18% payout (busy companies) vs 1.79–3.82% otherwise (all complaints).
-- `07_trends.sql` — view `v_trends`: last 90 days vs the 90 before.
+- `07_trends.sql` — view `v_trends`: v_volume + log-ratio trends (last 90 vs the 90 before) + shares of national volume; test 21/21. ✅
+  Shares fix most of the count drift: avg company 90d count ×5.5 from 2022 to 2024, avg share ×1.5
+  (15.6% → 23.4%, a real shift toward the bureaus). Trends read high in 2022 (avg 1.968) — warm-up.
 - `08_assembly.sql` — materialized view `mv_features`: every feature, one row per complaint.
