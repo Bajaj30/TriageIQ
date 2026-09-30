@@ -242,7 +242,9 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
 8. **Undeclared dependency:** scikit-learn is required but not in `pyproject.toml`.
 9. **A global average is a credit-reporting average.** Credit reporting is 83.2% of F1 rows but 3.3% of
    payouts, so the global rate (1.26%, F1) is mostly its number. Smooth entity rates toward the
-   **product** rate, not the global one — proposed, decide in Phase 1.
+   **product** rate, not the global one. **K measured (2026-10-01, `05a_choose_k.sql`, tuning period
+   Oct–Dec 2023, F1):** company × issue, history < 200 — AUC K=0 0.8690 · K=5 0.8901 · K=50 0.8754 ·
+   K=500 0.8495; Brier best at K=5. Flat from 2 to 7. **Recommended K = 5** — awaiting Shivam's OK.
 10. **Sub-issue changed meaning in Aug 2023.** All 122,207 missing sub-issues (F1) are structural, none
     skipped: 45 issues never have one (79,614); 3 depend on product — none under Payday (5,334); and
     **4 mortgage/payment issues got sub-issues only with the Aug-2023 form change (37,259)**. For those 4,

@@ -210,9 +210,30 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **A leak and a shift are different problems** — a leak uses information you wouldn't have yet; a shift
   means the future simply looks different from the past. The 2023 form change was a shift, fixed by
   translating old names into new ones.
-- **Don't trust a small sample's average** *(tech: smoothing)* — a company with 3 complaints and 1 payout
-  isn't really a "33% payer". Pull it toward a sensible default — its product's rate, not the overall rate,
-  because the overall rate is mostly credit reports.
+- **Don't trust a small sample's average** *(tech: smoothing / shrinkage, empirical Bayes)* — a company with
+  3 complaints and 1 payout isn't really a "33% payer"; that's luck. The fix is one line:
+
+  > **smoothed rate = (payouts + K × product rate) / (complaints + K)**
+
+  Read it as: *before looking at a company, pretend it already has K imaginary complaints that paid out at
+  its product's usual rate — then add its real ones.* A company with 3 complaints is mostly imaginary
+  complaints, so it leans on its product's rate. A company with 5,000 real complaints drowns the imaginary
+  ones out and speaks for itself. K sets how many imaginary complaints: small K trusts small samples, big K
+  ignores them. (The default is the product's rate, not the overall rate — the overall rate is mostly
+  credit reports, which almost never pay.)
+
+  | 3 complaints, 1 paid, a credit card company (product rate ≈ 15%) | smoothed rate |
+  |---|---|
+  | K = 0 — trust the 3 complaints completely | 33.3% |
+  | K = 5 | 20.9% |
+  | K = 50 | 16.0% |
+  | K = 200 — ignore the company's own history | 15.3% |
+
+  **We measured K instead of guessing it.** On complaints from Oct–Dec 2023 (never the 2024 final exam),
+  we tried 12 values and asked: how well does the smoothed rate alone separate complaints that paid from
+  those that didn't? For companies with little history, raw rates scored 87 out of 100; smoothing with K = 5
+  scored 89; K = 50 (our first guess) 88; K = 500 only 85. Anything from 2 to 7 was about equally good —
+  the big win is smoothing *at all*. We picked **K = 5**: just 5 imaginary complaints are enough.
 - **A translation dictionary for renamed categories** *(tech: crosswalk / mapping table)* — the same tool
   governments use when medical or industry codes get renumbered. A two-column list "old name → new name";
   every complaint looks itself up in it: found → take the new name, not found → keep its own.

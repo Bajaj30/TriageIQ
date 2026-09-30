@@ -12,7 +12,8 @@
 --  1. prior = the PRODUCT's payout rate to date (from 04) — itself as-of date   (trap #9)
 --  2. company and company x issue rates: shrink toward that prior with weight K
 --  3. when the prior is NULL too (a product's first 60 days), fall back to a stated constant
---  DECISIONS before writing: prior level (product vs overall) · K (start at 50, then check)
+--  K = 5 — MEASURED in 05a_choose_k.sql (tuning period, AUC + Brier; 2..7 about equal, 50 clearly worse)
+--  prior = the product's rate to date (trap #9)
 
 -- The prior must also be as-of date — an all-time prior leaks the future (guardrail §10).
 
