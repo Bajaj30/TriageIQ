@@ -266,6 +266,9 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **Change the design early** — the issue fix meant rebuilding every table, which took minutes. Later, the
   same change would break everything built on top.
 - **The database refuses bad data** — 12 out of 12 deliberately wrong inserts were rejected.
+- **The answer key lives in exactly one place** *(tech: the label as a view)* — "did it pay?" is one saved
+  question, not a column copied into many tables. Every later step asks it the same way, so the answer
+  can never mean two different things. It returns all 4.8 million answers in about a second.
 - **An index is a book's index** — instead of reading all 4.8 million complaints to find one company's
   history on one problem, the database looks it up: 797 complaints found in 0.19 milliseconds, without
   opening the main table at all. Building all 6 indexes took 11 seconds.

@@ -407,7 +407,7 @@ flowchart LR
 | Understand the data | ✅ done | proof the complaints were written by real people; the training set |
 | Design the database | ✅ done | 11 linked tables, with rules the database enforces itself |
 | Load the complaints | ✅ done | 4.8M complaints, 1.6M stories, 14.5M timeline rows — 21 of 21 checks pass |
-| Build the track record | 🔄 in progress | the seven steps in section 5; step 1 being written |
+| Build the track record | 🔄 in progress | the seven steps in section 5; step 1 (did it pay?) done |
 | Train the AI reader | ⏳ | the fine-tuned model, and the ⏳ scores above |
 | Put it online | ⏳ | a live link anyone can try: ⏳ |
 

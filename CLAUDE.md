@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-09-29 · Phase 0.4 complete · `sql/03_features/` mapped (8 stub files) · next: 01_label
+Last updated: 2026-09-30 · Phase 0.5 done (`v_label`) · next: `03_features/02_base.sql`
 
 ---
 
@@ -145,7 +145,7 @@ work) come after all tables are loaded.
 | 0.2 | Source dataset + profiling | **Complete** — v2 training set built |
 | 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
 | 0.4 | Bulk load | **Complete** — fact 4,826,564 · narrative 1,639,068 · events 14,479,692 · validated 21/21 · 6 indexes (company×issue lookup 0.19 ms, index-only); 31,378 company×issue pairs (F1) |
-| 0.5 | Label as a SQL view | Stub ready — `sql/03_features/01_label.sql`; NULL + untimely → 0 |
+| 0.5 | Label as a SQL view | **Complete** — `v_label`: 4,826,564 rows · paid 60,952 · untimely 2,785 · 19 unknown → 0 · base rate 1.26% (F1); reads the partial index, 1 s |
 | 1 | Layered point-in-time pipeline | Mapped — 8 files in `sql/03_features/` (see its log.md): label → base → volume (frame B) → outcome rates (frame A) → smoothing → sequence (frame C) → trends → `mv_features` |
 | 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |
 | 3 | FastAPI, Docker, Cloud Run, CI/CD, monitoring | Not started |
