@@ -283,6 +283,14 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **Two methods, one answer** — each volume number was recounted a second, completely different way
   (plain counting instead of window functions) for 22 complaints, including both ends of the busiest
   company-day in the data (4,245 complaints). All 22 matched.
+- **Proving there's no peeking** — we secretly flipped the answers of 3,495 complaints from one company's
+  busiest day (paid ↔ not paid), then recomputed that company's track record. Complaints on the same day
+  and up to 59 days later: not a single digit moved. On day 60, the rate jumped from 0.0034% to 0.34% —
+  exactly when those outcomes are allowed to be known. Then we undid the flip. A test that can also
+  *fail* is the only kind worth trusting. *(tech: leakage test inside a rolled-back transaction)*
+- **The track record works before the AI reads a word** — complaints whose company had paid out over 15%
+  of the time on that kind of problem really paid 28.74% of the time; where it had paid up to 1%, only
+  0.03% did (all complaints).
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it
