@@ -346,6 +346,12 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   2022, complaints with a story). They're mostly form letters disputing credit reports. When we stopped
   the same text from appearing in both the lessons and the final exam, 106,942 exam-side copies went —
   and only 9 of them had been paid. The old exam had been padded with easy, repeated letters.
+- **The database's track records beat the old shortcut** — with the old training set, the company
+  history was worked out from the training sample itself; with the new one it comes from the database,
+  built from all 4.8 million complaints. On the fair test (same product + problem) the history-only
+  score went from 91 to 93 out of 100, and history + words from 93 to 95; inside one company, 80 → 81.
+  (Different test sets, so read it as "at least as good", not a precise gain.) The three weakest clues
+  (trends, quiet days) added almost nothing — 0.1 points at most.
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it

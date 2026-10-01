@@ -24,13 +24,16 @@ complaint arrives → P(monetary relief) → high: senior analyst / low: templat
 - **A fusion model + FastAPI on Cloud Run** combines both, reading features from the same view
   training used.
 
-**The thesis, measured on the shipped training artifact (F3):**
+**The thesis, measured on training set v3** (test = 150,000 complaints from 2024, 2.31% payouts;
+TF-IDF + logistic regression; `training/test.ipynb`; FACTS.md "Baselines on training set v3"):
 
 | | within (Product×Issue) | **within-company** |
 |---|---|---|
-| text only | 0.8905 | **0.7900** |
-| metadata only | 0.9076 | 0.7463 |
-| fusion | **0.9330** | **0.8034** |
+| text only | 0.8916 | **0.7956** |
+| features only (19 SQL inputs) | 0.9276 | 0.7500 |
+| fusion | **0.9457** | **0.8115** |
+
+*(v2, historical: 0.8905 / 0.9076 / 0.9330 and 0.7900 / 0.7463 / 0.8034 — a different test set.)*
 
 Neither modality subsumes the other. Note the flip: holding product and issue fixed, metadata wins;
 **inside one company's queue — the deployment view — text wins.** Never quote one frame as if it
@@ -238,8 +241,8 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
    branch 0.032 AUC. Entity rates come from F1 in Postgres.
 4. **Post-intake columns are never features:** `Date sent to company`, `Company response to
    consumer`, `Timely response?`, `Company public response`.
-5. **Three evaluation frames, three claims** — pooled 0.9634 / within-strata 0.9330 / within-company
-   0.8034 (fusion, F3). Report the honest one; explain the gap.
+5. **Three evaluation frames, three claims** — pooled 0.9713 / within-strata 0.9457 / within-company
+   0.8115 (fusion, v3). Report the honest one; explain the gap.
 6. **Recalibration is mandatory** — case-control keep-fraction 0.104639 → logit offset −2.2572.
 7. **721 narratives straddle splits** (3,120 rows, 1.03%, 3 positives) — dup filter isn't group-aware.
    Fix before Phase 2: assign each narrative hash to one split.

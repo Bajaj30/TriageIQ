@@ -20,7 +20,7 @@ rest get a standard reply.
 | 📅 **~4,400** | new complaints a day, across all companies |
 | 💸 **1 in 80** | complaints end with the company paying money |
 | 📝 **1 in 3** | complaints include the customer's own written story |
-| 🎯 **80 / 100** | a simple starting model, on the most realistic test |
+| 🎯 **81 / 100** | a simple starting model, on the most realistic test |
 | 🤖 **⏳ / 100** | the fine-tuned AI model, on the same test |
 | 💰 **$0** | budget — a student laptop and free cloud tools |
 
@@ -158,7 +158,7 @@ flowchart TD
     A["📦 17.4 million complaints<br/>everything published, Dec 2011 to Aug 2026"]
     A -->|keep 2022 to 2024| B["🗓️ 4.8 million complaints<br/>used to build every company's track record"]
     B -->|keep those with a written story| C["📝 1.6 million complaints<br/>the AI can read"]
-    C -->|sample and split by date| D["🎯 301,460 complaints<br/>to train and test the AI"]
+    C -->|sample and split by date| D["🎯 292,940 complaints<br/>to train and test the AI"]
 ```
 
 **Why keep the 3.2 million complaints that have no written story?** The AI can't read them, but they
@@ -291,7 +291,7 @@ flowchart TD
     C --> D["🗂️ Organised tables<br/>the snowflake above"]
     D --> E["🧮 Track records,<br/>as of each complaint's date"]
     E --> F["📋 One row per complaint,<br/>every clue ready to use"]
-    F --> G["🎓 Train and test the AI<br/>301,460 complaints"]
+    F --> G["🎓 Train and test the AI<br/>292,940 complaints"]
     F --> H["⚡ Live service<br/>scores each new complaint"]
     classDef done fill:#d1fae5,stroke:#059669,color:#064e3b
     classDef doing fill:#fef3c7,stroke:#d97706,color:#78350f
@@ -335,9 +335,9 @@ We test it three ways, from easiest to most realistic:
 
 ```
 Coin flip (no skill at all)            ██████████            50
-Easy test      any two complaints      ███████████████████▎  96
-Fair test      same product + problem  ██████████████████▋   93
-Real-life test same company only       ████████████████▏     80
+Easy test      any two complaints      ███████████████████▍  97
+Fair test      same product + problem  ██████████████████▉   95
+Real-life test same company only       ████████████████▎     81
 ```
 
 > [!IMPORTANT]
@@ -349,8 +349,8 @@ Real-life test same company only       █████████████�
 
 | test | 📝 words only | 🧮 track record only | ⚖️ both |
 |---|:---:|:---:|:---:|
-| Fair test (same product + problem) | 89 | 91 | **93** |
-| Real-life test (same company only) | 79 | 75 | **80** |
+| Fair test (same product + problem) | 89 | 93 | **95** |
+| Real-life test (same company only) | 80 | 75 | **81** |
 
 Inside one company — the situation a real complaints team is in — **what the customer wrote matters
 more than the history.** Together they do best.
@@ -359,8 +359,8 @@ more than the history.** Together they do best.
 
 | | simple starting model | AI + track record |
 |---|:---:|:---:|
-| Real-life test score | 80 | ⏳ |
-| Fair test score | 93 | ⏳ |
+| Real-life test score | 81 | ⏳ |
+| Fair test score | 95 | ⏳ |
 | Share of payouts caught if seniors read only the riskiest 10% | ⏳ | ⏳ |
 | Time to score one complaint | — | ⏳ |
 
@@ -441,16 +441,17 @@ sampling on the train split only, then recalibration (logit offset −2.2572) ·
 
 ### Baseline numbers in full
 
-TF-IDF + logistic regression, test split: 150,000 complaints from 2024, 2.78% positive.
+TF-IDF + logistic regression on **training set v3** — train 62,940 (case-control), test 150,000 complaints
+from 2024, 2.31% payouts. Features = the 19 SQL inputs (`sql/03_features/feature_dictionary.md`).
 
 | model | pooled ROC-AUC | pooled PR-AUC | within product × issue | within company |
 |---|---|---|---|---|
-| text only | 0.9542 | 0.3551 | 0.8905 | 0.7900 |
-| metadata only | 0.9533 | 0.3414 | 0.9076 | 0.7463 |
-| **fusion** | **0.9634** | **0.4073** | **0.9330** | **0.8034** |
+| text only | 0.9599 | 0.3523 | 0.8916 | 0.7956 |
+| features only | 0.9642 | 0.3645 | 0.9276 | 0.7500 |
+| **fusion** | **0.9713** | **0.4262** | **0.9457** | **0.8115** |
 
-Reproduce with `python training/verify_ablation.py`. Every number in the project lives in
-[`Context/FACTS.md`](Context/FACTS.md).
+Reproduce with `training/test.ipynb`. Every number in the project lives in
+[`Context/FACTS.md`](Context/FACTS.md) (v2 numbers are kept there as history).
 
 ### What's in this repo
 

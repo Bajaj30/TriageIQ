@@ -78,6 +78,8 @@ F["splits_F3"] = {s: {"rows": int(len(g)), "positives": int(g.y.sum()), "rate": 
                       "from": str(g["Date received"].min().date()), "to": str(g["Date received"].max().date())}
                   for s, g in f3.groupby("split")}
 F["baselines"] = json.loads(ABL.read_text()) if ABL.exists() else None
+ABL3 = Path("training/baseline_v3_results.json")      # written by training/test.ipynb
+F["baselines_v3"] = json.loads(ABL3.read_text()) if ABL3.exists() else None
 
 # ------------------------------------------------ load expectations (independent of the SQL load)
 # A SECOND implementation of the load rules, in pandas. sql/02_load must agree with it: if a crosswalk
@@ -204,6 +206,15 @@ if F["baselines"]:
     w("> The metadata branch is depressed on F3 because target encoding was fitted on "
       "case-control-resampled train data (25% positive vs ~3.4%). **Entity rates must be computed over F1 "
       "in Postgres, never over resampled training rows.**")
+if F["baselines_v3"]:
+    B3 = F["baselines_v3"]
+    w("\n## Baselines on training set v3 — CURRENT (training/test.ipynb)\n")
+    w(f"Test: {B3['data']['n_test']:,} complaints from 2024, {B3['data']['test_base_rate']*100:.2f}% payouts · "
+      f"train {B3['data']['n_train']:,} (case-control). Same recipe as v2 (TF-IDF + logistic regression); "
+      "features = the 19 SQL inputs of `v_model_input`. Not the same test set as v2.\n")
+    w("| model | pooled AUC | pooled PR | within (Product×Issue) AUC | within-company AUC |\n|---|---|---|---|---|")
+    for mdl, x in B3["results"].items():
+        w(f"| {mdl} | {x['pooled_auc']:.4f} | {x['pooled_pr']:.4f} | {x['within_strata_auc']:.4f} | {x['within_company_auc']:.4f} |")
 Path("Context/FACTS.md").write_text("\n".join(L) + "\n")
 
 # ---------------------------------------------------------------- render the SQL seed

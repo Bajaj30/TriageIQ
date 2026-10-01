@@ -1,0 +1,51 @@
+{
+  "data": {
+    "file": "triageiq_training_v3.parquet",
+    "sha256": "16e3c4127dd1bbf05929ae7ff455c67175090213d78787ee1d6a1229bf796b3f",
+    "n_train": 62940,
+    "n_test": 150000,
+    "test_base_rate": 0.02314
+  },
+  "results": {
+    "text": {
+      "pooled_auc": 0.9598906795045672,
+      "pooled_pr": 0.3523012872752872,
+      "within_strata_auc": 0.8916483933829902,
+      "n_strata": 20.0,
+      "within_company_auc": 0.7955905520483222,
+      "n_companies": 24.0
+    },
+    "features (19)": {
+      "pooled_auc": 0.964239051726086,
+      "pooled_pr": 0.36447778843531725,
+      "within_strata_auc": 0.9275633086853201,
+      "n_strata": 20.0,
+      "within_company_auc": 0.7499534387605582,
+      "n_companies": 24.0
+    },
+    "features minus weak (16)": {
+      "pooled_auc": 0.9641416366854235,
+      "pooled_pr": 0.3630985292454012,
+      "within_strata_auc": 0.927154639334511,
+      "n_strata": 20.0,
+      "within_company_auc": 0.7492025757059892,
+      "n_companies": 24.0
+    },
+    "fusion": {
+      "pooled_auc": 0.9713055150440287,
+      "pooled_pr": 0.4261635371294727,
+      "within_strata_auc": 0.9456666330619218,
+      "n_strata": 20.0,
+      "within_company_auc": 0.8114915186888955,
+      "n_companies": 24.0
+    },
+    "fusion minus weak": {
+      "pooled_auc": 0.9712830829725204,
+      "pooled_pr": 0.4254408664576157,
+      "within_strata_auc": 0.9453520056788269,
+      "n_strata": 20.0,
+      "within_company_auc": 0.8106360571410013,
+      "n_companies": 24.0
+    }
+  }
+}

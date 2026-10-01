@@ -126,3 +126,15 @@ Test base rate 2.78% · 71,460 train / 150,000 test rows.
 Three numbers, three different claims: **pooled** is flattered by between-company and between-product differences; **within-strata** holds product and issue fixed; **within-company** is what a single bank triaging its own queue would actually experience. Report the honest one.
 
 > The metadata branch is depressed on F3 because target encoding was fitted on case-control-resampled train data (25% positive vs ~3.4%). **Entity rates must be computed over F1 in Postgres, never over resampled training rows.**
+
+## Baselines on training set v3 — CURRENT (training/test.ipynb)
+
+Test: 150,000 complaints from 2024, 2.31% payouts · train 62,940 (case-control). Same recipe as v2 (TF-IDF + logistic regression); features = the 19 SQL inputs of `v_model_input`. Not the same test set as v2.
+
+| model | pooled AUC | pooled PR | within (Product×Issue) AUC | within-company AUC |
+|---|---|---|---|---|
+| text | 0.9599 | 0.3523 | 0.8916 | 0.7956 |
+| features (19) | 0.9642 | 0.3645 | 0.9276 | 0.7500 |
+| features minus weak (16) | 0.9641 | 0.3631 | 0.9272 | 0.7492 |
+| fusion | 0.9713 | 0.4262 | 0.9457 | 0.8115 |
+| fusion minus weak | 0.9713 | 0.4254 | 0.9454 | 0.8106 |
