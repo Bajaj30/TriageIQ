@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-01 · **Phase 1 complete** — `mv_features` + `v_model_input` (19 inputs) · next: `04_training_set` + Kaggle setup
+Last updated: 2026-10-01 · training set v3 built in SQL (`sql/04_training_set/`) · next: export to Parquet + Kaggle setup
 
 ---
 
@@ -262,6 +262,15 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
     a history reset + shift. **Fixed by D17** (issue crosswalk, 2026-09-28). The small ones and the 4
     sub-issue cases are still open → smoothing toward the parent rate, Phase 1.
 
+12. **Training set v3 (2026-10-01) — rules chosen by me on Shivam's delegation; revisit after training.**
+    Start 2022-04-01 (warm-up) · ≥20 real words (one rule replaces min-words + ≤30% blanks) · one text, one
+    split (first appearance; later copies dropped, never moved) · cap 25 copies (v2 code DROPPED whole 26+
+    clusters — contradicted its own docs) · train all payouts + 3× · val 80k · test 150k · seed 42.
+    Result: train 62,940 (15,735 payouts) · val 80,000 (3.50%) · test 150,000 (2.31%) · **offset −2.4165**
+    (keep-fraction 0.0892 — v2's −2.2572 no longer applies). Rule 4 dropped 106,942 complaints / 9 payouts,
+    the cap 195,545 / 14: repeated templates almost never pay (unique texts 3.84% vs copies ≤0.05%).
+    Idea for later: an as-of 'identical text seen before' count is a legit, likely strong feature.
+    Heavy queries: `SET max_parallel_workers_per_gather = 0` — parallel hashes overflow the 1 GB shm_size.
 11. **Sort memory.** Default `work_mem` 4MB made window sorts over 4.8M rows spill to disk (28 GB temp,
     11+ min). Set `ALTER DATABASE triageiq SET work_mem = '256MB'` (in `12_indexes.sql`): same check 16 s.
     Docker VM has 8 GB — don't raise much further; a query can hold several sorts at once.

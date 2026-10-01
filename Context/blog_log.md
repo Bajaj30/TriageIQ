@@ -341,6 +341,11 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   counts that swell as complaint volume grows. A model trained on 2022–23 would read them as "this is
   2024" rather than "this complaint is risky". Choosing what *not* to feed a model is half the job. The
   list of 19 lives in one saved query, so training and the live service can never disagree about it.
+- **Copy-paste complaints almost never get paid** — 849,718 complaints with a unique story paid out 3.84%
+  of the time; complaints whose exact text appears 2 or more times paid out 0.05% or less (from April
+  2022, complaints with a story). They're mostly form letters disputing credit reports. When we stopped
+  the same text from appearing in both the lessons and the final exam, 106,942 exam-side copies went —
+  and only 9 of them had been paid. The old exam had been padded with easy, repeated letters.
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it
