@@ -288,6 +288,11 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
      (manifest: 1,569,044 → 1,444,945). Open (decide in `04_training_set`): that filter hides heavy-blank
      complaints from training though they still arrive in production — after collapsing, loosen it to
      drop only texts with almost no real words left.
+     **Measured 2026-10-01 (all F2):** blanks ≥30% = 126,596 complaints (7.72%) but only 129 payouts
+     (0.08–0.13% rate). After collapsing (5,000-sample each side): median 238 → 109 tokens, over 512:
+     12.1% → 3.6% — heavy-blank texts get SHORTER, so loosening the filter can't push real words out.
+     **Catch:** as plain text `[REDACTED]` = 5 word-pieces vs `XXXX` = 2 → register the markers as
+     **special tokens** (`add_special_tokens` + resize embeddings), or collapsing lengthens typical texts.
   2. Head + tail truncation for the long ones.
   3. **Slice evaluation:** score the model separately on complaints cut at 512 vs those that fit —
      this is how we learn whether length matters (replaces the 256 ablation).
