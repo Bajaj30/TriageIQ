@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-01 · training set v3 built in SQL (`sql/04_training_set/`) · next: export to Parquet + Kaggle setup
+Last updated: 2026-10-01 · training set v3 built + exported to Parquet (155 MB) · next: Kaggle setup guide, re-baseline on v3
 
 ---
 
@@ -122,6 +122,8 @@ Data/docs/data_profile.md     dataset profile
 Data/complaints.csv           9.2GB raw — gitignored
 Data/data/interim/            meta.parquet · narratives.parquet · triageiq_training_v2.parquet — gitignored
 training/verify_ablation.py   reproduces every baseline number
+training/export_training_set.py   copies v_training_export → triageiq_training_v3.parquet + manifest (moves rows only)
+                              NOTE: FACTS.md 'F3' and all baselines are still the v2 artifact — re-measure on v3
 training/canonical_facts.py   regenerates FACTS.md, canonical_facts.json AND sql/02_load/00_expected_facts.sql
                               (generated — never hand-edit). It re-implements the load rules in pandas; the
                               SQL load must match it (11_validate reads expected('key')). Change a crosswalk
