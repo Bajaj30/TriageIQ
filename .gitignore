@@ -21,3 +21,6 @@ Data/data/
 # Personal documents — not part of the project
 Context/*.docx
 Context/*.pages
+
+# model runs (weights are hundreds of MB) — kept on Kaggle / locally, never in git
+training/outputs/
