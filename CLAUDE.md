@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-01 · training set v3 built + exported to Parquet (155 MB) · Kaggle setup guide written (`training/KAGGLE_SETUP.md`) · next: Shivam runs it on Kaggle, then re-baseline on v3
+Last updated: 2026-10-01 · v3 on Kaggle — smoke test passed (sha256 match, 2× T4 15.6 GB, torch 2.10.0+cu128) · next: re-baseline on v3 (Mac, CPU)
 
 ---
 
@@ -154,7 +154,7 @@ work) come after all tables are loaded.
 | 0.4 | Bulk load | **Complete** — fact 4,826,564 · narrative 1,639,068 · events 14,479,692 · validated 21/21 · 6 indexes (company×issue lookup 0.19 ms, index-only); 31,378 company×issue pairs (F1) |
 | 0.5 | Label as a SQL view | **Complete** — `v_label`: 4,826,564 rows · paid 60,952 · untimely 2,785 · 19 unknown → 0 · base rate 1.26% (F1); reads the partial index, 1 s |
 | 1 | Layered point-in-time pipeline | **Complete** — `sql/03_features/` 01–08: `mv_features` (4,826,564 rows × 40 cols, ~80 s build) → `v_model_input` (**19 inputs**, see `sql/03_features/feature_dictionary.md`); recount tests + leak test pass (`sql/tests/`) |
-| 2 | pgvector, fusion, stratified ablation | Not started — plan in §9 |
+| 2 | pgvector, fusion, stratified ablation | **Started** — v3 uploaded as a private Kaggle Dataset; Cell 1 smoke test passed (sha256 `16e3c4127dd1…`, counts match, 2× T4). Next: re-baseline on v3 (cheap, CPU), then DistilBERT |
 | 3 | FastAPI, Docker, Cloud Run, CI/CD, monitoring | Not started |
 
 ---
