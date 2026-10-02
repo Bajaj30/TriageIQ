@@ -294,10 +294,23 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **The verdict on "database + AI" vs "AI alone"** — reading the riskiest 10% of 2024 complaints, the AI
   alone catches 88.8% of payouts; the AI plus the database's track records catches 92.6% — about 130 more
   paying complaints found for the same amount of reading. The combination is the model we keep.
-- **Halving the data barely hurt** — trained on half the examples, the AI scored 81.7 instead of 82.2
-  inside a company — well within the ± range, i.e. about as much as luck. So feeding it 8 times more
-  examples (3.5 GPU-hours) would most likely add less than that. Fifteen minutes of testing saved three
-  and a half hours of training — and pointed us back to what's actually missing: information, not volume.
+- **Why we didn't feed the AI 8 times more data — and how 15 minutes proved it** — the AI trained on
+  62,940 complaints: every one of the 15,735 that paid, plus 3 that didn't for each. About 480,000 more
+  "didn't pay" complaints were left on the table to save GPU time. The textbook way to use them all is a
+  *weighted* lesson: keep every complaint, but make each missed payout count about 34 times more than a
+  false alarm, so the rare payouts don't get drowned out *(tech: weighted loss)*. That would have taken
+  ~3.5 GPU-hours. Before spending them, we ran the cheap test in reverse: train on **half** the data
+  (15 minutes). If losing half the examples hurts a lot, gaining more should help a lot. It didn't: the
+  score went from 82.2 to 81.7 inside a company — well within the ± range, i.e. about the size of luck.
+  **Why more data couldn't help much:** (1) the extra complaints are all "didn't pay" — there are no
+  new payouts to learn from, ever; (2) the AI's mistakes come from information that isn't in the
+  complaint at all (the company's internal decision), and more copies of the same kind of complaint
+  can't supply it. More of the same isn't more information. Fifteen minutes of testing saved three and
+  a half hours of training — and pointed us at what is actually missing: new *clues*, not more *rows*.
+- **Why a longer-reading AI wouldn't help either** — DistilBERT reads the first 512 word-pieces (~410
+  words) and skips the rest; 8.4% of 2024 complaints are longer. If the deciding words were hiding in
+  those tails, a model that reads *every* word would beat it on exactly those complaints. It doesn't —
+  both score 96.1 on them. So a bigger, slower long-context model would buy nothing here.
 - **Every score gets a ± range** — the honest score is averaged over just 24 companies, so we re-draw the
   test complaints 1,000 times and report where the score lands 95% of the time: 0.8224 is really
   "somewhere between 0.815 and 0.830". Two models whose ranges overlap may differ only by luck.

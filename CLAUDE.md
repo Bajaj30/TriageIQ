@@ -346,6 +346,9 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
      The 512 cut costs nothing relative to a read-everything model → **512 stays; head+tail is low priority.**
   4. If the cut slice underperforms: chunk + pool with the same DistilBERT (median 2, p90 3 chunks).
   5. Last resort: a 1024+ model (jina-embeddings-v2-small, ~33M, 8,192 ctx).
+  **Steps 4–5 NOT NEEDED (2026-10-02):** the read-every-word TF-IDF fusion ties DistilBERT on the cut
+  slice (0.9614 = 0.9614) — no evidence of signal beyond piece 512; the cut slice is 8.4% of test
+  complaints / 12.4% of payouts (430 / 3,471); the ceiling is company decisions (trap 14), not length.
   **Rejected, measured:** lemmatization — even an impossible best case (every `##` piece removed)
   fits only 22.0% of the long ones, and it feeds DistilBERT unnatural text; stopword removal — fits
   55.5% but deletes not / no / never / nothing / cannot.
