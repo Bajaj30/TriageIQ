@@ -1,0 +1,89 @@
+{
+ "within_company_ci95": [
+  0.795596660340314,
+  0.8116238805103089
+ ],
+ "run": "full",
+ "cfg": {
+  "n_train": null,
+  "n_val": null,
+  "n_test": null,
+  "epochs": 3,
+  "batch": 16,
+  "eval_batch": 64,
+  "model": "distilbert-base-uncased",
+  "mode": "text",
+  "max_len": 512,
+  "trunc": "head",
+  "lr_enc": 2e-05,
+  "lr_rest": 0.001,
+  "warmup": 0.05,
+  "weight_decay": 0.01,
+  "patience": 1,
+  "seed": 42,
+  "grad_accum": 1
+ },
+ "history": [
+  {
+   "epoch": 1,
+   "frozen": true,
+   "train_loss": 0.31477860414228026,
+   "secs": 197.17508244514465,
+   "pooled_auc": 0.9291351060340409,
+   "pooled_pr": 0.2870799492361612,
+   "within_strata_auc": 0.8293840932701484,
+   "n_strata": 17,
+   "within_company_auc": 0.7436947968248023,
+   "n_companies": 20,
+   "auc_fits_512": 0.9300543886648406,
+   "auc_cut_at_512": 0.9165364689221681
+  },
+  {
+   "epoch": 2,
+   "frozen": false,
+   "train_loss": 0.25017324750657033,
+   "secs": 482.0139989852905,
+   "pooled_auc": 0.9532844769768323,
+   "pooled_pr": 0.41170520961306123,
+   "within_strata_auc": 0.8906479536889824,
+   "n_strata": 17,
+   "within_company_auc": 0.7978173146520029,
+   "n_companies": 20,
+   "auc_fits_512": 0.9544028604521032,
+   "auc_cut_at_512": 0.9408360091639499
+  },
+  {
+   "epoch": 3,
+   "frozen": false,
+   "train_loss": 0.20369386213402788,
+   "secs": 482.5890157222748,
+   "pooled_auc": 0.9536957079761736,
+   "pooled_pr": 0.41538469596982536,
+   "within_strata_auc": 0.895919823647876,
+   "n_strata": 17,
+   "within_company_auc": 0.7955971965867479,
+   "n_companies": 20,
+   "auc_fits_512": 0.9549348247661348,
+   "auc_cut_at_512": 0.9400870640942549
+  }
+ ],
+ "test": {
+  "pooled_auc": 0.9639634974494868,
+  "pooled_pr": 0.37589571219107,
+  "within_strata_auc": 0.9162881543855463,
+  "n_strata": 20,
+  "within_company_auc": 0.8035956137429404,
+  "n_companies": 24,
+  "auc_fits_512": 0.9646536533096974,
+  "auc_cut_at_512": 0.9555291786715985,
+  "calibrated_mean_p": 0.032636652363992644,
+  "actual_rate": 0.02314
+ },
+ "recall_at": {
+  "top_5pct": 0.6732929991356957,
+  "top_10pct": 0.8876404494382022,
+  "top_20pct": 0.9824258138864881
+ },
+ "n_test": 150000,
+ "test_payouts": 3471
+}

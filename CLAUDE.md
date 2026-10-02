@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-02 · text-only DistilBERT running on Kaggle · next: half-data check (TRAIN_FRAC=0.5) → maybe v4 weighted full-data run
+Last updated: 2026-10-02 · ablation: SQL adds +0.019 within-company over DistilBERT text-only (ranges don't overlap) · next: half-data check, DeBERTa text-only
 
 ---
 
@@ -32,7 +32,8 @@ TF-IDF + logistic regression; `training/test.ipynb`; FACTS.md "Baselines on trai
 | text only | 0.8916 | **0.7956** |
 | features only (19 SQL inputs) | 0.9276 | 0.7500 |
 | fusion | **0.9457** | **0.8115** |
-| **DistilBERT fusion** (Kaggle, 3 epochs) | **0.9492** | **0.8224** |
+| **DistilBERT fusion** (Kaggle, 3 epochs) | **0.9492** | **0.8224** (0.815–0.830) |
+| DistilBERT text only | 0.9163 | 0.8036 (0.796–0.812) |
 
 *(v2, historical: 0.8905 / 0.9076 / 0.9330 and 0.7900 / 0.7463 / 0.8034 — a different test set.)*
 

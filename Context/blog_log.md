@@ -281,6 +281,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   blending real ones *(tech: SMOTE)* — great for numbers like transactions, useless for text, because
   half of one complaint glued to half of another isn't a complaint; (4) make the model focus on what it
   gets wrong *(tech: focal loss)*.
+- **Is the database worth it, or just use a better AI?** — first answer: the same AI reading only the
+  story scored 80 out of 100 inside a company; reading the story *plus* the database's track records, 82.
+  The ± ranges don't overlap, so it's not luck. On the other tests the gap is bigger (92 vs 95). The
+  track records add something the text alone can't. (Still to test: a much bigger AI, text only.)
 - **Halve it before you double it** — before spending 3.5 GPU-hours on 8× more data, train once on *half*
   the data (15 minutes). If losing half hurts, gaining more will probably help; if it doesn't, it won't.
 - **Every score gets a ± range** — the honest score is averaged over just 24 companies, so we re-draw the

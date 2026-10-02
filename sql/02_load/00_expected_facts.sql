@@ -237,6 +237,32 @@ INSERT INTO expected_facts (fact, value) VALUES
  ('runs_v3.fusion_distilbert.test.within_company_auc', 0.8224316255600731),
  ('runs_v3.fusion_distilbert.test.within_strata_auc', 0.949165896825584),
  ('runs_v3.fusion_distilbert.test_payouts', 3471),
+ ('runs_v3.text_distilbert.cfg.batch', 16),
+ ('runs_v3.text_distilbert.cfg.epochs', 3),
+ ('runs_v3.text_distilbert.cfg.eval_batch', 64),
+ ('runs_v3.text_distilbert.cfg.grad_accum', 1),
+ ('runs_v3.text_distilbert.cfg.lr_enc', 2e-05),
+ ('runs_v3.text_distilbert.cfg.lr_rest', 0.001),
+ ('runs_v3.text_distilbert.cfg.max_len', 512),
+ ('runs_v3.text_distilbert.cfg.patience', 1),
+ ('runs_v3.text_distilbert.cfg.seed', 42),
+ ('runs_v3.text_distilbert.cfg.warmup', 0.05),
+ ('runs_v3.text_distilbert.cfg.weight_decay', 0.01),
+ ('runs_v3.text_distilbert.n_test', 150000),
+ ('runs_v3.text_distilbert.recall_at.top_10pct', 0.8876404494382022),
+ ('runs_v3.text_distilbert.recall_at.top_20pct', 0.9824258138864881),
+ ('runs_v3.text_distilbert.recall_at.top_5pct', 0.6732929991356957),
+ ('runs_v3.text_distilbert.test.actual_rate', 0.02314),
+ ('runs_v3.text_distilbert.test.auc_cut_at_512', 0.9555291786715985),
+ ('runs_v3.text_distilbert.test.auc_fits_512', 0.9646536533096974),
+ ('runs_v3.text_distilbert.test.calibrated_mean_p', 0.032636652363992644),
+ ('runs_v3.text_distilbert.test.n_companies', 24),
+ ('runs_v3.text_distilbert.test.n_strata', 20),
+ ('runs_v3.text_distilbert.test.pooled_auc', 0.9639634974494868),
+ ('runs_v3.text_distilbert.test.pooled_pr', 0.37589571219107),
+ ('runs_v3.text_distilbert.test.within_company_auc', 0.8035956137429404),
+ ('runs_v3.text_distilbert.test.within_strata_auc', 0.9162881543855463),
+ ('runs_v3.text_distilbert.test_payouts', 3471),
  ('schema.company_day_max', 4245),
  ('schema.company_day_multi', 0.43462609401593755),
  ('schema.company_days', 280846),
@@ -261,5 +287,5 @@ INSERT INTO expected_facts (fact, value) VALUES
 CREATE OR REPLACE FUNCTION expected(k TEXT) RETURNS NUMERIC
 LANGUAGE sql STABLE AS $$ SELECT value FROM expected_facts WHERE fact = k $$;
 
--- sanity: expect 243 facts
+-- sanity: expect 269 facts
 SELECT count(*) AS facts FROM expected_facts;
