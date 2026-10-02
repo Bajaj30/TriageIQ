@@ -287,6 +287,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   track records add something the text alone can't. (Still to test: a much bigger AI, text only.)
 - **Halve it before you double it** — before spending 3.5 GPU-hours on 8× more data, train once on *half*
   the data (15 minutes). If losing half hurts, gaining more will probably help; if it doesn't, it won't.
+- **Halving the data barely hurt** — trained on half the examples, the AI scored 81.7 instead of 82.2
+  inside a company — well within the ± range, i.e. about as much as luck. So feeding it 8 times more
+  examples (3.5 GPU-hours) would most likely add less than that. Fifteen minutes of testing saved three
+  and a half hours of training — and pointed us back to what's actually missing: information, not volume.
 - **Every score gets a ± range** — the honest score is averaged over just 24 companies, so we re-draw the
   test complaints 1,000 times and report where the score lands 95% of the time: 0.8224 is really
   "somewhere between 0.815 and 0.830". Two models whose ranges overlap may differ only by luck.

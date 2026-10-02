@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-02 · ablation: SQL adds +0.019 within-company over DistilBERT text-only (ranges don't overlap) · next: half-data check, DeBERTa text-only
+Last updated: 2026-10-02 · half-data check: 0.8166 vs 0.8224 — more data won't help much · next: DeBERTa text-only and/or the amount + recent-rate SQL features
 
 ---
 
@@ -301,6 +301,8 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
     Ranking is unaffected; before showing probabilities (API, expected cost), recalibrate on the most
     recent labelled data. **Kaggle UI:** a committed run's log page may stop updating — check the
     Output tab / metrics.json before assuming a stall (it fooled us on 2026-10-02).
+    **Draft vs saved runs:** a draft (interactive) session keeps `/kaggle/working` only while it is on —
+    download from the Output panel before stopping, or use Save Version → Save & Run All.
 11. **Sort memory.** Default `work_mem` 4MB made window sorts over 4.8M rows spill to disk (28 GB temp,
     11+ min). Set `ALTER DATABASE triageiq SET work_mem = '256MB'` (in `12_indexes.sql`): same check 16 s.
     Docker VM has 8 GB — don't raise much further; a query can hold several sorts at once.
@@ -355,6 +357,11 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
   for numeric data like transactions); (4) focal loss — a variant of (2). Steps:
   a. **Half-data check** — `TRAIN_FRAC=0.5` (notebook cell 1), ~15 min. If halving drops within-company
      clearly (outside the ± range), more data helps → b. If not → skip, spend hours on features/DeBERTa.
+     **RESULT (2026-10-02): fusion at 50% → within-company 0.8166** (pooled AUC 0.9722, PR 0.4280, strata
+     0.9465) vs 0.8224 (0.815–0.830) at 100% — **inside the range: halving cost ~0.006.** ⇒ more data is
+     unlikely to help; **b is deprioritised.** Source: Kaggle *draft* session read off screen — outputs were
+     not saved (draft files vanish when the session stops; only Save Version keeps them), so no results
+     file / range for it. Rerun as a saved version only if it must enter FACTS.md.
   b. Training set **v4**: all eligible train non-payouts + weighted loss (~3.5 h on one T4, measured
      481 s/epoch per 63k rows). Probability correction becomes −ln(weight) instead of ln(keep-fraction).
   c. Final model also trains on Oct–Dec 2023 (+~3k real payouts), fixed epochs (no val left to stop on).
