@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-02 · v4 fusion = v3 fusion within noise (0.8195 vs 0.8224) · model stays DistilBERT fusion on v3 (19 inputs) · next: Phase 3 (recalibration + API)
+Last updated: 2026-10-02 · model fixed (DistilBERT fusion, v3, 19 inputs) · Phase 3 = AWS deploy planned (§12) · Shivam is setting up AWS
 
 ---
 
@@ -167,7 +167,7 @@ work) come after all tables are loaded.
 | 0.5 | Label as a SQL view | **Complete** — `v_label`: 4,826,564 rows · paid 60,952 · untimely 2,785 · 19 unknown → 0 · base rate 1.26% (F1); reads the partial index, 1 s |
 | 1 | Layered point-in-time pipeline | **Complete** — `sql/03_features/` 01–08: `mv_features` (4,826,564 rows × 40 cols, ~80 s build) → `v_model_input` (**19 inputs**, see `sql/03_features/feature_dictionary.md`); recount tests + leak test pass (`sql/tests/`) |
 | 2 | pgvector, fusion, stratified ablation | **In progress** — DistilBERT fusion full run done (3 × ~481 s on one T4): within-company **0.8224**, within-strata 0.9492, PR 0.4395, riskiest 10% catches 92.6% (FACTS.md). Results: `training/results/fusion_full_v3.json`. Next: DistilBERT text-only + features-only arms, recalibration |
-| 3 | FastAPI, Docker, Cloud Run, CI/CD, monitoring | Not started |
+| 3 | FastAPI, Docker, AWS deploy, monitoring | **Planned (2026-10-02)** — AWS instead of Cloud Run (free $100 credits); see §12. Shivam is setting up the AWS account |
 
 ---
 
@@ -410,3 +410,34 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
 `expected_cost = P(monetary relief) × claimed_amount` (amount regex-extracted, product-median
 fallback). A $200k claim at P=0.012 → $2,400; a $10 claim at P=0.285 → $3. Recovers magnitude
 without a severity label. Amount is *claimed*, not verified; ~81% of complaints need the fallback.
+
+---
+
+## 12. Phase 3 — deployment plan (agreed 2026-10-02)
+
+**Goal:** a public link for the resume (Swagger UI, ground rule 2) that anyone can open for **a few months**.
+Shivam has **$100 AWS credits**; long-term hosting is NOT needed. Replaces the spec's Cloud Run plan
+(TriageIQ.md §3.3) — AWS only because the credits are free. Shivam is setting up AWS himself (with Claude
+Code) and will report back; check his account's credit type / expiry date before relying on it.
+
+**Chosen: option A — one small Lightsail or EC2 server (~2 GB RAM, ~$10–12/month est.), Docker Compose,
+two containers:** `postgres` (small serving DB) + `api` (FastAPI + model on CPU). Budget alarm at
+$10 / $50 / $90. (Rejected for now: 4 GB server ~$20–24/mo — less runway; Lambda — cold starts, more work.)
+
+**What ships — NOT the 13 GB local DB (it stays on the Mac as the rebuild source):**
+| serving table | built by SQL from the full DB | purpose |
+|---|---|---|
+| dims (company, product, sub-product, issue, state names) | copy | pick from lists, not ids |
+| **entity snapshot as of 2024-12-31** — company×issue / company / issue / product rates, shares, trends, quiet days | same formulas as `sql/03_features/`, evaluated at the data's end | score a NEW typed-in complaint |
+| the 150,000 test complaints (2024): 19 inputs + clean text + true outcome | from `v_model_input` / `v_training_export` | demo "real complaint → prediction vs what happened" |
+≈ 300 MB. Features stay SQL-only (ground rule 4); AWS holds results. **Limit to state openly:** the data ends
+2024-12-31, so new complaints are scored "as of end-2024" — live updates need a refresh job (later).
+
+**Model:** DistilBERT fusion v3 (`training/outputs/fusion_distilbert_full/model.pt`, 19 inputs). Before
+deploy: (1) **recalibrate** on the most recent labelled data (trap 13: 3.11% predicted vs 2.31% actual);
+(2) export to **ONNX + int8** (~70 MB vs 265 MB) and re-check scores + CPU latency; TF-IDF fusion is the
+fallback if CPU is too slow. Endpoints (spec §3.1): `POST /predict` (ids + text, never features),
+`GET /complaint/{id}` (demo), `GET /health`, `GET /model-info`.
+
+**Never commit AWS keys / `.env`.** Cost is a hard limit: free credits only (ground rule 3).
+
