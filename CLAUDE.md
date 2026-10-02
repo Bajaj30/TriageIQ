@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-02 · half-data check: 0.8166 vs 0.8224 — more data won't help much · next: DeBERTa text-only and/or the amount + recent-rate SQL features
+Last updated: 2026-10-02 · **model chosen: DistilBERT fusion** (text + 19 SQL inputs) · DeBERTa skipped · next: amount + recent-rate SQL features → v4 → one fusion rerun → Phase 3
 
 ---
 
@@ -349,6 +349,13 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
   **Rejected, measured:** lemmatization — even an impossible best case (every `##` piece removed)
   fits only 22.0% of the long ones, and it feeds DistilBERT unnatural text; stopword removal — fits
   55.5% but deletes not / no / never / nothing / cannot.
+- **MODEL CHOSEN (2026-10-02): DistilBERT fusion — text + the 19 SQL inputs.** Best on every score (within-
+  company 0.8224, riskiest 10% catches 92.6% vs 88.8% text-only ≈ 130 more payouts in the 2024 test).
+  Shivam: the text-vs-fusion debate is settled → **DeBERTa text-only run skipped** (optional; the error
+  analysis says the missing information isn't in the text). Fallback for CPU serving: TF-IDF fusion
+  (0.8115, 91.7%) if DistilBERT is too slow on Cloud Run — measure in Phase 3. Before showing any
+  probability: recalibrate on recent data (trap 13). Next improvement: dollar-amount + recent (6–12 mo)
+  company×issue rate as SQL features → training set v4 → one fusion rerun (~30 min).
 - **Class imbalance — plan agreed 2026-10-02 (after the text-only run).** Payouts are ~2–3% of complaints.
   Today: **undersampling** (all 15,735 train payouts + 3 non-payouts each = 62,940; ~480k eligible
   non-payouts thrown away) — chosen to save GPU, not because it is best. Options: (1) undersample [now];

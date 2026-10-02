@@ -287,6 +287,13 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   track records add something the text alone can't. (Still to test: a much bigger AI, text only.)
 - **Halve it before you double it** — before spending 3.5 GPU-hours on 8× more data, train once on *half*
   the data (15 minutes). If losing half hurts, gaining more will probably help; if it doesn't, it won't.
+- **Why the AI gets 19 clues, not 40 — tested** — we fed a simple model the 19 chosen clues, then the 19
+  plus the 16 left out. The extra 16 added exactly nothing. They are mostly *clocks*: a company's total
+  complaint count was ~108,000 on average in the training years and ~588,000 in 2024. A model trained on
+  the first number has never seen the second — it would be reading the calendar, not the complaint.
+- **The verdict on "database + AI" vs "AI alone"** — reading the riskiest 10% of 2024 complaints, the AI
+  alone catches 88.8% of payouts; the AI plus the database's track records catches 92.6% — about 130 more
+  paying complaints found for the same amount of reading. The combination is the model we keep.
 - **Halving the data barely hurt** — trained on half the examples, the AI scored 81.7 instead of 82.2
   inside a company — well within the ± range, i.e. about as much as luck. So feeding it 8 times more
   examples (3.5 GPU-hours) would most likely add less than that. Fifteen minutes of testing saved three

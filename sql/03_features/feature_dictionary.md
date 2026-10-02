@@ -50,6 +50,11 @@ NULLs: only `*_share_90d` on 2022-01-01 (535 complaints — no earlier day exist
 | `company_rank_this_month` | grows with monthly volume — drifts like the raw counts. |
 | `days_since_prev_company_complaint` | raw version of #19 (NULL for a company's first complaint). |
 
+**Tested 2026-10-02** (TF-IDF-style logistic regression, features only, v3 test 2024): the 19 inputs →
+within-company 0.7500 / pooled 0.9642; the 19 + the 16 excluded numbers (log-scaled) → 0.7499 / 0.9635.
+The excluded numbers add nothing. Why: their 2024 values are ~5× the training values (all-time count
+108,569 → 588,157; days since start 383 → 926, never seen in training) — they encode *when*, not *what*.
+
 ## Known limits
 
 - **Warm-up (early 2022):** outcome rates start with no history (14.07% of 2022 complaints have none),
