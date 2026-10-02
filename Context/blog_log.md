@@ -368,6 +368,16 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   come out a third too high on 2024 (3.1% predicted vs 2.3% real). It learned from 2022–23, when payouts
   were more common; they keep getting rarer. Ranking is what routing needs, but any probability shown to
   a person must first be re-tuned on recent data.
+- **Reading the AI's worst mistakes** — we read the complaints the AI ranked most wrongly inside their own
+  company. The *missed payouts* were mostly complaints about credit reports or logging in — the kind that
+  almost never pay — where the company paid anyway, probably as a goodwill gesture. The *false alarms*
+  read exactly like refund cases: a named fee, an amount, an unauthorised charge — and the company simply
+  said no. In both cases the deciding fact lives inside the company, not in the complaint. That is why
+  a bigger AI can't simply push the score to 90: the missing information isn't in the text.
+- **Money talk is a strong clue** — one in five complaints with a story mentions a dollar amount; they
+  end in a payout 7.1% of the time, against 1.0% for the rest, and hold 63% of all payouts. (An earlier
+  check had said "no amounts at all" — a typo-level bug in how the search was typed. Always look at a
+  few real rows before trusting a zero.)
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it

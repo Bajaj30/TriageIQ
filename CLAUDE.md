@@ -285,6 +285,15 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
     the cap 195,545 / 14: repeated templates almost never pay (unique texts 3.84% vs copies ≤0.05%).
     Idea for later: an as-of 'identical text seen before' count is a legit, likely strong feature.
     Heavy queries: `SET max_parallel_workers_per_gather = 0` — parallel hashes overflow the 1 GB shm_size.
+14. **Why within-company stops near 0.82 — error analysis (2026-10-02, `training/error_analysis.py` →
+    `training/results/error_analysis_v3.md`).** Missed payouts are mostly *surprise* payouts on non-money
+    complaints (credit-report disputes, login problems; company×issue rate ≈ 0.001–0.05) — they read like
+    thousands that never pay (likely goodwill credits). False alarms read exactly like refund cases (named
+    fee, amount, unauthorized charge) — the company just didn't pay; the reason isn't in the text. ⇒ The
+    ceiling looks like unobservable company decisions, not a weak reader; 0.9 is unlikely on average.
+    **Dollar amounts:** 19.2% of F2 narratives mention `{$…}`; they pay 7.10% vs 0.99% and hold 63% of
+    payouts (22,306 / 35,375). An earlier "0 amounts" check was a shell-quoting bug (`$` eaten by bash).
+    Candidate SQL features: has_amount, log max amount — and a recent (last 6–12 months) company×issue rate.
 13. **Calibration drifts (2026-10-02).** After the −2.4165 offset the full run predicts 3.11% on 2024 vs
     2.31% actual. The offset corrects the case-control sampling, NOT the year-on-year fall in payouts.
     Ranking is unaffected; before showing probabilities (API, expected cost), recalibrate on the most
