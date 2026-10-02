@@ -333,6 +333,10 @@
   },
   "runs_v3": {
     "features_sql": {
+      "within_company_ci95": [
+        0.743626879671923,
+        0.7627398713278014
+      ],
       "run": "full",
       "cfg": {
         "n_train": null,
@@ -418,6 +422,10 @@
       "test_payouts": 3471
     },
     "fusion_distilbert": {
+      "within_company_ci95": [
+        0.8147815367097373,
+        0.8298323115269082
+      ],
       "run": "full",
       "cfg": {
         "n_train": null,

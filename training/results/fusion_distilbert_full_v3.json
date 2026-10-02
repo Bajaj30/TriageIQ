@@ -1,4 +1,8 @@
 {
+ "within_company_ci95": [
+  0.8147815367097373,
+  0.8298323115269082
+ ],
  "run": "full",
  "cfg": {
   "n_train": null,

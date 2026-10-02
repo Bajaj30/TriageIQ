@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-02 · ablation running — fusion 0.8224, SQL-only 0.7537 (FACTS.md 'Model comparison') · next: Kaggle text-only DistilBERT + DeBERTa
+Last updated: 2026-10-02 · text-only DistilBERT running on Kaggle · next: half-data check (TRAIN_FRAC=0.5) → maybe v4 weighted full-data run
 
 ---
 
@@ -345,6 +345,19 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
   **Rejected, measured:** lemmatization — even an impossible best case (every `##` piece removed)
   fits only 22.0% of the long ones, and it feeds DistilBERT unnatural text; stopword removal — fits
   55.5% but deletes not / no / never / nothing / cannot.
+- **Class imbalance — plan agreed 2026-10-02 (after the text-only run).** Payouts are ~2–3% of complaints.
+  Today: **undersampling** (all 15,735 train payouts + 3 non-payouts each = 62,940; ~480k eligible
+  non-payouts thrown away) — chosen to save GPU, not because it is best. Options: (1) undersample [now];
+  (2) **weighted loss on ALL rows** — keep every complaint, weight payouts ~×34 (529,022 / 15,735);
+  (3) SMOTE/oversampling — **rejected for text** (can't blend two complaints into a valid new one; fine
+  for numeric data like transactions); (4) focal loss — a variant of (2). Steps:
+  a. **Half-data check** — `TRAIN_FRAC=0.5` (notebook cell 1), ~15 min. If halving drops within-company
+     clearly (outside the ± range), more data helps → b. If not → skip, spend hours on features/DeBERTa.
+  b. Training set **v4**: all eligible train non-payouts + weighted loss (~3.5 h on one T4, measured
+     481 s/epoch per 63k rows). Probability correction becomes −ln(weight) instead of ln(keep-fraction).
+  c. Final model also trains on Oct–Dec 2023 (+~3k real payouts), fixed epochs (no val left to stop on).
+  Expected gain: modest (+0.005–0.02) — error analysis says the misses are mostly information the text
+  lacks. Every run now reports a 95% range (`evaluate_fusion.py`): fusion 0.8224 (0.815–0.830).
 - **Training speed:** `group_by_length=True` is the big win (2.23× fewer tokens; dynamic padding
   alone does *nothing* on this data), `fp16` on T4, freeze encoder epoch 1, early stop on val PR-AUC,
   ≤3 epochs, develop on a 10k subset.

@@ -463,6 +463,10 @@ sample weights (or recalibrate afterwards) so predicted probabilities return to 
 This is standard case-control design: it makes fine-tuning tractable on free-tier GPU without
 throwing away a single positive.
 
+**Imbalance — measured follow-up (2026-10-02, CLAUDE.md §9):** undersampling was a GPU-budget choice. Next:
+a half-data check; if less data hurts, a weighted-loss run on all ~545k train complaints (SMOTE is rejected
+for text — two complaints can't be blended into a valid third).
+
 **The split is temporal, never random.** Train on earlier complaints, test on later ones. Random
 splits leak future-period statistics backward. Temporal honestly simulates deployment and *depresses*
 your metrics — expect that, and say so proudly.

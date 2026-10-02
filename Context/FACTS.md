@@ -148,7 +148,9 @@ One test set for every row: 150,000 complaints from 2024 (3,471 payouts). TF-IDF
 | TF-IDF + logistic regression | text | 0.7956 | 0.8916 | 0.3523 | 87.2% | 0.9542 | — |
 | TF-IDF + logistic regression | SQL features | 0.7500 | 0.9276 | 0.3645 | 88.8% | 0.9495 | — |
 | TF-IDF + logistic regression | text + SQL | 0.8115 | 0.9457 | 0.4262 | 91.7% | 0.9614 | — |
-| **small network (no language model)** | SQL features | **0.7537** | 0.9266 | 0.3847 | 89.1% | 0.9507 | 2.47% |
-| **distilbert-base-uncased** | text + SQL | **0.8224** | 0.9492 | 0.4395 | 92.6% | 0.9614 | 3.11% |
+| **small network (no language model)** | SQL features | **0.7537** (0.744–0.763) | 0.9266 | 0.3847 | 89.1% | 0.9507 | 2.47% |
+| **distilbert-base-uncased** | text + SQL | **0.8224** (0.815–0.830) | 0.9492 | 0.4395 | 92.6% | 0.9614 | 3.11% |
+
+Brackets = 95% range of the within-company score (1,000 resamples of complaints inside each company, `training/evaluate_fusion.py`). Runs whose ranges overlap heavily may differ only by luck.
 
 Calibrated mean = average predicted payout chance after the case-control offset (−2.4165). The offset fixes the sampling, not the drift (payouts fall year by year) — trap 13.

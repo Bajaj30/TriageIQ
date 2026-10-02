@@ -274,6 +274,18 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **When one box can hold two answers** *(tech: one-hot vs multi-hot encoding)* — the tags column can say
   "Older American", "Servicemember", or both. Treating "both" as a separate, unrelated category would
   hide that it *is* an older American. Two yes/no switches — one per fact — let "both" simply flip both.
+- **Four ways to handle a rare answer** *(tech: class imbalance)* — when only 2–3 in 100 complaints pay
+  (or 3 in 100 bank accounts are mule accounts), a model can score 97% by always saying "no". The fixes:
+  (1) throw away most "no" examples (what we did first — fast, but wasteful); (2) keep everything and
+  make each missed "yes" cost ~34× more *(tech: weighted loss)*; (3) invent extra "yes" examples by
+  blending real ones *(tech: SMOTE)* — great for numbers like transactions, useless for text, because
+  half of one complaint glued to half of another isn't a complaint; (4) make the model focus on what it
+  gets wrong *(tech: focal loss)*.
+- **Halve it before you double it** — before spending 3.5 GPU-hours on 8× more data, train once on *half*
+  the data (15 minutes). If losing half hurts, gaining more will probably help; if it doesn't, it won't.
+- **Every score gets a ± range** — the honest score is averaged over just 24 companies, so we re-draw the
+  test complaints 1,000 times and report where the score lands 95% of the time: 0.8224 is really
+  "somewhere between 0.815 and 0.830". Two models whose ranges overlap may differ only by luck.
 - **AI readers have a length limit** — DistilBERT reads at most 512 word-pieces.
 - **Old text-cleanup tricks can hurt modern AI readers** *(tech: lemmatization, stopword removal)* —
   they were made for models that just count words. A modern reader understands "charged" vs "charge"

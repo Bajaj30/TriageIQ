@@ -235,9 +235,15 @@ if F["runs_v3"] and F["baselines_v3"]:
     for run, X in F["runs_v3"].items():
         T, c = X["test"], X["cfg"]
         model = "small network (no language model)" if c.get("mode") == "features" else c["model"].split("/")[-1]
-        w(f"| **{model}** | {names.get(c.get('mode', 'fusion'), c.get('mode'))} | **{T['within_company_auc']:.4f}** | "
+        if c.get("train_frac", 1) < 1:
+            model += f" ({int(c['train_frac'] * 100)}% of train)"
+        ci = X.get("within_company_ci95")
+        wc = f"**{T['within_company_auc']:.4f}**" + (f" ({ci[0]:.3f}–{ci[1]:.3f})" if ci else "")
+        w(f"| **{model}** | {names.get(c.get('mode', 'fusion'), c.get('mode'))} | {wc} | "
           f"{T['within_strata_auc']:.4f} | {T['pooled_pr']:.4f} | {X['recall_at']['top_10pct']*100:.1f}% | "
           f"{T['auc_cut_at_512']:.4f} | {T['calibrated_mean_p']*100:.2f}% |")
+    w("\nBrackets = 95% range of the within-company score (1,000 resamples of complaints inside each company, "
+      "`training/evaluate_fusion.py`). Runs whose ranges overlap heavily may differ only by luck.")
     w("\nCalibrated mean = average predicted payout chance after the case-control offset (−2.4165). The offset "
       "fixes the sampling, not the drift (payouts fall year by year) — trap 13.")
 Path("Context/FACTS.md").write_text("\n".join(L) + "\n")
