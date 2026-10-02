@@ -35,6 +35,19 @@ the day before · **C** = order within a company, tiebreak `(date_received, comp
 | 18 | `issue_trend_90d` | same, for the issue | 07 | B | as above |
 | 19 | `company_quiet_days` | days since the company's previous complaint (first ever: days since data start — a lower bound) | 06 | C | bursts vs quiet periods (weak) |
 
+**Added in v4 (2026-10-02) — 23 inputs:**
+
+| # | column | what it says | built in | frame | why it's in |
+|---|---|---|---|---|---|
+| 20 | `has_amount` | the complaint mentions a dollar amount (`{$…}`) | 01_schema/08 | text at intake | 19.2% of texts; 7.10% payout vs 0.99% |
+| 21 | `log_max_amount` | ln(1 + largest amount mentioned) | 01_schema/08 | text at intake | small amounts pay most (under $100: 11.70%; $10k+: 4.09%) |
+| 22 | `company_issue_recent_rate_s` | company × issue payout rate over the 365 days ending 60 days back, smoothed toward its all-time rate | 04–05 | A (bounded) | policies change — **tested: adds nothing** (0.7500 → 0.7490) |
+| 23 | `company_recent_rate_s` | same, company level | 04–05 | A (bounded) | as above |
+
+Standalone test (features only, small network, v4 vs v3): within-company 0.7779 (0.769–0.787) vs 0.7537
+(0.744–0.763) — ranges don't overlap. Isolated with logistic regression: **the amount clue carries the gain**
+(0.7500 → 0.7710); the recent rates add nothing — candidates to drop if the fusion confirms it.
+
 NULLs: only `*_share_90d` on 2022-01-01 (535 complaints — no earlier day exists).
 
 ## Stored, but NOT model inputs — and why

@@ -3,7 +3,7 @@
 Reads (git-ignored, downloaded from Kaggle or made on the Mac):
   training/outputs/<run>/metrics.json           written by fusion_distilbert.ipynb
   training/outputs/<run>/test_predictions.parquet
-  Data/data/interim/triageiq_training_v3.parquet for the true labels
+  Data/data/interim/triageiq_training_v3.parquet for the true labels (v4 has the same rows and labels)
 Writes (tracked):  training/results/<run>_v3.json  -> rendered into Context/FACTS.md (the ablation table)
 
 Run:  python training/evaluate_fusion.py training/outputs/text_distilbert_full     (one run)
@@ -46,10 +46,11 @@ def summarise(RUN: Path):
     out = {"within_company_ci95": [lo, hi], "run": m["run"], "cfg": m["cfg"], "history": m["history"], "test": m["test"], "recall_at": recall_at,
            "n_test": int(len(t)), "test_payouts": int(y.sum())}
     Path("training/results").mkdir(exist_ok=True)
-    Path(f"training/results/{RUN.name}_v3.json").write_text(json.dumps(out, indent=1))
+    name = RUN.name if RUN.name.endswith(("_v3", "_v4")) else f"{RUN.name}_v3"   # older folders were all v3
+    Path(f"training/results/{name}.json").write_text(json.dumps(out, indent=1))
     print(RUN.name, f"within-company {m['test']['within_company_auc']:.4f}  95% range {lo:.4f}-{hi:.4f}")
     print(json.dumps({"test": {k: round(v, 4) for k, v in m["test"].items()}, "recall_at": recall_at}, indent=1))
 
-runs = [Path(a) for a in sys.argv[1:]] or sorted(p.parent for p in Path("training/outputs").glob("*_full/metrics.json"))
+runs = [Path(a) for a in sys.argv[1:]] or sorted(p.parent for p in Path("training/outputs").glob("*_full*/metrics.json"))
 for r in runs:
     summarise(r)

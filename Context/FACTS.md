@@ -149,6 +149,7 @@ One test set for every row: 150,000 complaints from 2024 (3,471 payouts). TF-IDF
 | TF-IDF + logistic regression | SQL features | 0.7500 | 0.9276 | 0.3645 | 88.8% | 0.9495 | — |
 | TF-IDF + logistic regression | text + SQL | 0.8115 | 0.9457 | 0.4262 | 91.7% | 0.9614 | — |
 | **small network (no language model)** | SQL features | **0.7537** (0.744–0.763) | 0.9266 | 0.3847 | 89.1% | 0.9507 | 2.47% |
+| **small network (no language model) · data v4** | SQL features | **0.7779** (0.769–0.787) | 0.9403 | 0.4094 | 90.7% | 0.9549 | 2.50% |
 | **distilbert-base-uncased** | text + SQL | **0.8224** (0.815–0.830) | 0.9492 | 0.4395 | 92.6% | 0.9614 | 3.11% |
 | **distilbert-base-uncased** | text | **0.8036** (0.796–0.812) | 0.9163 | 0.3759 | 88.8% | 0.9555 | 3.26% |
 

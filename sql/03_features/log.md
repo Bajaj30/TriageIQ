@@ -14,6 +14,7 @@ Each file builds one view; 08 stitches them into the materialized view the model
   (0.10% in 2023, 0.06% in 2024) — the first 60 days of data see no outcomes at all. Consider starting
   training rows later than 2022-01-01, or rely on the no-history flags.
 - `05a_choose_k.sql` — tuning: AUC + Brier of the smoothed rate for 12 values of K on Oct–Dec 2023; best K ≈ 5. ✅
+- `04_outcome_rates.sql` also holds RECENT windows (365 days ending 60 days back; added 2026-10-02) — recount 21/21 + leak test 3/3 re-run.
 - `05_smoothing.sql` — table `feature_params` (K = 5, 2021 fallback 2.86%) + view `v_smoothed`: every 04 column plus 4 smoothed rates, never NULL. ✅
 - `06_sequence.sql` — view `v_sequence`: gaps, ranks and tenure (frame C, deterministic tiebreak); exact counts 4,946 / 50,827, test 22/22. ✅
   **Clocks, decide in 08:** `days_since_start` is the calendar itself, and `company_tenure_days` equals it for

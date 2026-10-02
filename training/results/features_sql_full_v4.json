@@ -1,0 +1,91 @@
+{
+ "within_company_ci95": [
+  0.7687886793252475,
+  0.7865685033196405
+ ],
+ "run": "full",
+ "cfg": {
+  "n_train": null,
+  "n_val": null,
+  "n_test": null,
+  "epochs": 3,
+  "batch": 16,
+  "eval_batch": 64,
+  "model": "distilbert-base-uncased",
+  "mode": "features",
+  "data": "v4",
+  "train_frac": 1.0,
+  "max_len": 512,
+  "trunc": "head",
+  "lr_enc": 2e-05,
+  "lr_rest": 0.001,
+  "warmup": 0.05,
+  "weight_decay": 0.01,
+  "patience": 1,
+  "seed": 42,
+  "grad_accum": 1
+ },
+ "history": [
+  {
+   "epoch": 1,
+   "frozen": false,
+   "train_loss": 0.2350949285251231,
+   "secs": 17.787637948989868,
+   "pooled_auc": 0.957030317539652,
+   "pooled_pr": 0.4428450929182738,
+   "within_strata_auc": 0.8953440721142196,
+   "n_strata": 17,
+   "within_company_auc": 0.7840377809102594,
+   "n_companies": 20,
+   "auc_fits_512": 0.9588240643005025,
+   "auc_cut_at_512": 0.9385023070054601
+  },
+  {
+   "epoch": 2,
+   "frozen": false,
+   "train_loss": 0.21201477305230296,
+   "secs": 17.641238927841187,
+   "pooled_auc": 0.9589554307175819,
+   "pooled_pr": 0.4514133905372861,
+   "within_strata_auc": 0.8962697004853621,
+   "n_strata": 17,
+   "within_company_auc": 0.7901345768417952,
+   "n_companies": 20,
+   "auc_fits_512": 0.9606353218715923,
+   "auc_cut_at_512": 0.9415868024666106
+  },
+  {
+   "epoch": 3,
+   "frozen": false,
+   "train_loss": 0.20773073114042798,
+   "secs": 17.07090711593628,
+   "pooled_auc": 0.9589686684573516,
+   "pooled_pr": 0.45007858727466815,
+   "within_strata_auc": 0.8968418098146596,
+   "n_strata": 17,
+   "within_company_auc": 0.7892948903052763,
+   "n_companies": 20,
+   "auc_fits_512": 0.9606191615199207,
+   "auc_cut_at_512": 0.9417202859586045
+  }
+ ],
+ "test": {
+  "pooled_auc": 0.9686776044535037,
+  "pooled_pr": 0.40938843276937603,
+  "within_strata_auc": 0.9403146666920843,
+  "n_strata": 20,
+  "within_company_auc": 0.7779386186793333,
+  "n_companies": 24,
+  "auc_fits_512": 0.9699127333161736,
+  "auc_cut_at_512": 0.9549220857629788,
+  "calibrated_mean_p": 0.02501941149478709,
+  "actual_rate": 0.02314
+ },
+ "recall_at": {
+  "top_5pct": 0.6868337654854508,
+  "top_10pct": 0.9066551426101987,
+  "top_20pct": 0.9919331604724864
+ },
+ "n_test": 150000,
+ "test_payouts": 3471
+}

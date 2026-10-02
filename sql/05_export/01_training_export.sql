@@ -23,6 +23,7 @@ SELECT t.complaint_id,
        i.company_issue_rate_s, i.company_rate_s, i.issue_rate_s, i.product_rate_s, i.company_untimely_rate,
        i.company_share_90d, i.company_issue_share_90d, i.issue_share_90d, i.company_trend_90d, i.issue_trend_90d,
        i.company_quiet_days,
+       i.company_issue_recent_rate_s, i.company_recent_rate_s, i.has_amount, i.log_max_amount,   -- v4
        m.date_received,                  -- eval-only
        m.company_id                      -- eval-only
 FROM   training_set        t
@@ -38,7 +39,9 @@ SELECT split, count(*) AS rows, sum(paid) AS payouts,
                            is_older_american, is_servicemember, company_no_history, company_issue_no_history,
                            company_issue_rate_s, company_rate_s, issue_rate_s, product_rate_s,
                            company_untimely_rate, company_share_90d, company_issue_share_90d, issue_share_90d,
-                           company_trend_90d, issue_trend_90d, company_quiet_days, date_received, company_id) > 0)
+                           company_trend_90d, issue_trend_90d, company_quiet_days,
+                           company_issue_recent_rate_s, company_recent_rate_s, has_amount, log_max_amount,
+                           date_received, company_id) > 0)
                                                                 AS rows_with_null,
        round(avg(length(text)))                                 AS avg_text_chars
 FROM   v_training_export GROUP BY split ORDER BY min(date_received);

@@ -294,6 +294,12 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **The verdict on "database + AI" vs "AI alone"** — reading the riskiest 10% of 2024 complaints, the AI
   alone catches 88.8% of payouts; the AI plus the database's track records catches 92.6% — about 130 more
   paying complaints found for the same amount of reading. The combination is the model we keep.
+- **One new clue beat 480,000 extra examples** — instead of more rows, we added two new *clues*: whether
+  the complaint mentions a dollar amount (and how big), and how a company has behaved in just the last
+  year. Tested on the database clues alone, inside a company: 75.4 → 77.8, and the ± ranges don't
+  overlap. Testing each clue separately showed the **amount** did all of it; the "last 12 months" clue
+  added nothing. Oddly, *small* amounts pay most: under $100 → 11.7% payouts, over $10,000 → 4.1% —
+  a $35 fee is easy to refund, a $20,000 loan dispute isn't.
 - **Why we didn't feed the AI 8 times more data — and how 15 minutes proved it** — the AI trained on
   62,940 complaints: every one of the 15,735 that paid, plus 3 that didn't for each. About 480,000 more
   "didn't pay" complaints were left on the table to save GPU time. The textbook way to use them all is a

@@ -81,8 +81,8 @@ F["baselines"] = json.loads(ABL.read_text()) if ABL.exists() else None
 ABL3 = Path("training/baseline_v3_results.json")      # written by training/test.ipynb
 F["baselines_v3"] = json.loads(ABL3.read_text()) if ABL3.exists() else None
 # every model run, summarised by training/evaluate_fusion.py
-F["runs_v3"] = {q.stem.replace("_full_v3", ""): json.loads(q.read_text())
-                for q in sorted(Path("training/results").glob("*_full_v3.json"))}
+F["runs_v3"] = {q.stem: json.loads(q.read_text())
+                for q in sorted(Path("training/results").glob("*_full*_v[0-9].json"))}
 
 # ------------------------------------------------ load expectations (independent of the SQL load)
 # A SECOND implementation of the load rules, in pandas. sql/02_load must agree with it: if a crosswalk
@@ -235,6 +235,8 @@ if F["runs_v3"] and F["baselines_v3"]:
     for run, X in F["runs_v3"].items():
         T, c = X["test"], X["cfg"]
         model = "small network (no language model)" if c.get("mode") == "features" else c["model"].split("/")[-1]
+        if c.get("data", "v3") != "v3":
+            model += f" · data {c['data']}"
         if c.get("train_frac", 1) < 1:
             model += f" ({int(c['train_frac'] * 100)}% of train)"
         ci = X.get("within_company_ci95")

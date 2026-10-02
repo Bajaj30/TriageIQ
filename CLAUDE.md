@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-02 · **model chosen: DistilBERT fusion** (text + 19 SQL inputs) · DeBERTa skipped · next: amount + recent-rate SQL features → v4 → one fusion rerun → Phase 3
+Last updated: 2026-10-02 · v4 features (23 inputs): SQL-only 0.7537 → 0.7779, driven by the dollar amount · next: Kaggle fusion retrain on v4
 
 ---
 
@@ -359,6 +359,12 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
   (0.8115, 91.7%) if DistilBERT is too slow on Cloud Run — measure in Phase 3. Before showing any
   probability: recalibrate on recent data (trap 13). Next improvement: dollar-amount + recent (6–12 mo)
   company×issue rate as SQL features → training set v4 → one fusion rerun (~30 min).
+- **v4 features (2026-10-02): 23 inputs = 19 + `has_amount`, `log_max_amount` (01_schema/08) + recent
+  company×issue / company rates (04/05, 365 days ending 60 back).** Export `triageiq_training_v4` = same
+  rows/labels as v3. SQL-only standalone: within-company **0.7779 (0.769–0.787)** vs v3 0.7537 (0.744–0.763);
+  the **amount** clue carries it (LR: 0.7500 → 0.7710), recent rates add nothing (0.7490). Notebook switch
+  `DATA` (default v4). Open: the text model already reads `{$…}`, so the fusion gain may be smaller —
+  **retrain DistilBERT fusion on v4 to find out.**
 - **Class imbalance — plan agreed 2026-10-02 (after the text-only run).** Payouts are ~2–3% of complaints.
   Today: **undersampling** (all 15,735 train payouts + 3 non-payouts each = 62,940; ~480k eligible
   non-payouts thrown away) — chosen to save GPU, not because it is best. Options: (1) undersample [now];

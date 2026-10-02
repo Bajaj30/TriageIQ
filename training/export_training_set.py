@@ -6,8 +6,8 @@ This script only MOVES rows. Every rule, feature and label lives in SQL (ground 
 Reads Postgres through `docker exec ... psql COPY` — no database driver needed.
 
 Run:  python training/export_training_set.py
-  ->  Data/data/interim/triageiq_training_v3.parquet
-      Data/data/interim/triageiq_training_v3.manifest.json
+  ->  Data/data/interim/triageiq_training_v4.parquet
+      Data/data/interim/triageiq_training_v4.manifest.json
 """
 import hashlib, io, json, subprocess
 from datetime import datetime, timezone
@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 
 OUT = Path("Data/data/interim")
-NAME = "triageiq_training_v3"
+NAME = "triageiq_training_v4"   # v4 = same rows as v3, 23 inputs (recent rates + amount)
 PSQL = ["docker", "exec", "-i", "triageiq-postgres", "psql", "-U", "triageiq", "-d", "triageiq"]
 
 ROLES = {
@@ -24,10 +24,12 @@ ROLES = {
     "label":       ["paid"],
     "text":        ["text"],
     "categorical": ["product_id", "sub_product_id", "issue_id", "state_id"],
-    "flags":       ["is_older_american", "is_servicemember", "company_no_history", "company_issue_no_history"],
+    "flags":       ["is_older_american", "is_servicemember", "company_no_history", "company_issue_no_history",
+                    "has_amount"],
     "numeric":     ["company_issue_rate_s", "company_rate_s", "issue_rate_s", "product_rate_s",
                     "company_untimely_rate", "company_share_90d", "company_issue_share_90d",
-                    "issue_share_90d", "company_trend_90d", "issue_trend_90d", "company_quiet_days"],
+                    "issue_share_90d", "company_trend_90d", "issue_trend_90d", "company_quiet_days",
+                    "company_issue_recent_rate_s", "company_recent_rate_s", "log_max_amount"],
     "eval_only":   ["date_received", "company_id"],   # never model inputs
 }
 
