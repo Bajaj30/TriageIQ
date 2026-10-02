@@ -315,6 +315,11 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
   2. Head + tail truncation for the long ones.
   3. **Slice evaluation:** score the model separately on complaints cut at 512 vs those that fit —
      this is how we learn whether length matters (replaces the 256 ablation).
+     **TF-IDF reference (v3 test, `test.ipynb` 6b):** 12,602 cut (8.4%), paying 3.41% vs 2.21%. AUC fits /
+     cut — text 0.9603 / 0.9542 · features 0.9656 / 0.9495 · fusion 0.9722 / 0.9614. **Long complaints are
+     harder for every model, even features-only (which reads no text).** So a DistilBERT gap alone proves
+     nothing: truncation hurts only if DistilBERT's cut-slice AUC falls clearly below TF-IDF fusion's 0.9614.
+     Smoke (10k, noisy): DistilBERT 0.9721 / 0.9529.
   4. If the cut slice underperforms: chunk + pool with the same DistilBERT (median 2, p90 3 chunks).
   5. Last resort: a 1024+ model (jina-embeddings-v2-small, ~33M, 8,192 ctx).
   **Rejected, measured:** lemmatization — even an impossible best case (every `##` piece removed)

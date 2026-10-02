@@ -259,44 +259,58 @@
     },
     "results": {
       "text": {
-        "pooled_auc": 0.9598906795045672,
-        "pooled_pr": 0.3523012872752872,
+        "pooled_auc": 0.9598906814707407,
+        "pooled_pr": 0.3523012751667059,
         "within_strata_auc": 0.8916483933829902,
         "n_strata": 20.0,
         "within_company_auc": 0.7955905520483222,
         "n_companies": 24.0
       },
       "features (19)": {
-        "pooled_auc": 0.964239051726086,
-        "pooled_pr": 0.36447778843531725,
-        "within_strata_auc": 0.9275633086853201,
+        "pooled_auc": 0.9642389671806328,
+        "pooled_pr": 0.36447653117588596,
+        "within_strata_auc": 0.9275626765852103,
         "n_strata": 20.0,
-        "within_company_auc": 0.7499534387605582,
+        "within_company_auc": 0.7499589999710873,
         "n_companies": 24.0
       },
       "features minus weak (16)": {
-        "pooled_auc": 0.9641416366854235,
-        "pooled_pr": 0.3630985292454012,
-        "within_strata_auc": 0.927154639334511,
+        "pooled_auc": 0.9641422344021154,
+        "pooled_pr": 0.36309680428410307,
+        "within_strata_auc": 0.9271584489963794,
         "n_strata": 20.0,
-        "within_company_auc": 0.7492025757059892,
+        "within_company_auc": 0.7492094357551458,
         "n_companies": 24.0
       },
       "fusion": {
-        "pooled_auc": 0.9713055150440287,
-        "pooled_pr": 0.4261635371294727,
-        "within_strata_auc": 0.9456666330619218,
+        "pooled_auc": 0.9713061304562807,
+        "pooled_pr": 0.42615796105121423,
+        "within_strata_auc": 0.945675784444346,
         "n_strata": 20.0,
-        "within_company_auc": 0.8114915186888955,
+        "within_company_auc": 0.8114792900758254,
         "n_companies": 24.0
       },
       "fusion minus weak": {
-        "pooled_auc": 0.9712830829725204,
-        "pooled_pr": 0.4254408664576157,
-        "within_strata_auc": 0.9453520056788269,
+        "pooled_auc": 0.9712805092516331,
+        "pooled_pr": 0.4254395692727885,
+        "within_strata_auc": 0.9453556664607597,
         "n_strata": 20.0,
-        "within_company_auc": 0.8106360571410013,
+        "within_company_auc": 0.8106203917226603,
         "n_companies": 24.0
+      }
+    },
+    "slice_512": {
+      "text": {
+        "auc_fits_512": 0.9603192608446124,
+        "auc_cut_at_512": 0.9541918547333186
+      },
+      "features (19)": {
+        "auc_fits_512": 0.9656038303739547,
+        "auc_cut_at_512": 0.9494567211060077
+      },
+      "fusion": {
+        "auc_fits_512": 0.9721908999591186,
+        "auc_cut_at_512": 0.9613982529480547
       }
     }
   },

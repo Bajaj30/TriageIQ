@@ -352,6 +352,11 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   score went from 91 to 93 out of 100, and history + words from 93 to 95; inside one company, 80 → 81.
   (Different test sets, so read it as "at least as good", not a precise gain.) The three weakest clues
   (trends, quiet days) added almost nothing — 0.1 points at most.
+- **Long complaints are harder for everyone** — we feared that cutting long complaints at 512 word-pieces
+  hides the important part. So we checked a model that reads *every* word, and one that reads *no* words
+  at all (track records only). Both scored lower on long complaints too (8.4% of the 2024 test set,
+  which pay out more often: 3.41% vs 2.21%). Long complaints are simply harder — so the AI can only be
+  blamed for the cut if it falls clearly behind the read-everything model on exactly those complaints.
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it
