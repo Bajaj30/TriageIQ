@@ -264,6 +264,33 @@ INSERT INTO expected_facts (fact, value) VALUES
  ('runs_v3.fusion_distilbert_full_v3.test.within_company_auc', 0.8224316255600731),
  ('runs_v3.fusion_distilbert_full_v3.test.within_strata_auc', 0.949165896825584),
  ('runs_v3.fusion_distilbert_full_v3.test_payouts', 3471),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.batch', 16),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.epochs', 3),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.eval_batch', 64),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.grad_accum', 1),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.lr_enc', 2e-05),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.lr_rest', 0.001),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.max_len', 512),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.patience', 1),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.seed', 42),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.train_frac', 1.0),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.warmup', 0.05),
+ ('runs_v3.fusion_distilbert_full_v4.cfg.weight_decay', 0.01),
+ ('runs_v3.fusion_distilbert_full_v4.n_test', 150000),
+ ('runs_v3.fusion_distilbert_full_v4.recall_at.top_10pct', 0.9291270527225584),
+ ('runs_v3.fusion_distilbert_full_v4.recall_at.top_20pct', 0.9933736675309709),
+ ('runs_v3.fusion_distilbert_full_v4.recall_at.top_5pct', 0.7392682224142898),
+ ('runs_v3.fusion_distilbert_full_v4.test.actual_rate', 0.02314),
+ ('runs_v3.fusion_distilbert_full_v4.test.auc_cut_at_512', 0.9612685232596352),
+ ('runs_v3.fusion_distilbert_full_v4.test.auc_fits_512', 0.97451072433157),
+ ('runs_v3.fusion_distilbert_full_v4.test.calibrated_mean_p', 0.03010169527120246),
+ ('runs_v3.fusion_distilbert_full_v4.test.n_companies', 24),
+ ('runs_v3.fusion_distilbert_full_v4.test.n_strata', 20),
+ ('runs_v3.fusion_distilbert_full_v4.test.pooled_auc', 0.9734082450090425),
+ ('runs_v3.fusion_distilbert_full_v4.test.pooled_pr', 0.44257243124871437),
+ ('runs_v3.fusion_distilbert_full_v4.test.within_company_auc', 0.8195179627520627),
+ ('runs_v3.fusion_distilbert_full_v4.test.within_strata_auc', 0.9514047052449771),
+ ('runs_v3.fusion_distilbert_full_v4.test_payouts', 3471),
  ('runs_v3.text_distilbert_full_v3.cfg.batch', 16),
  ('runs_v3.text_distilbert_full_v3.cfg.epochs', 3),
  ('runs_v3.text_distilbert_full_v3.cfg.eval_batch', 64),
@@ -314,5 +341,5 @@ INSERT INTO expected_facts (fact, value) VALUES
 CREATE OR REPLACE FUNCTION expected(k TEXT) RETURNS NUMERIC
 LANGUAGE sql STABLE AS $$ SELECT value FROM expected_facts WHERE fact = k $$;
 
--- sanity: expect 296 facts
+-- sanity: expect 323 facts
 SELECT count(*) AS facts FROM expected_facts;

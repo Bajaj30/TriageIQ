@@ -300,6 +300,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   overlap. Testing each clue separately showed the **amount** did all of it; the "last 12 months" clue
   added nothing. Oddly, *small* amounts pay most: under $100 → 11.7% payouts, over $10,000 → 4.1% —
   a $35 fee is easy to refund, a $20,000 loan dispute isn't.
+- **…but the AI had already read it** — retrained with the amount clue, the full AI scored the same (82.0
+  vs 82.2, well inside the ± range). It makes sense: the clue helped the database-only model because that
+  model can't read; the AI reads "$760" in the complaint itself. A clue only helps if the model doesn't
+  already have it. We kept the simpler 19-clue version.
 - **Why we didn't feed the AI 8 times more data — and how 15 minutes proved it** — the AI trained on
   62,940 complaints: every one of the 15,735 that paid, plus 3 that didn't for each. About 480,000 more
   "didn't pay" complaints were left on the table to save GPU time. The textbook way to use them all is a

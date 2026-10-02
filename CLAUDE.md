@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-02 · v4 features (23 inputs): SQL-only 0.7537 → 0.7779, driven by the dollar amount · next: Kaggle fusion retrain on v4
+Last updated: 2026-10-02 · v4 fusion = v3 fusion within noise (0.8195 vs 0.8224) · model stays DistilBERT fusion on v3 (19 inputs) · next: Phase 3 (recalibration + API)
 
 ---
 
@@ -365,6 +365,9 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
   the **amount** clue carries it (LR: 0.7500 → 0.7710), recent rates add nothing (0.7490). Notebook switch
   `DATA` (default v4). Open: the text model already reads `{$…}`, so the fusion gain may be smaller —
   **retrain DistilBERT fusion on v4 to find out.**
+  **RESULT: v4 fusion within-company 0.8195 (0.811–0.827) vs v3 0.8224 (0.815–0.830); PR 0.4426 vs 0.4395;
+  top-10% 92.9% vs 92.6% — same within noise.** DistilBERT already reads the amounts in the text.
+  **DECISION: keep the v3 fusion (19 inputs)** — equal score, simpler to serve.
 - **Class imbalance — plan agreed 2026-10-02 (after the text-only run).** Payouts are ~2–3% of complaints.
   Today: **undersampling** (all 15,735 train payouts + 3 non-payouts each = 62,940; ~480k eligible
   non-payouts thrown away) — chosen to save GPU, not because it is best. Options: (1) undersample [now];

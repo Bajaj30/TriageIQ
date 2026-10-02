@@ -1,0 +1,91 @@
+{
+ "within_company_ci95": [
+  0.8114480358605812,
+  0.8271426471319635
+ ],
+ "run": "full",
+ "cfg": {
+  "n_train": null,
+  "n_val": null,
+  "n_test": null,
+  "epochs": 3,
+  "batch": 16,
+  "eval_batch": 64,
+  "model": "distilbert-base-uncased",
+  "mode": "fusion",
+  "data": "v4",
+  "train_frac": 1.0,
+  "max_len": 512,
+  "trunc": "head",
+  "lr_enc": 2e-05,
+  "lr_rest": 0.001,
+  "warmup": 0.05,
+  "weight_decay": 0.01,
+  "patience": 1,
+  "seed": 42,
+  "grad_accum": 1
+ },
+ "history": [
+  {
+   "epoch": 1,
+   "frozen": true,
+   "train_loss": 0.2303001724028487,
+   "secs": 216.8811354637146,
+   "pooled_auc": 0.9589957411281589,
+   "pooled_pr": 0.45171901759966937,
+   "within_strata_auc": 0.8985180217863171,
+   "n_strata": 17,
+   "within_company_auc": 0.7955541044723896,
+   "n_companies": 20,
+   "auc_fits_512": 0.9605879876426867,
+   "auc_cut_at_512": 0.9424647131254933
+  },
+  {
+   "epoch": 2,
+   "frozen": false,
+   "train_loss": 0.20315626047357496,
+   "secs": 526.4458770751953,
+   "pooled_auc": 0.9643458989968279,
+   "pooled_pr": 0.4806592630989623,
+   "within_strata_auc": 0.912650611136166,
+   "n_strata": 17,
+   "within_company_auc": 0.8202695559160609,
+   "n_companies": 20,
+   "auc_fits_512": 0.9657727215359507,
+   "auc_cut_at_512": 0.9492469066740925
+  },
+  {
+   "epoch": 3,
+   "frozen": false,
+   "train_loss": 0.18423245024639778,
+   "secs": 526.2381012439728,
+   "pooled_auc": 0.9645240587436958,
+   "pooled_pr": 0.48164676393150907,
+   "within_strata_auc": 0.9128802945407973,
+   "n_strata": 17,
+   "within_company_auc": 0.8224376970147914,
+   "n_companies": 20,
+   "auc_fits_512": 0.9659144185964199,
+   "auc_cut_at_512": 0.9495898565689075
+  }
+ ],
+ "test": {
+  "pooled_auc": 0.9734082450090425,
+  "pooled_pr": 0.44257243124871437,
+  "within_strata_auc": 0.9514047052449771,
+  "n_strata": 20,
+  "within_company_auc": 0.8195179627520627,
+  "n_companies": 24,
+  "auc_fits_512": 0.97451072433157,
+  "auc_cut_at_512": 0.9612685232596352,
+  "calibrated_mean_p": 0.03010169527120246,
+  "actual_rate": 0.02314
+ },
+ "recall_at": {
+  "top_5pct": 0.7392682224142898,
+  "top_10pct": 0.9291270527225584,
+  "top_20pct": 0.9933736675309709
+ },
+ "n_test": 150000,
+ "test_payouts": 3471
+}
