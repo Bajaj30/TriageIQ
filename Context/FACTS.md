@@ -139,20 +139,16 @@ Test: 150,000 complaints from 2024, 2.31% payouts · train 62,940 (case-control)
 | fusion | 0.9713 | 0.4262 | 0.9457 | 0.8115 |
 | fusion minus weak | 0.9713 | 0.4254 | 0.9454 | 0.8106 |
 
-## DistilBERT fusion on training set v3 — CURRENT (Kaggle T4, training/fusion_distilbert.ipynb)
+## Model comparison on training set v3 — CURRENT (the ablation)
 
-Same test set as the v3 baselines (150,000 complaints from 2024, 3,471 payouts). 3 epochs, best by val PR-AUC; ~481 s per unfrozen epoch.
+One test set for every row: 150,000 complaints from 2024 (3,471 payouts). TF-IDF rows: `training/test.ipynb` (logistic regression). Neural rows: `training/fusion_distilbert.ipynb` (MODE/MODEL), summarised by `training/evaluate_fusion.py`. **Question: is model + SQL worth more than a stronger model alone?**
 
-| metric | TF-IDF fusion | **DistilBERT fusion** |
-|---|---|---|
-| within-company AUC | 0.8115 | **0.8224** |
-| within (Product×Issue) AUC | 0.9457 | **0.9492** |
-| pooled AUC | 0.9713 | **0.9731** |
-| pooled PR-AUC | 0.4262 | **0.4395** |
-| AUC, complaints cut at 512 | 0.9614 | **0.9614** |
-| AUC, complaints that fit | 0.9722 | **0.9741** |
-| payouts caught reading the riskiest 5% | 72.3% | **74.0%** |
-| payouts caught reading the riskiest 10% | 91.7% | **92.6%** |
-| payouts caught reading the riskiest 20% | 99.3% | **99.4%** |
+| model | inputs | within-company | within (Product×Issue) | pooled PR-AUC | riskiest 10% catches | AUC cut at 512 | calibrated mean (actual 2.31%) |
+|---|---|---|---|---|---|---|---|
+| TF-IDF + logistic regression | text | 0.7956 | 0.8916 | 0.3523 | 87.2% | 0.9542 | — |
+| TF-IDF + logistic regression | SQL features | 0.7500 | 0.9276 | 0.3645 | 88.8% | 0.9495 | — |
+| TF-IDF + logistic regression | text + SQL | 0.8115 | 0.9457 | 0.4262 | 91.7% | 0.9614 | — |
+| **small network (no language model)** | SQL features | **0.7537** | 0.9266 | 0.3847 | 89.1% | 0.9507 | 2.47% |
+| **distilbert-base-uncased** | text + SQL | **0.8224** | 0.9492 | 0.4395 | 92.6% | 0.9614 | 3.11% |
 
-Calibration (after the case-control offset): mean predicted 3.11% vs actual 2.31% — the offset fixes the sampling, not the drift (payouts fall year by year).
+Calibrated mean = average predicted payout chance after the case-control offset (−2.4165). The offset fixes the sampling, not the drift (payouts fall year by year) — trap 13.

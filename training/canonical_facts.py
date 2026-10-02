@@ -80,8 +80,9 @@ F["splits_F3"] = {s: {"rows": int(len(g)), "positives": int(g.y.sum()), "rate": 
 F["baselines"] = json.loads(ABL.read_text()) if ABL.exists() else None
 ABL3 = Path("training/baseline_v3_results.json")      # written by training/test.ipynb
 F["baselines_v3"] = json.loads(ABL3.read_text()) if ABL3.exists() else None
-FUS = Path("training/results/fusion_full_v3.json")      # written by training/evaluate_fusion.py
-F["fusion_distilbert_v3"] = json.loads(FUS.read_text()) if FUS.exists() else None
+# every model run, summarised by training/evaluate_fusion.py
+F["runs_v3"] = {q.stem.replace("_full_v3", ""): json.loads(q.read_text())
+                for q in sorted(Path("training/results").glob("*_full_v3.json"))}
 
 # ------------------------------------------------ load expectations (independent of the SQL load)
 # A SECOND implementation of the load rules, in pandas. sql/02_load must agree with it: if a crosswalk
@@ -217,24 +218,28 @@ if F["baselines_v3"]:
     w("| model | pooled AUC | pooled PR | within (Product×Issue) AUC | within-company AUC |\n|---|---|---|---|---|")
     for mdl, x in B3["results"].items():
         w(f"| {mdl} | {x['pooled_auc']:.4f} | {x['pooled_pr']:.4f} | {x['within_strata_auc']:.4f} | {x['within_company_auc']:.4f} |")
-if F["fusion_distilbert_v3"]:
-    X = F["fusion_distilbert_v3"]; T = X["test"]; B3 = F["baselines_v3"]
-    w("\n## DistilBERT fusion on training set v3 — CURRENT (Kaggle T4, training/fusion_distilbert.ipynb)\n")
-    w(f"Same test set as the v3 baselines ({X['n_test']:,} complaints from 2024, {X['test_payouts']:,} payouts). "
-      f"{len(X['history'])} epochs, best by val PR-AUC; ~{X['history'][-1]['secs']:.0f} s per unfrozen epoch.\n")
-    bf = B3["results"]["fusion"] if B3 else {}
-    w("| metric | TF-IDF fusion | **DistilBERT fusion** |\n|---|---|---|")
-    for k, lbl in [("within_company_auc","within-company AUC"),("within_strata_auc","within (Product×Issue) AUC"),
-                   ("pooled_auc","pooled AUC"),("pooled_pr","pooled PR-AUC")]:
-        w(f"| {lbl} | {bf.get(k, float('nan')):.4f} | **{T[k]:.4f}** |")
-    if B3 and "slice_512" in B3:
-        w(f"| AUC, complaints cut at 512 | {B3['slice_512']['fusion']['auc_cut_at_512']:.4f} | **{T['auc_cut_at_512']:.4f}** |")
-        w(f"| AUC, complaints that fit | {B3['slice_512']['fusion']['auc_fits_512']:.4f} | **{T['auc_fits_512']:.4f}** |")
-    if B3 and "recall_at" in B3:
-        for kk in ("top_5pct", "top_10pct", "top_20pct"):
-            w(f"| payouts caught reading the riskiest {kk[4:-3]}% | {B3['recall_at']['fusion'][kk]*100:.1f}% | **{X['recall_at'][kk]*100:.1f}%** |")
-    w(f"\nCalibration (after the case-control offset): mean predicted {T['calibrated_mean_p']*100:.2f}% vs actual "
-      f"{T['actual_rate']*100:.2f}% — the offset fixes the sampling, not the drift (payouts fall year by year).")
+if F["runs_v3"] and F["baselines_v3"]:
+    B3 = F["baselines_v3"]
+    w("\n## Model comparison on training set v3 — CURRENT (the ablation)\n")
+    w("One test set for every row: 150,000 complaints from 2024 (3,471 payouts). TF-IDF rows: `training/test.ipynb` "
+      "(logistic regression). Neural rows: `training/fusion_distilbert.ipynb` (MODE/MODEL), summarised by "
+      "`training/evaluate_fusion.py`. **Question: is model + SQL worth more than a stronger model alone?**\n")
+    w("| model | inputs | within-company | within (Product×Issue) | pooled PR-AUC | riskiest 10% catches | AUC cut at 512 | calibrated mean (actual 2.31%) |")
+    w("|---|---|---|---|---|---|---|---|")
+    tf = {"text": "text", "features (19)": "SQL features", "fusion": "text + SQL"}
+    for k, lbl in tf.items():
+        x = B3["results"][k]; ra = B3.get("recall_at", {}).get(k, {}); sl = B3.get("slice_512", {}).get(k, {})
+        w(f"| TF-IDF + logistic regression | {lbl} | {x['within_company_auc']:.4f} | {x['within_strata_auc']:.4f} | "
+          f"{x['pooled_pr']:.4f} | {ra.get('top_10pct', float('nan'))*100:.1f}% | {sl.get('auc_cut_at_512', float('nan')):.4f} | — |")
+    names = {"fusion": "text + SQL", "text": "text", "features": "SQL features"}
+    for run, X in F["runs_v3"].items():
+        T, c = X["test"], X["cfg"]
+        model = "small network (no language model)" if c.get("mode") == "features" else c["model"].split("/")[-1]
+        w(f"| **{model}** | {names.get(c.get('mode', 'fusion'), c.get('mode'))} | **{T['within_company_auc']:.4f}** | "
+          f"{T['within_strata_auc']:.4f} | {T['pooled_pr']:.4f} | {X['recall_at']['top_10pct']*100:.1f}% | "
+          f"{T['auc_cut_at_512']:.4f} | {T['calibrated_mean_p']*100:.2f}% |")
+    w("\nCalibrated mean = average predicted payout chance after the case-control offset (−2.4165). The offset "
+      "fixes the sampling, not the drift (payouts fall year by year) — trap 13.")
 Path("Context/FACTS.md").write_text("\n".join(L) + "\n")
 
 # ---------------------------------------------------------------- render the SQL seed

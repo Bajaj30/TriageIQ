@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-02 · **DistilBERT fusion beats the bar** (within-company 0.8224 vs 0.8115) · next: text-only / features-only arms of the ablation
+Last updated: 2026-10-02 · ablation running — fusion 0.8224, SQL-only 0.7537 (FACTS.md 'Model comparison') · next: Kaggle text-only DistilBERT + DeBERTa
 
 ---
 
@@ -129,10 +129,12 @@ training/verify_ablation.py   reproduces every baseline number
 training/export_training_set.py   copies v_training_export → triageiq_training_v3.parquet + manifest (moves rows only)
                               NOTE: FACTS.md 'F3' and all baselines are still the v2 artifact — re-measure on v3
 training/KAGGLE_SETUP.md      upload v3 Parquet + manifest as a private Kaggle Dataset; GPU notebook; Cell 1 checks sha256 + counts vs manifest, confirms T4
-training/fusion_distilbert.ipynb   Phase 2 model: DistilBERT + 19 SQL inputs. RUN = mac (512 rows) / smoke (Kaggle
-                              10k) / full. Saves model.pt, preprocessing.json, metrics.json, test predictions.
+training/fusion_distilbert.ipynb   Phase 2 model. Switches in cell 1: RUN = mac/smoke/full · MODE = fusion/text/
+                              features · MODEL = distilbert-base-uncased / microsoft/deberta-v3-base. On the Mac
+                              set them as env vars (RUN=full MODE=features …). Output folder <mode>_<model>_<run>. Saves model.pt, preprocessing.json, metrics.json, test predictions.
                               Mac: run with USE_TF=0 (conda env's TensorFlow is broken); test pass on CPU.
 training/test.ipynb           v3 baselines (TF-IDF + LR) — the bar: within-company 0.8115
+training/evaluate_fusion.py   training/outputs/<run>/ → training/results/<run>_v3.json (tracked) → FACTS.md ablation table
 training/canonical_facts.py   regenerates FACTS.md, canonical_facts.json AND sql/02_load/00_expected_facts.sql
                               (generated — never hand-edit). It re-implements the load rules in pandas; the
                               SQL load must match it (11_validate reads expected('key')). Change a crosswalk

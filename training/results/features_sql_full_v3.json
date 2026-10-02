@@ -1,0 +1,85 @@
+{
+ "run": "full",
+ "cfg": {
+  "n_train": null,
+  "n_val": null,
+  "n_test": null,
+  "epochs": 3,
+  "batch": 16,
+  "eval_batch": 64,
+  "model": "distilbert-base-uncased",
+  "mode": "features",
+  "max_len": 512,
+  "trunc": "head",
+  "lr_enc": 2e-05,
+  "lr_rest": 0.001,
+  "warmup": 0.05,
+  "weight_decay": 0.01,
+  "patience": 1,
+  "seed": 42,
+  "grad_accum": 1
+ },
+ "history": [
+  {
+   "epoch": 1,
+   "frozen": false,
+   "train_loss": 0.24244775872640276,
+   "secs": 19.195533275604248,
+   "pooled_auc": 0.9533529248178414,
+   "pooled_pr": 0.41833124447433023,
+   "within_strata_auc": 0.8849387838741991,
+   "n_strata": 17,
+   "within_company_auc": 0.7633986075194256,
+   "n_companies": 20,
+   "auc_fits_512": 0.955302775482185,
+   "auc_cut_at_512": 0.9342834072215801
+  },
+  {
+   "epoch": 2,
+   "frozen": false,
+   "train_loss": 0.21796774593749224,
+   "secs": 18.075772047042847,
+   "pooled_auc": 0.9553968304494735,
+   "pooled_pr": 0.4279325370160752,
+   "within_strata_auc": 0.8844972445516244,
+   "n_strata": 17,
+   "within_company_auc": 0.7692102865615698,
+   "n_companies": 20,
+   "auc_fits_512": 0.957299554006894,
+   "auc_cut_at_512": 0.9367674323279768
+  },
+  {
+   "epoch": 3,
+   "frozen": false,
+   "train_loss": 0.21388399612802503,
+   "secs": 18.488887071609497,
+   "pooled_auc": 0.9554853212330716,
+   "pooled_pr": 0.4277281582226289,
+   "within_strata_auc": 0.885384519690798,
+   "n_strata": 17,
+   "within_company_auc": 0.769104606019579,
+   "n_companies": 20,
+   "auc_fits_512": 0.9573368695163375,
+   "auc_cut_at_512": 0.93729766983002
+  }
+ ],
+ "test": {
+  "pooled_auc": 0.9657040573042475,
+  "pooled_pr": 0.38470963688965343,
+  "within_strata_auc": 0.9265869181104561,
+  "n_strata": 20,
+  "within_company_auc": 0.7536875320891814,
+  "n_companies": 24,
+  "auc_fits_512": 0.9671000478665558,
+  "auc_cut_at_512": 0.9506993748519286,
+  "calibrated_mean_p": 0.024724019076294464,
+  "actual_rate": 0.02314
+ },
+ "recall_at": {
+  "top_5pct": 0.6632094497263037,
+  "top_10pct": 0.8910976663785652,
+  "top_20pct": 0.989628349178911
+ },
+ "n_test": 150000,
+ "test_payouts": 3471
+}
