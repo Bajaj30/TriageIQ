@@ -528,6 +528,8 @@ publishing both — with an explanation of the gap — is a better artifact than
 interviewer *will* ask whether your AUC is inflated by between-entity variation; answer it in the
 README before they ask.
 
+**Every metric, defined once:** `Context/metrics.md` (values in FACTS.md).
+
 **Why these metrics:** at a 2.16% positive rate accuracy is a lie. PR-AUC measures ranking where it
 matters; recall-at-fixed-precision translates to the business sentence — *"at a precision the
 compliance desk tolerates, we catch X% of complaints that end in a payout."* Practice saying it.

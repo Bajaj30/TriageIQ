@@ -456,3 +456,39 @@ never keep a second copy here; two copies drift apart. What to reuse, by README 
 | 6. Results so far | the three tests (bar chart) · words vs track record |
 | 7. What changes | without vs with TriageIQ |
 | 8. Where the project is | the roadmap |
+
+---
+
+## 9. How we keep score — every measure, in plain words
+
+The question is never "will this complaint pay — yes or no?" It's **"which complaints should a senior read
+first?"** So almost every score is about **ordering**, not about being right or wrong one complaint at a time.
+(Precise definitions and the code behind each: `Context/metrics.md`.)
+
+- **The main score — "inside one company"** *(tech: within-company ROC-AUC)*. Take two complaints sent to the
+  **same** company, one that ended in a payout and one that didn't. How often does the AI put the payout
+  first? 50 = coin flip, 100 = perfect. It's the honest score because a bank only ever sorts its *own*
+  complaints. Our best: **82**.
+- **Two easier versions of the same score** — compare any two complaints at all (*pooled*: 97 — inflated,
+  because "credit cards pay more than credit reports" is an easy point), or two complaints about the same
+  product and problem (95). We show all three and trust the lowest.
+- **The ± range** *(tech: bootstrap 95% interval)* — the main score rests on just 24 companies, so we
+  re-draw the test complaints 1,000 times and report where the score lands 95% of the time. If two
+  models' ranges don't overlap, the difference is real; if they overlap a lot, it may be luck.
+- **"Read the riskiest 10%, catch 93%"** *(tech: recall at top-k)* — the sentence a manager cares about:
+  if seniors only read the 10% of complaints the AI ranks highest, they see 93% of the complaints that
+  end up costing money.
+- **How clean the top of the list is** *(tech: PR-AUC)* — as you go down the AI's list, how many of the
+  flagged complaints really paid? This one punishes false alarms, which the main score is lenient about
+  when payouts are rare. It's also how we pick the best training round.
+- **Are its percentages honest?** *(tech: calibration)* — when the AI says "3%", do about 3% pay? Ours
+  says 3.1% on average for 2024, but only 2.3% paid: right about *who*, a bit high about *how many*,
+  because payouts keep getting rarer. Fixable later by re-tuning on recent data.
+- **Long vs short complaints** *(tech: slice AUC)* — the same main score, measured separately on complaints
+  the AI had to cut short and those it read in full. That's how we learned the cut doesn't hurt.
+- **How close the percentages are to reality** *(tech: Brier score)* — used once, to tune how much to trust
+  small companies' track records.
+- **What we refuse to use: accuracy.** Saying "no payout" to every 2024 complaint is 97.7% accurate — and
+  completely useless. A yes/no score like F2 *(recall counted twice as much as precision)* comes later,
+  when a real desk chooses where to draw its "send to a senior" line.
+

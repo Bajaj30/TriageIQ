@@ -113,6 +113,7 @@ README.md                     public, plain-language (non-technical reader), Mer
                               **Fill its ⏳ placeholders as phases finish; numbers must match FACTS.md.**
 Context/FACTS.md              every number, three frames — generated, never hand-edit
 sql/03_features/feature_dictionary.md   every feature: meaning, frame, model input yes/no and why
+Context/metrics.md            every metric: what it answers, how computed, which code, why (not) used — no numbers
 Context/schema_explanation.md Phase 0.3 decisions, each tied to a concept   ← current work
 Context/TriageIQ.md           full engineering spec (bible v2); §1.4a = verified window-frame rules
 Context/WHAT_WHY.md           pitch and positioning

@@ -485,6 +485,7 @@ Reproduce with `training/test.ipynb`. Every number in the project lives in
 | [`Context/WHAT_WHY.md`](Context/WHAT_WHY.md) | the pitch — what and why |
 | [`Context/TriageIQ.md`](Context/TriageIQ.md) | the full engineering spec |
 | [`Context/schema_explanation.md`](Context/schema_explanation.md) | every database decision, and why |
+| [`Context/metrics.md`](Context/metrics.md) | how every score is defined and computed |
 | [`Context/blog_log.md`](Context/blog_log.md) | discarded ideas, surprises, lessons |
 
 </details>
