@@ -53,7 +53,10 @@ ON CONFLICT (param) DO UPDATE SET value = EXCLUDED.value, source = EXCLUDED.sour
 -- Not smoothed: company_untimely_rate — there is no product-level untimely rate to shrink toward yet;
 -- it stays raw (NULL = no history) and 08 decides.
 
-CREATE OR REPLACE VIEW v_smoothed AS
+-- DROP ... CASCADE, not OR REPLACE: 04 gained columns (recent history), which shifts prior.* — OR REPLACE
+-- refuses to move columns. CASCADE also drops mv_features + v_model_input: re-run 08_assembly.sql after.
+DROP VIEW IF EXISTS v_smoothed CASCADE;
+CREATE VIEW v_smoothed AS
 WITH p AS (                                   -- the two parameters, read once
     SELECT max(value) FILTER (WHERE param = 'k')              AS k,
            max(value) FILTER (WHERE param = 'fallback_prior') AS fallback
@@ -63,13 +66,22 @@ prior AS (                                    -- step 1 + 3: the smoothed produc
     SELECT o.*, p.k,
            (coalesce(o.product_payouts, 0) + p.k * p.fallback) / (o.product_n_known + p.k) AS product_rate_s
     FROM   v_outcome_rates o CROSS JOIN p
+),
+longrun AS (                                  -- step 2: (payouts + K x prior) / (n + K)
+    SELECT prior.*,
+           (coalesce(company_payouts, 0)       + k * product_rate_s) / (company_n_known       + k) AS company_rate_s,
+           (coalesce(company_issue_payouts, 0) + k * product_rate_s) / (company_issue_n_known + k) AS company_issue_rate_s,
+           (coalesce(issue_payouts, 0)         + k * product_rate_s) / (issue_n_known         + k) AS issue_rate_s
+    FROM   prior
 )
-SELECT prior.*,                               -- everything from 04, plus:
-       -- step 2: (payouts + K x prior) / (n + K)
-       (coalesce(company_payouts, 0)       + k * product_rate_s) / (company_n_known       + k) AS company_rate_s,
-       (coalesce(company_issue_payouts, 0) + k * product_rate_s) / (company_issue_n_known + k) AS company_issue_rate_s,
-       (coalesce(issue_payouts, 0)         + k * product_rate_s) / (issue_n_known         + k) AS issue_rate_s
-FROM   prior;
+SELECT longrun.*,                             -- everything above, plus RECENT rates (added 2026-10-02):
+       -- the same formula one level down: the last 12 months, pulled toward the entity's OWN all-time rate.
+       -- Few recent complaints -> close to the long-run rate; many -> the recent behaviour shows through.
+       (coalesce(company_issue_payouts_recent, 0) + k * company_issue_rate_s) / (company_issue_n_recent + k)
+                                                                                    AS company_issue_recent_rate_s,
+       (coalesce(company_payouts_recent, 0)       + k * company_rate_s)       / (company_n_recent       + k)
+                                                                                    AS company_recent_rate_s
+FROM   longrun;
 -- coalesce(payouts, 0): sum() over an empty frame is NULL, and NULL + anything = NULL.
 
 -- CHECKS — each reads the view ONCE (a MATERIALIZED CTE); ~45 s each.
@@ -82,9 +94,12 @@ WITH v AS MATERIALIZED (SELECT * FROM v_smoothed)
 SELECT count(*)                                                        AS rows,
        count(DISTINCT complaint_id)                                    AS complaints,
        count(*) FILTER (WHERE product_rate_s IS NULL OR company_rate_s IS NULL
-                           OR company_issue_rate_s IS NULL OR issue_rate_s IS NULL) AS any_null,
-       count(*) FILTER (WHERE least(product_rate_s, company_rate_s, company_issue_rate_s, issue_rate_s) < 0
-                           OR greatest(product_rate_s, company_rate_s, company_issue_rate_s, issue_rate_s) > 1)
+                           OR company_issue_rate_s IS NULL OR issue_rate_s IS NULL
+                           OR company_issue_recent_rate_s IS NULL OR company_recent_rate_s IS NULL) AS any_null,
+       count(*) FILTER (WHERE least(product_rate_s, company_rate_s, company_issue_rate_s, issue_rate_s,
+                                    company_issue_recent_rate_s, company_recent_rate_s) < 0
+                           OR greatest(product_rate_s, company_rate_s, company_issue_rate_s, issue_rate_s,
+                                    company_issue_recent_rate_s, company_recent_rate_s) > 1)
                                                                        AS out_of_range
 FROM   v;
 

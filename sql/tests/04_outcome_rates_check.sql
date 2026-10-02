@@ -2,6 +2,7 @@
 -- tests/04_outcome_rates_check.sql
 -- TESTS   : view v_outcome_rates (03_features/04_outcome_rates.sql)
 -- PART A  : RECOUNT — every feature for 21 complaints, recomputed with plain WHERE date <= d - 60
+--           (recent columns: WHERE date BETWEEN d - 425 AND d - 60)
 --           (no window functions). 20 by hash (same every run) + the first complaint in the data,
 --           which has NO history: its counts must be 0 and its rates NULL.
 -- PART B  : LEAK TEST — inside a transaction, flip the answer (paid <-> not paid) of every complaint
@@ -25,7 +26,7 @@ s AS (
     FROM   sample JOIN fact_complaint f USING (complaint_id)
 ),
 direct AS (   -- method 2: "rows of the same group whose date is at least 60 days before d"
-    SELECT s.complaint_id, s.why, c.*, ci.*, i.*, p.*
+    SELECT s.complaint_id, s.why, c.*, ci.*, i.*, p.*, r.*
     FROM   s
     CROSS  JOIN LATERAL (SELECT count(*) AS company_n_known, sum(paid) AS company_payouts,
                                 avg(paid) AS company_paid_rate, avg(untimely) AS company_untimely_rate
@@ -41,6 +42,13 @@ direct AS (   -- method 2: "rows of the same group whose date is at least 60 day
     CROSS  JOIN LATERAL (SELECT count(*) AS product_n_known, sum(paid) AS product_payouts, avg(paid) AS product_paid_rate
                          FROM v_base b WHERE b.product_id = s.product_id
                                          AND b.date_received <= s.d - 60) p
+    CROSS  JOIN LATERAL (SELECT                                 -- recent: the 365 days ending 60 days back
+                count(*) FILTER (WHERE b.issue_id = s.issue_id)  AS company_issue_n_recent,
+                sum(paid) FILTER (WHERE b.issue_id = s.issue_id) AS company_issue_payouts_recent,
+                count(*)                                         AS company_n_recent,
+                sum(paid)                                        AS company_payouts_recent
+                         FROM v_base b WHERE b.company_id = s.company_id
+                                         AND b.date_received BETWEEN s.d - 425 AND s.d - 60) r
 ),
 v AS MATERIALIZED (   -- method 1: the view
     SELECT * FROM v_outcome_rates WHERE complaint_id IN (SELECT complaint_id FROM sample)
@@ -50,12 +58,14 @@ SELECT d.why, d.complaint_id, v.company_n_known, round(v.company_paid_rate, 4) A
        CASE WHEN (v.company_n_known, v.company_payouts, v.company_paid_rate, v.company_untimely_rate,
                   v.company_issue_n_known, v.company_issue_payouts, v.company_issue_paid_rate,
                   v.issue_n_known, v.issue_payouts, v.issue_paid_rate,
-                  v.product_n_known, v.product_payouts, v.product_paid_rate)
+                  v.product_n_known, v.product_payouts, v.product_paid_rate,
+                  v.company_issue_n_recent, v.company_issue_payouts_recent, v.company_n_recent, v.company_payouts_recent)
                  IS NOT DISTINCT FROM          -- like "=", but NULL matches NULL (the no-history row)
                  (d.company_n_known, d.company_payouts, d.company_paid_rate, d.company_untimely_rate,
                   d.company_issue_n_known, d.company_issue_payouts, d.company_issue_paid_rate,
                   d.issue_n_known, d.issue_payouts, d.issue_paid_rate,
-                  d.product_n_known, d.product_payouts, d.product_paid_rate)
+                  d.product_n_known, d.product_payouts, d.product_paid_rate,
+                  d.company_issue_n_recent, d.company_issue_payouts_recent, d.company_n_recent, d.company_payouts_recent)
             THEN 'PASS' ELSE '** FAIL **' END AS result
 FROM   direct d LEFT JOIN v USING (complaint_id)
 ORDER  BY d.why, d.complaint_id;

@@ -51,7 +51,14 @@ SELECT complaint_id,
        avg(paid)     OVER w_product  AS product_paid_rate,
        -- step 4: explicit "no history" flags for the two company-level entities
        (count(*) OVER w_company  = 0)::int AS company_no_history,
-       (count(*) OVER w_co_issue = 0)::int AS company_issue_no_history
+       (count(*) OVER w_co_issue = 0)::int AS company_issue_no_history,
+       -- RECENT history (added 2026-10-02): only the 12 months that END 60 days ago. Companies change
+       -- policy; the all-time rate above remembers 2022 as strongly as last quarter. Same 60-day lag,
+       -- so the leak test covers these columns too. Smoothed in 05 toward the all-time rate.
+       count(*)      OVER w_co_issue_recent AS company_issue_n_recent,
+       sum(paid)     OVER w_co_issue_recent AS company_issue_payouts_recent,
+       count(*)      OVER w_company_recent  AS company_n_recent,
+       sum(paid)     OVER w_company_recent  AS company_payouts_recent
 FROM   v_base
 WINDOW w_company  AS (PARTITION BY company_id           ORDER BY date_received
                       RANGE BETWEEN UNBOUNDED PRECEDING AND INTERVAL '60 days' PRECEDING),
@@ -60,7 +67,12 @@ WINDOW w_company  AS (PARTITION BY company_id           ORDER BY date_received
        w_issue    AS (PARTITION BY issue_id             ORDER BY date_received
                       RANGE BETWEEN UNBOUNDED PRECEDING AND INTERVAL '60 days' PRECEDING),
        w_product  AS (PARTITION BY product_id           ORDER BY date_received
-                      RANGE BETWEEN UNBOUNDED PRECEDING AND INTERVAL '60 days' PRECEDING);
+                      RANGE BETWEEN UNBOUNDED PRECEDING AND INTERVAL '60 days' PRECEDING),
+       -- frame A, but with a START: days d-425 .. d-60 = the 365 days of outcomes known most recently
+       w_co_issue_recent AS (PARTITION BY company_id, issue_id ORDER BY date_received
+                      RANGE BETWEEN INTERVAL '425 days' PRECEDING AND INTERVAL '60 days' PRECEDING),
+       w_company_recent  AS (PARTITION BY company_id           ORDER BY date_received
+                      RANGE BETWEEN INTERVAL '425 days' PRECEDING AND INTERVAL '60 days' PRECEDING);
 
 -- CHECKS — a view recomputes on every query; each check reads it ONCE (a MATERIALIZED CTE).
 -- (If a check crawls: SHOW work_mem; must say 256MB — see CLAUDE.md trap #11.)
