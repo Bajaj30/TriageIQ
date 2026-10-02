@@ -138,3 +138,21 @@ Test: 150,000 complaints from 2024, 2.31% payouts · train 62,940 (case-control)
 | features minus weak (16) | 0.9641 | 0.3631 | 0.9272 | 0.7492 |
 | fusion | 0.9713 | 0.4262 | 0.9457 | 0.8115 |
 | fusion minus weak | 0.9713 | 0.4254 | 0.9454 | 0.8106 |
+
+## DistilBERT fusion on training set v3 — CURRENT (Kaggle T4, training/fusion_distilbert.ipynb)
+
+Same test set as the v3 baselines (150,000 complaints from 2024, 3,471 payouts). 3 epochs, best by val PR-AUC; ~481 s per unfrozen epoch.
+
+| metric | TF-IDF fusion | **DistilBERT fusion** |
+|---|---|---|
+| within-company AUC | 0.8115 | **0.8224** |
+| within (Product×Issue) AUC | 0.9457 | **0.9492** |
+| pooled AUC | 0.9713 | **0.9731** |
+| pooled PR-AUC | 0.4262 | **0.4395** |
+| AUC, complaints cut at 512 | 0.9614 | **0.9614** |
+| AUC, complaints that fit | 0.9722 | **0.9741** |
+| payouts caught reading the riskiest 5% | 72.3% | **74.0%** |
+| payouts caught reading the riskiest 10% | 91.7% | **92.6%** |
+| payouts caught reading the riskiest 20% | 99.3% | **99.4%** |
+
+Calibration (after the case-control offset): mean predicted 3.11% vs actual 2.31% — the offset fixes the sampling, not the drift (payouts fall year by year).

@@ -21,7 +21,7 @@ rest get a standard reply.
 | 💸 **1 in 80** | complaints end with the company paying money |
 | 📝 **1 in 3** | complaints include the customer's own written story |
 | 🎯 **81 / 100** | a simple starting model, on the most realistic test |
-| 🤖 **⏳ / 100** | the fine-tuned AI model, on the same test |
+| 🤖 **82 / 100** | the fine-tuned AI model, on the same test |
 | 💰 **$0** | budget — a student laptop and free cloud tools |
 
 ---
@@ -359,9 +359,9 @@ more than the history.** Together they do best.
 
 | | simple starting model | AI + track record |
 |---|:---:|:---:|
-| Real-life test score | 81 | ⏳ |
-| Fair test score | 95 | ⏳ |
-| Share of payouts caught if seniors read only the riskiest 10% | ⏳ | ⏳ |
+| Real-life test score | 81 | **82** |
+| Fair test score | 95 | **95** |
+| Share of payouts caught if seniors read only the riskiest 10% | 92% | **93%** |
 | Time to score one complaint | — | ⏳ |
 
 ---
@@ -382,8 +382,7 @@ flowchart TB
     end
 ```
 
-- **Senior time goes where money is at stake:** reading the riskiest ⏳% of complaints catches ⏳% of
-  all payouts.
+- **Senior time goes where money is at stake:** reading the riskiest **10%** of complaints catches **93%** of all payouts (2024 test, all companies together).
 - **Fewer surprises:** rare but expensive cases inside "low-risk" products get flagged by their words.
 - **Each score comes with examples:** the most similar past complaints and how they ended (⏳).
 

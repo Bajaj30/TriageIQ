@@ -357,6 +357,17 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   at all (track records only). Both scored lower on long complaints too (8.4% of the 2024 test set,
   which pay out more often: 3.41% vs 2.21%). Long complaints are simply harder — so the AI can only be
   blamed for the cut if it falls clearly behind the read-everything model on exactly those complaints.
+- **The AI reader passed the final exam** — on 150,000 complaints from 2024 it had never seen, the
+  fine-tuned model (DistilBERT reading the story + the 19 database clues) scored **82 out of 100** inside a
+  single company, against 81 for the simple word-counting model. If a senior analyst reads only the
+  riskiest 10% of complaints, they catch **93%** of all the complaints that end in a payout. It trained
+  in about 30 minutes on a free GPU.
+- **The cut at 512 word-pieces turned out harmless** — on the long complaints, the AI scored exactly
+  what the read-every-word model scored (both 96). Long complaints are just harder, for everyone.
+- **Right about *who*, too high about *how many*** — the AI ranks complaints well, but its percentages
+  come out a third too high on 2024 (3.1% predicted vs 2.3% real). It learned from 2022–23, when payouts
+  were more common; they keep getting rarer. Ranking is what routing needs, but any probability shown to
+  a person must first be re-tuned on recent data.
 - **One final exam for the whole load** — a single query checks 21 things at once (every table's size,
   one row per complaint, exactly 3 history rows each, the payout count against the raw file, both
   translation tables) and prints PASS or FAIL for each, in 27 seconds. And we tested the tester: feed it

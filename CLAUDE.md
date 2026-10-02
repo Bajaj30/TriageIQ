@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-01 · v3 baselines done · fusion notebook `training/fusion_distilbert.ipynb` passes the Mac test · next: Kaggle smoke (10k)
+Last updated: 2026-10-02 · **DistilBERT fusion beats the bar** (within-company 0.8224 vs 0.8115) · next: text-only / features-only arms of the ablation
 
 ---
 
@@ -32,6 +32,7 @@ TF-IDF + logistic regression; `training/test.ipynb`; FACTS.md "Baselines on trai
 | text only | 0.8916 | **0.7956** |
 | features only (19 SQL inputs) | 0.9276 | 0.7500 |
 | fusion | **0.9457** | **0.8115** |
+| **DistilBERT fusion** (Kaggle, 3 epochs) | **0.9492** | **0.8224** |
 
 *(v2, historical: 0.8905 / 0.9076 / 0.9330 and 0.7900 / 0.7463 / 0.8034 — a different test set.)*
 
@@ -161,7 +162,7 @@ work) come after all tables are loaded.
 | 0.4 | Bulk load | **Complete** — fact 4,826,564 · narrative 1,639,068 · events 14,479,692 · validated 21/21 · 6 indexes (company×issue lookup 0.19 ms, index-only); 31,378 company×issue pairs (F1) |
 | 0.5 | Label as a SQL view | **Complete** — `v_label`: 4,826,564 rows · paid 60,952 · untimely 2,785 · 19 unknown → 0 · base rate 1.26% (F1); reads the partial index, 1 s |
 | 1 | Layered point-in-time pipeline | **Complete** — `sql/03_features/` 01–08: `mv_features` (4,826,564 rows × 40 cols, ~80 s build) → `v_model_input` (**19 inputs**, see `sql/03_features/feature_dictionary.md`); recount tests + leak test pass (`sql/tests/`) |
-| 2 | pgvector, fusion, stratified ablation | **Started** — v3 uploaded as a private Kaggle Dataset; Cell 1 smoke test passed (sha256 `16e3c4127dd1…`, counts match, 2× T4). Next: re-baseline on v3 (cheap, CPU), then DistilBERT |
+| 2 | pgvector, fusion, stratified ablation | **In progress** — DistilBERT fusion full run done (3 × ~481 s on one T4): within-company **0.8224**, within-strata 0.9492, PR 0.4395, riskiest 10% catches 92.6% (FACTS.md). Results: `training/results/fusion_full_v3.json`. Next: DistilBERT text-only + features-only arms, recalibration |
 | 3 | FastAPI, Docker, Cloud Run, CI/CD, monitoring | Not started |
 
 ---
@@ -247,7 +248,8 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
    consumer`, `Timely response?`, `Company public response`.
 5. **Three evaluation frames, three claims** — pooled 0.9713 / within-strata 0.9457 / within-company
    0.8115 (fusion, v3). Report the honest one; explain the gap.
-6. **Recalibration is mandatory** — case-control keep-fraction 0.104639 → logit offset −2.2572.
+6. **Recalibration is mandatory** — v3: keep-fraction 0.0892 → logit offset **−2.4165** (read it from the
+   manifest, never type it; v2's −2.2572 is dead). It fixes sampling only — see trap 13 for drift.
 7. **721 narratives straddle splits** (3,120 rows, 1.03%, 3 positives) — dup filter isn't group-aware.
    Fix before Phase 2: assign each narrative hash to one split.
 8. **Undeclared dependency:** scikit-learn is required but not in `pyproject.toml`.
@@ -281,6 +283,11 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
     the cap 195,545 / 14: repeated templates almost never pay (unique texts 3.84% vs copies ≤0.05%).
     Idea for later: an as-of 'identical text seen before' count is a legit, likely strong feature.
     Heavy queries: `SET max_parallel_workers_per_gather = 0` — parallel hashes overflow the 1 GB shm_size.
+13. **Calibration drifts (2026-10-02).** After the −2.4165 offset the full run predicts 3.11% on 2024 vs
+    2.31% actual. The offset corrects the case-control sampling, NOT the year-on-year fall in payouts.
+    Ranking is unaffected; before showing probabilities (API, expected cost), recalibrate on the most
+    recent labelled data. **Kaggle UI:** a committed run's log page may stop updating — check the
+    Output tab / metrics.json before assuming a stall (it fooled us on 2026-10-02).
 11. **Sort memory.** Default `work_mem` 4MB made window sorts over 4.8M rows spill to disk (28 GB temp,
     11+ min). Set `ALTER DATABASE triageiq SET work_mem = '256MB'` (in `12_indexes.sql`): same check 16 s.
     Docker VM has 8 GB — don't raise much further; a query can hold several sorts at once.
@@ -320,6 +327,8 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
      harder for every model, even features-only (which reads no text).** So a DistilBERT gap alone proves
      nothing: truncation hurts only if DistilBERT's cut-slice AUC falls clearly below TF-IDF fusion's 0.9614.
      Smoke (10k, noisy): DistilBERT 0.9721 / 0.9529.
+     **Full run verdict (2026-10-02): DistilBERT cut-slice 0.9614 = TF-IDF's 0.9614; fits 0.9741 vs 0.9722.**
+     The 512 cut costs nothing relative to a read-everything model → **512 stays; head+tail is low priority.**
   4. If the cut slice underperforms: chunk + pool with the same DistilBERT (median 2, p90 3 chunks).
   5. Last resort: a 1024+ model (jina-embeddings-v2-small, ~33M, 8,192 ctx).
   **Rejected, measured:** lemmatization — even an impossible best case (every `##` piece removed)
