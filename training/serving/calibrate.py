@@ -9,12 +9,12 @@ HOW (the golden rule: fit on one period, check on a LATER one — never grade a 
   1. intercept shift : p = sigmoid(z + b)        one number  — fixes a change in the overall payout rate
   2. Platt scaling   : p = sigmoid(a*z + b)      two numbers — also fixes over/under-confidence
   3. isotonic        : a free-form staircase     many steps  — flexible, can overfit, creates ties
-  Checks: fit on Jan–Jun 2024 → score Jul–Dec 2024; fit on Jul–Sep → score Oct–Dec.
+  Checks: fit on Jan–Jun 2024 → score Jul-Dec 2024; fit on Jul–Sep → score Oct–Dec.
   A monotone fix (1, 2) cannot change any ranking score; isotonic's ties can (measured below).
 DEPLOY: refit the chosen method on the most recent 6 months (Jul–Dec 2024) — payouts are still falling, so
   the newest data is the best guess of "now". Threshold: the riskiest 10% → senior analyst.
 
-Run:  python training/calibrate.py
+Run:  python training/serving/calibrate.py
   ->  training/outputs/fusion_distilbert_full/calibration.json   (shipped with the model; git-ignored)
       training/results/calibration_v3.json                       (tracked numbers)
 """

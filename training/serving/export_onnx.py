@@ -9,14 +9,14 @@ WHAT IT BUILDS — the serving bundle, everything the API needs, in one folder:
     model.onnx          the fusion model: (input_ids, attention_mask, cat, num) -> logit
     tokenizer.json      DistilBERT's word-pieces + the [DATE] / [REDACTED] markers (fast-tokenizer file)
     preprocessing.json  the train-only means/stds and the input order (copied from the training run)
-    calibration.json    offset + Platt a, b + the senior threshold (from training/calibrate.py)
+    calibration.json    offset + Platt a, b + the senior threshold (from training/serving/calibrate.py)
 CHECKS (printed, and saved to training/results/onnx_v3.json):
   1. tokenizer: the serving tokenizer (tokenizers library) gives the SAME ids as training's (transformers)
   2. parity: ONNX vs PyTorch on 1,000 test complaints — the same math, so differences ~1e-5
   3. vs Kaggle: our CPU fp32 logits vs the T4's fp16 logits — small differences, ranking unchanged
   4. speed: one complaint at a time on 2 CPU threads (≈ a small cloud server), p50 / p95 by length
 
-Run:  USE_TF=0 python training/export_onnx.py
+Run:  USE_TF=0 python training/serving/export_onnx.py
 """
 import json, os, shutil, time
 from pathlib import Path
