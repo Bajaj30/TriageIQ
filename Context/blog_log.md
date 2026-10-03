@@ -339,6 +339,10 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   ranking score stays exactly the same. A fancier, free-form correction did fit slightly better — but it lumps
   complaints into ties and quietly lowered the ranking score, so the simple two-number fix won. The rule for the
   desk: the riskiest 10% of complaints go to a senior; in 2024 that group paid out 21% of the time, the rest 0.2%.
+  **Why not tune it on the late-2023 practice data?** Payouts kept falling: October–December 2023 paid 3.50%,
+  2024 paid 2.31%. A correction tuned on 2023 would still forecast too high for 2024 — and forecasting too high
+  is exactly the problem we were fixing. So the correction is tuned on the newest data available (the second
+  half of 2024), and checked on months that came *after* the ones it was tuned on.
 - **The same AI, without the AI toolkit** *(tech: ONNX export)* — the trained model was saved as a single file
   that a small, fast engine can run on an ordinary processor, no graphics card or training software needed.
   Checked on 1,000 real complaints: identical answers to 5 decimal places. One complaint takes about 20

@@ -1,4 +1,5 @@
 [project]
+package-mode = false
 name = "triageiq"
 version = "0.1.0"
 description = "Customer support ticket escalation prediction system"
@@ -15,7 +16,11 @@ dependencies = [
     "langdetect (>=1.0.9,<2.0.0)",
     "matplotlib (>=3.11.1,<4.0.0)",
     "anthropic (>=1.5.0,<2.0.0)",
-    "python-dotenv (>=1.2.3,<2.0.0)"
+    "python-dotenv (>=1.2.3,<2.0.0)",
+    "onnxruntime (>=1.17,<2)",
+    "torch (>=2.0,<3)",
+    "transformers (>=4.30,<5)",
+    "tokenizers (>=0.15,<1)"
 ]
 
 
