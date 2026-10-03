@@ -65,13 +65,9 @@ NGINX / SSL / firewall videos at 3.6.
 
 ## Schedule
 
-| when | watch | build |
-|---|---|---|
-| Weekend 1 | prerequisites you failed · CS50 L8 (first part) · API course §1, §3, §5, §6, §7 | 3.0 |
-| Weekdays | StatQuest log-odds · FSDL Lecture 5 | 3.1 · 3.2 · 3.3 (no backend needed) |
-| Weekend 2 | API course §8, §9, §11, §12, §14 · Nana Docker · API course §15 | 3.4 · 3.5 |
-| Next | Missing Semester L5, L9 · re-watch §14's NGINX / SSL / firewall parts | 3.6 · 3.7 |
-| Then | API course §16, §17 · FSDL Lecture 6 | 3.8 · 3.9 · 3.10 |
+**Superseded (2026-10-03) by the compressed plan in `CLAUDE.md` §12:** build first, learn just-in-time while
+building, and do the courses and the book after deploying. The steps and concepts below still apply; only
+the timing changed.
 
 ---
 

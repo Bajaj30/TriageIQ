@@ -460,3 +460,20 @@ fallback if CPU is too slow. Endpoints (spec §3.1): `POST /predict` (ids + text
 
 **Never commit AWS keys / `.env`.** Cost is a hard limit: free credits only (ground rule 3).
 
+**TIMELINE (Shivam, 2026-10-03, hard): local demo in 4 days, deployed in the 2–3 days after; exams at the
+end of October need 10 full days (~Oct 21–31).** So: **build first, learn just-in-time** (I write the code,
+he reviews and explains it back; a short concept lesson before each day's work). Courses (Andrew Ng's
+*Machine Learning in Production*, freeCodeCamp API course, Nana Docker) and the DMLS book move to **after
+deploy (~Oct 10–20) and after exams.** Day 1 = Sat 2026-10-03 (shift if he starts later).
+| day | build (Learning/Phase3 step) | done when |
+|---|---|---|
+| 1 | 3.1 recalibrate (fit Jan–Jun 2024, check Jul–Dec, refit on all 2024) + threshold · 3.2 ONNX fp32 + parity on 1k + CPU latency | avg predicted ≈ actual on H2-2024; ONNX = PyTorch to ~1e-5; p50/p95 known |
+| 2 | 3.3 serving DB (`sql/06_serving/`): dims + snapshot as of 2024-12-31 + 150k test complaints + `clean_narrative()`; skew test; `pg_dump` | skew test passes; dump size known |
+| 3 | 3.4 FastAPI (`api/`): /predict, /complaint/{id}, /health, /model-info on the Mac | Swagger works; /complaint score = offline score |
+| 4 | 3.5 Docker: api Dockerfile + compose (postgres from dump + api) → **localhost demo from scratch** | `docker compose up` on a clean volume → demo works |
+| 5 | 3.6 AWS: budget alarms, server (~2 GB + swap), security group, SSH, copy model + dump, compose up | public IP opens /docs from another network |
+| 6 | 3.7 NGINX + read-only DB role + input limits + rate limit; README live link; screen recording | 5432 closed from outside; recording saved |
+| 7 (buffer) | minimal 3.8 (ruff + pytest + build) and 3.9 (prediction_log + one SQL drift query) — else after exams | — |
+**Cut / deferred:** int8 (ship fp32 ONNX unless time), CI/CD and the drift report (buffer day or later), HTTPS/domain
+(optional), courses + book (after deploy).
+
