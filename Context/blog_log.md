@@ -331,6 +331,18 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 - **Long tails** — a few extreme cases (a 30,110-copy template, a few very long complaints) can break
   methods built for typical cases.
 - **Older free GPUs can't use the newest number format** *(tech: fp16 vs bf16)* — so we use the older one.
+- **Making the percentages honest** *(tech: calibration, Platt scaling)* — a good weather forecaster is right
+  about *how often*: on days they say "30% rain", it rains about 3 days in 10. Our AI said 3.1% of 2024 complaints
+  would pay; 2.3% did. Two numbers fix it — one squeezes the AI's over-confident extremes, one shifts everything
+  down for the falling payout rate. Fitted on January–June 2024 and checked on July–December, the corrected
+  forecast said 2.22% against a real 2.10% (uncorrected: 2.91%). The order of complaints never changes, so every
+  ranking score stays exactly the same. A fancier, free-form correction did fit slightly better — but it lumps
+  complaints into ties and quietly lowered the ranking score, so the simple two-number fix won. The rule for the
+  desk: the riskiest 10% of complaints go to a senior; in 2024 that group paid out 21% of the time, the rest 0.2%.
+- **The same AI, without the AI toolkit** *(tech: ONNX export)* — the trained model was saved as a single file
+  that a small, fast engine can run on an ordinary processor, no graphics card or training software needed.
+  Checked on 1,000 real complaints: identical answers to 5 decimal places. One complaint takes about 20
+  thousandths of a second on a laptop (a short one 11, the longest 54).
 
 ---
 

@@ -1,0 +1,106 @@
+{
+ "calibration": {
+  "method": "Platt scaling on z = logit + offset:  p = sigmoid(a * z + b)",
+  "offset": -2.416530199710768,
+  "a": 0.7025292011737427,
+  "b": -0.762053082188278,
+  "fit_on": "2024-07-01..2024-12-31 test complaints (newest labelled data), n = 83130",
+  "senior_threshold_p": 0.036739253936614404,
+  "senior_share": 0.1,
+  "senior_rule": "p >= senior_threshold_p -> senior analyst, else template (riskiest 10% of 2024 test complaints)",
+  "data_end": "2024-12-31"
+ },
+ "checks": {
+  "fit Jan\u2013Jun \u2192 check Jul\u2013Dec": [
+   {
+    "method": "offset only",
+    "n": 83130,
+    "actual": 0.021027306628172742,
+    "predicted": 0.029101268529972253,
+    "brier": 0.016041106737856664,
+    "log_loss": 0.05308768739537674,
+    "ece": 0.00972025590229172,
+    "within_company": 0.8295677389054382
+   },
+   {
+    "method": "intercept shift",
+    "n": 83130,
+    "actual": 0.021027306628172742,
+    "predicted": 0.02226825732351011,
+    "brier": 0.014944158214353197,
+    "log_loss": 0.05094200101815835,
+    "ece": 0.003232019891918264,
+    "within_company": 0.8295677389054382
+   },
+   {
+    "method": "Platt",
+    "n": 83130,
+    "actual": 0.021027306628172742,
+    "predicted": 0.02221429557551925,
+    "brier": 0.014743029492402885,
+    "log_loss": 0.04939025181936146,
+    "ece": 0.0017183553431089791,
+    "within_company": 0.8295677389054382
+   },
+   {
+    "method": "isotonic",
+    "n": 83130,
+    "actual": 0.021027306628172742,
+    "predicted": 0.022138751649792097,
+    "brier": 0.01475197858561783,
+    "log_loss": 0.04940688776660629,
+    "ece": 0.0012108086104831493,
+    "within_company": 0.8290217645419509
+   }
+  ],
+  "fit Jul\u2013Sep \u2192 check Oct\u2013Dec": [
+   {
+    "method": "offset only",
+    "n": 43196,
+    "actual": 0.021298268358181313,
+    "predicted": 0.028924494776740774,
+    "brier": 0.016084937442646614,
+    "log_loss": 0.052329613042069956,
+    "ece": 0.008995283558906617,
+    "within_company": 0.8322523498962879
+   },
+   {
+    "method": "intercept shift",
+    "n": 43196,
+    "actual": 0.021298268358181313,
+    "predicted": 0.02039983424002926,
+    "brier": 0.014993875280533525,
+    "log_loss": 0.05040273690676336,
+    "ece": 0.0008995475358240663,
+    "within_company": 0.8322523498962879
+   },
+   {
+    "method": "Platt",
+    "n": 43196,
+    "actual": 0.021298268358181313,
+    "predicted": 0.020406119089538603,
+    "brier": 0.014902410718831324,
+    "log_loss": 0.04912136818644223,
+    "ece": 0.0010134641151443653,
+    "within_company": 0.8322523498962879
+   },
+   {
+    "method": "isotonic",
+    "n": 43196,
+    "actual": 0.021298268358181313,
+    "predicted": 0.020401675248661436,
+    "brier": 0.014868362074964479,
+    "log_loss": 0.04921234041914833,
+    "ece": 0.001153722804248253,
+    "within_company": 0.8309915446915005
+   }
+  ]
+ },
+ "deployed_on_2024": {
+  "recall_of_payouts_in_senior": 0.9259579371938923,
+  "payout_rate_in_senior": 0.21426666666666666,
+  "payout_rate_in_template": 0.0019037037037037037,
+  "within_company_before": 0.8224316255600731,
+  "within_company_after": 0.8224316255600731
+ }
+}

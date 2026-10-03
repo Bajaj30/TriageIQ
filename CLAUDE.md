@@ -315,7 +315,7 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
 13. **Calibration drifts (2026-10-02).** After the −2.4165 offset the full run predicts 3.11% on 2024 vs
     2.31% actual. The offset corrects the case-control sampling, NOT the year-on-year fall in payouts.
     Ranking is unaffected; before showing probabilities (API, expected cost), recalibrate on the most
-    recent labelled data. **Kaggle UI:** a committed run's log page may stop updating — check the
+    recent labelled data. **DONE 2026-10-03 (Platt, §12 Day 1)** — the API must apply `calibration.json`. **Kaggle UI:** a committed run's log page may stop updating — check the
     Output tab / metrics.json before assuming a stall (it fooled us on 2026-10-02).
     **Draft vs saved runs:** a draft (interactive) session keeps `/kaggle/working` only while it is on —
     download from the Output panel before stopping, or use Save Version → Save & Run All.
@@ -432,7 +432,7 @@ without a severity label. Amount is *claimed*, not verified; ~81% of complaints 
 ## 12. Phase 3 — deployment plan (agreed 2026-10-02)
 
 **Goal:** a public link for the resume (Swagger UI, ground rule 2) that anyone can open for **a few months**.
-Shivam has **$100 AWS credits**; long-term hosting is NOT needed. Replaces the spec's Cloud Run plan
+Shivam has **$140 AWS credits** (account ready 2026-10-03; EC2 likely — confirm on Day 5); long-term hosting is NOT needed. Replaces the spec's Cloud Run plan
 (TriageIQ.md §3.3) — AWS only because the credits are free. Shivam is setting up AWS himself (with Claude
 Code) and will report back; check his account's credit type / expiry date before relying on it.
 
@@ -474,6 +474,14 @@ deploy (~Oct 10–20) and after exams.** Day 1 = Sat 2026-10-03 (shift if he sta
 | 5 | 3.6 AWS: budget alarms, server (~2 GB + swap), security group, SSH, copy model + dump, compose up | public IP opens /docs from another network |
 | 6 | 3.7 NGINX + read-only DB role + input limits + rate limit; README live link; screen recording | 5432 closed from outside; recording saved |
 | 7 (buffer) | minimal 3.8 (ruff + pytest + build) and 3.9 (prediction_log + one SQL drift query) — else after exams | — |
+**Day 1 DONE (2026-10-03):** `training/calibrate.py` → Platt on z = logit − 2.4165 (fit on Jul–Dec 2024): a 0.7025,
+b −0.7621; checks fit Jan–Jun → Jul–Dec: predicted 2.22% vs actual 2.10% (offset only 2.91%); fit Jul–Sep → Oct–Dec
+2.04% vs 2.13%; isotonic rejected (its ties lower within-company 0.8296 → 0.8290). Senior if p ≥ 0.0367 = riskiest
+10% of 2024 test: catches 92.6% of payouts, 21.4% pay vs 0.19% in template; within-company unchanged 0.8224.
+`training/export_onnx.py` → bundle `training/outputs/serving_v3/` (model.onnx 266 MB, tokenizer.json,
+preprocessing.json, calibration.json): tokenizer 1000/1000 identical, ONNX vs PyTorch max |Δlogit| 1e-5, vs Kaggle T4
+fp16 max |Δp| 0.00036, rank corr 0.999999; M4 2 threads p50 20 ms / p95 81 ms (≤128 tok 11 ms, 256–512 54 ms).
+Results: `training/results/calibration_v3.json`, `onnx_v3.json`. int8 deferred: decide on Day 5 from server latency.
 **Cut / deferred:** int8 (ship fp32 ONNX unless time), CI/CD and the drift report (buffer day or later), HTTPS/domain
 (optional), courses + book (after deploy).
 

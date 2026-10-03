@@ -1,0 +1,21 @@
+{
+ "model_onnx_mb": 266.075243,
+ "tokenizer_identical_of_1000": 1000,
+ "parity": {
+  "onnx_vs_pytorch_max_abs_logit": 9.5367431640625e-06,
+  "cpu_vs_kaggle_t4_max_abs_logit": 0.01055908203125,
+  "cpu_vs_kaggle_t4_max_abs_prob": 0.00036328188710293974,
+  "cpu_vs_kaggle_rank_corr": 0.9999990069985336
+ },
+ "speed": {
+  "p50_ms": 19.99075000276207,
+  "p95_ms": 81.46573335397989,
+  "p50_ms_by_tokens": {
+   "0-128": 11.203207999642473,
+   "128-256": 25.97229149978375,
+   "256-512": 53.76191699906485
+  },
+  "threads": 2,
+  "machine": "MacBook M4 (a cloud vCPU is slower \u2014 re-measure on the server)"
+ }
+}
