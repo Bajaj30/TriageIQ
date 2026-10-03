@@ -57,6 +57,8 @@ gets the next step.
   concept even if the project uses only part of it (e.g. all of Docker, not just Compose), then the same
   idea implemented in TriageIQ, then he explains it back. Phase 3 follows `Learning/Phase3/directions.md`.
   **Prefers video lectures over blogs/articles** when pointing him to resources.
+- **No new .md files unless he asks for one (2026-10-03).** Answer in chat, or update an existing file
+  (CLAUDE.md, blog_log, logs) as standing duties require. Never create a doc just to hold an answer.
 
 **Rigor**
 - **Ask when in doubt; never assume.** If an instruction is ambiguous, ask — or state the
