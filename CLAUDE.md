@@ -435,7 +435,10 @@ $10 / $50 / $90. (Rejected for now: 4 GB server ~$20–24/mo — less runway; La
 
 **Model:** DistilBERT fusion v3 (`training/outputs/fusion_distilbert_full/model.pt`, 19 inputs). Before
 deploy: (1) **recalibrate** on the most recent labelled data (trap 13: 3.11% predicted vs 2.31% actual);
-(2) export to **ONNX + int8** (~70 MB vs 265 MB) and re-check scores + CPU latency; TF-IDF fusion is the
+(2) export to **ONNX** (same model, runs on ONNX Runtime — no PyTorch in the image) and optionally
+**int8** (~130–140 MB est., not ~70: the 23M-number vocabulary table usually stays 32-bit). **Ship rule:**
+score all 150k test complaints with both; int8 ships only if within-company stays inside the PyTorch
+model's range and top-10% recall holds; else ship fp32 ONNX. Also report senior/template flips + CPU latency; TF-IDF fusion is the
 fallback if CPU is too slow. Endpoints (spec §3.1): `POST /predict` (ids + text, never features),
 `GET /complaint/{id}` (demo), `GET /health`, `GET /model-info`.
 
