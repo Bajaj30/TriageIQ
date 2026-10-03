@@ -12,6 +12,7 @@ Two jobs, two kinds of file:
 | `Phase1/` — point-in-time features in SQL | `revision.md` | done |
 | `Phase2/` — training set, DistilBERT fusion, evaluation | `revision.md` | done |
 | `Phase3/` — calibration, API, Docker, AWS, monitoring | `directions.md` (the roadmap you are on) · `learning_log.md` (start it at 3.0) | **now** |
+| *(root)* — the book | `book_DMLS.md`: how to read *Designing ML Systems*, chapter order, what to do per chapter · `book_DMLS_notes.md` (yours) | alongside Phase 3 |
 
 **Where numbers come from:** `Context/FACTS.md` only (generated). Every number in these files states its group:
 *all complaints* (4,826,564, 2022–24) · *complaints with text* (1,639,068) · *the 2024 test set* (150,000).

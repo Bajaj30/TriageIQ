@@ -134,6 +134,7 @@ Learning/README.md            index: directions (roadmaps) vs revision (intervie
 Learning/Phase0/              directions.md · learning_log.md (his notes, 0.1–0.3) · revision.md
 Learning/Phase1/revision.md   features: concept cards (idea · in TriageIQ · Q→A · lecture) + what broke + numbers
 Learning/Phase2/revision.md   model: same format
+Learning/book_DMLS.md         how to read Chip Huyen's DMLS: per-chapter loop (survey → section → recall → TriageIQ table → act → review), chapter order tied to Phase 3 steps
 Learning/Phase3/directions.md roadmap: prerequisites P1–P11, lecture map, schedule; per step Assumes → Watch →
                               Learn → Build (+ Bridge to the course) → Explain back → Done when
 Data/EDA.ipynb                profiling + v2 training-set build (Cell 8)

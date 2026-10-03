@@ -19,7 +19,7 @@
 > explained, then **added to this file**, so the gap is closed for good.
 
 **One book for the whole phase:** Chip Huyen, *Designing Machine Learning Systems* (O'Reilly, 2022).
-Ch. 7 covers deployment, ch. 8 drift and monitoring, ch. 9 continual learning.
+How to read it, in which order, and what to do per chapter: **`Learning/book_DMLS.md`**.
 
 ---
 
