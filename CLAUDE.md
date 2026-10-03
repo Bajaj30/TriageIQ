@@ -6,7 +6,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-02 · model fixed (DistilBERT fusion, v3, 19 inputs) · Phase 3 = AWS deploy planned (§12) · Shivam is setting up AWS
+Last updated: 2026-10-03 · model fixed (DistilBERT fusion, v3, 19 inputs) · Phase 3 = AWS deploy planned (§12) · learning guide `Learning/Phase3/directions.md` · Shivam is setting up AWS
 
 ---
 
@@ -53,6 +53,9 @@ gets the next step.
 - **Crisp, simple language, no story-type responses.** Tie each step back to basics and to the core
   goal above.
 - **Do not circle.** When he states a requirement, map every decision to it directly.
+- **Teaching (his request, 2026-10-03):** intuition first (an everyday comparison), then the **complete**
+  concept even if the project uses only part of it (e.g. all of Docker, not just Compose), then the same
+  idea implemented in TriageIQ, then he explains it back. Phase 3 follows `Learning/Phase3/directions.md`.
 
 **Rigor**
 - **Ask when in doubt; never assume.** If an instruction is ambiguous, ask — or state the
@@ -123,6 +126,7 @@ Context/audit.md              prompt for an independent audit
 Context/audit_findings_2026-09-12.md   audit results + resolution status
 Context/old_context/          v1 archives (synthetic-customer design) — do not delete
 Learning/Phase0/              directions.md (learning guide) · learning_log.md (his notes)
+Learning/Phase3/directions.md Phase 3 steps 3.0–3.10: Learn (whole concept) → Build (in TriageIQ) → Explain back → Done when
 Data/EDA.ipynb                profiling + v2 training-set build (Cell 8)
 Data/docs/data_profile.md     dataset profile
 Data/complaints.csv           9.2GB raw — gitignored
@@ -167,7 +171,7 @@ work) come after all tables are loaded.
 | 0.5 | Label as a SQL view | **Complete** — `v_label`: 4,826,564 rows · paid 60,952 · untimely 2,785 · 19 unknown → 0 · base rate 1.26% (F1); reads the partial index, 1 s |
 | 1 | Layered point-in-time pipeline | **Complete** — `sql/03_features/` 01–08: `mv_features` (4,826,564 rows × 40 cols, ~80 s build) → `v_model_input` (**19 inputs**, see `sql/03_features/feature_dictionary.md`); recount tests + leak test pass (`sql/tests/`) |
 | 2 | pgvector, fusion, stratified ablation | **In progress** — DistilBERT fusion full run done (3 × ~481 s on one T4): within-company **0.8224**, within-strata 0.9492, PR 0.4395, riskiest 10% catches 92.6% (FACTS.md). Results: `training/results/fusion_full_v3.json`. Next: DistilBERT text-only + features-only arms, recalibration |
-| 3 | FastAPI, Docker, AWS deploy, monitoring | **Planned (2026-10-02)** — AWS instead of Cloud Run (free $100 credits); see §12. Shivam is setting up the AWS account |
+| 3 | FastAPI, Docker, AWS deploy, monitoring | **Planned (2026-10-02)** — AWS instead of Cloud Run (free $100 credits); see §12. Shivam is setting up the AWS account. Order of work = `Learning/Phase3/directions.md` (3.0 foundations → 3.1 calibration → … → 3.9 monitoring → 3.10 wrap-up) |
 
 ---
 
