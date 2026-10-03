@@ -87,6 +87,10 @@ gets the next step.
   `blog_log.md` — plan for it when the project nears its end. Must include an interactive
   **snowflake-schema visual**. Diagrams live ONLY in `README.md` (§5 = snowflake, journey,
   track-record steps); `blog_log.md` §8 lists what to reuse. Never duplicate a diagram.
+- **Learning folder (standing duty, 2026-10-03):** when a phase finishes, write its `Learning/PhaseN/revision.md`
+  (same card format); fill README's 2-minute story step 7 after Phase 3. **The gap rule:** when he reports a
+  term a Phase 3 step assumed but didn't teach, explain it, then add it to that step's **Assumes** (or to P1–P11).
+  Resources: video lectures first; text only where no good lecture exists — say so.
 - He values honesty about limitations over polish; diagnosing a flaw is an explicit project goal.
 
 **Machine:** MacBook M4, 16GB. Mac does SQL, data prep, and 1k-row training smoke tests on MPS.
@@ -126,8 +130,12 @@ Context/blog_log.md           blog raw material: discarded ideas, realisations, 
 Context/audit.md              prompt for an independent audit
 Context/audit_findings_2026-09-12.md   audit results + resolution status
 Context/old_context/          v1 archives (synthetic-customer design) — do not delete
-Learning/Phase0/              directions.md (learning guide) · learning_log.md (his notes)
-Learning/Phase3/directions.md Phase 3 steps 3.0–3.10: Learn (whole concept) → Build (in TriageIQ) → Explain back → Done when
+Learning/README.md            index: directions (roadmaps) vs revision (interview prep) · reading order · 2-minute story
+Learning/Phase0/              directions.md · learning_log.md (his notes, 0.1–0.3) · revision.md
+Learning/Phase1/revision.md   features: concept cards (idea · in TriageIQ · Q→A · lecture) + what broke + numbers
+Learning/Phase2/revision.md   model: same format
+Learning/Phase3/directions.md roadmap: prerequisites P1–P11, lecture map, schedule; per step Assumes → Watch →
+                              Learn → Build (+ Bridge to the course) → Explain back → Done when
 Data/EDA.ipynb                profiling + v2 training-set build (Cell 8)
 Data/docs/data_profile.md     dataset profile
 Data/complaints.csv           9.2GB raw — gitignored

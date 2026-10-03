@@ -1,6 +1,8 @@
 # TriageIQ — Interview Notes
 
 Phase-by-phase: what it does, what broke, how it was fixed.
+**Concept-by-concept interview prep (Q → A, lectures) lives in `Learning/` — start at `Learning/README.md`.**
+This file holds the longer "what broke" stories (Phase 0 → Phase 2 planning).
 Kept short on purpose — each entry should be speakable in under a minute.
 
 **One-line pitch:** Predict whether an incoming CFPB consumer complaint will end in monetary relief,

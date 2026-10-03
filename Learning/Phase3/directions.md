@@ -1,17 +1,77 @@
 # Phase 3 — Learning Directions: from a trained model to a public link
 
 > [!IMPORTANT]
-> **How to use this file.** One step at a time, in order. Every step has four parts:
-> 1. **Learn:** the *whole* concept, intuition first, even where TriageIQ uses only part of it.
-> 2. **Build:** the same idea inside TriageIQ.
-> 3. **Explain it back:** say the answers without notes. These are also your interview questions.
-> 4. **Done when:** the check that closes the step.
+> **How to use this file.** One step at a time, in order. Every step has six parts:
+> 1. **Assumes:** what you must already know. Each item points to a prerequisite (P1–P11) or an earlier
+>    step. If you can't do its self-test, do that first.
+> 2. **Watch:** the lectures for this step, in order, with exact sections.
+> 3. **Learn:** the *whole* concept, intuition first, even where TriageIQ uses only part of it.
+> 4. **Build:** the same idea inside TriageIQ. **Bridge** notes say where our setup differs from the course.
+> 5. **Explain it back:** say the answers without notes. These are also your interview questions.
+> 6. **Done when:** the check that closes the step.
 >
 > Come back to the main chat after each step. Keep your own notes in `learning_log.md`, as in Phase 0.
 > The plan behind this file is in `CLAUDE.md` §12, and every number is in `Context/FACTS.md`.
 
+> [!NOTE]
+> **The gap rule.** Every assumption a step makes is written under **Assumes**. If you still hit a word or idea
+> you don't know, stop: write the exact term in `learning_log.md` and bring it to the main chat. It gets
+> explained, then **added to this file**, so the gap is closed for good.
+
 **One book for the whole phase:** Chip Huyen, *Designing Machine Learning Systems* (O'Reilly, 2022).
 Ch. 7 covers deployment, ch. 8 drift and monitoring, ch. 9 continual learning.
+
+---
+
+## 3.P Prerequisites: check these first
+
+Each one has a 2-minute self-test. Pass it → skip it. Can't → watch the source before the step that needs it.
+
+| # | skill | self-test | if not → watch | needed by |
+|---|---|---|---|---|
+| P1 | Python modules and imports | What does `from api.main import app` look for on disk? | Corey Schafer, "Python Tutorial for Beginners 9: Import Modules" | 3.4 |
+| P2 | Type hints | Read aloud: `def f(x: int \| None = None) -> dict[str, float]:` | FastAPI docs, "Python Types Intro" (text, 15 min; no lecture worth it, and FastAPI is built on this) | 3.4 |
+| P3 | Decorators | What does `@app.get("/health")` do to the function under it? | Corey Schafer, "Python Tutorial: Decorators" | 3.4 |
+| P4 | async / await, the idea | Why can one waiter serve many tables but one cook can't cook two dishes at once? | FastAPI docs, "Concurrency and async / await" (the burger story; the best explanation is this text) | 3.4 |
+| P5 | Virtual environments, pinned requirements | conda env vs `venv`; why write `fastapi==0.x.y`, not `fastapi`? | freeCodeCamp API course §2: only the "virtual environment" videos (Mac) | 3.4–3.5 |
+| P6 | Shell basics, permissions, env vars | What do `chmod 400 key.pem` and `$PATH` mean? What does a pipe `\|` do? | MIT Missing Semester, Lecture 1 (the shell) + Lecture 2 (shell tools) | 3.0, 3.6 |
+| P7 | Git beyond commit | clone vs pull; what is a branch; what does `.gitignore` protect? | MIT Missing Semester, Lecture 6 (version control) | 3.6, 3.8 |
+| P8 | JSON and YAML | Find the error: a YAML list with one item indented by 3 spaces | TechWorld with Nana, "YAML Tutorial" (~18 min) | 3.5, 3.8 |
+| P9 | Odds, log-odds, sigmoid | Turn probability 0.2 into odds (0.25) and log-odds (−1.39) | StatQuest, "Odds and Log(Odds), Clearly Explained!!!" + "Logistic Regression" | 3.1 |
+| P10 | PyTorch model basics | What's inside `state_dict`? What does `model.eval()` switch off? | done together: a walk through our notebook's model class at the start of 3.2 | 3.2 |
+| P11 | Public-key cryptography, the idea | Why can you share a public key but never the private one? | MIT Missing Semester, Lecture 9 (security and cryptography) | 3.6–3.7 |
+
+## The lectures, in one place (watch each part just before its step)
+
+| source | parts | for step |
+|---|---|---|
+| CS50x 2024, Lecture 8 | the first part only (internet, TCP/IP, DNS, HTTP); stop when HTML starts | 3.0 |
+| StatQuest | "Odds and Log(Odds)"; "Logistic Regression" | 3.1 |
+| Full Stack Deep Learning 2022 | Lecture 5, Deployment | 3.2, 3.3 |
+| Full Stack Deep Learning 2022 | Lecture 6, Continual Learning | 3.9 |
+| freeCodeCamp, "Python API Development" (Sanjeev Thiyagarajan, 19 h) | §1, §3, §5, §6, §7, §8, §9, §11, §12 | 3.4 |
+| | §15 (Docker) | 3.5 |
+| | §14 (deploy on Ubuntu) | 3.6 |
+| | §16 (testing; skip the voting tests) · §17 (CI/CD; skip the Heroku deploy) | 3.8 |
+| | **skip:** §2 (except the venv videos), §4 (SQL basics, you're past it), §10 (votes), §13 (Heroku) | — |
+| TechWorld with Nana, "Docker Tutorial for Beginners" (~3 h) | all | 3.5 |
+| MIT Missing Semester | Lecture 5 (command-line environment, SSH) · Lecture 9 (security) | 3.6, 3.7 |
+
+**Why the API course is watched almost whole, and in its own order:** later sections build on earlier ones.
+§7 compares Pydantic with the ORM from §6. §16's tests use the logins from §8. §14 runs the migrations from §11.
+Skipping a middle section, or reordering, is exactly how a "the course assumed I knew this" gap appears.
+So §14 is watched before §15, as the course does, even though we build its part later (3.6). Re-watch §14's
+NGINX / SSL / firewall videos at 3.6.
+
+## Schedule
+
+| when | watch | build |
+|---|---|---|
+| Weekend 1 | prerequisites you failed · CS50 L8 (first part) · API course §1, §3, §5, §6, §7 | 3.0 |
+| Weekdays | StatQuest log-odds · FSDL Lecture 5 | 3.1 · 3.2 · 3.3 (no backend needed) |
+| Weekend 2 | API course §8, §9, §11, §12, §14 · Nana Docker · API course §15 | 3.4 · 3.5 |
+| Next | Missing Semester L5, L9 · re-watch §14's NGINX / SSL / firewall parts | 3.6 · 3.7 |
+| Then | API course §16, §17 · FSDL Lecture 6 | 3.8 · 3.9 · 3.10 |
 
 ---
 
@@ -75,6 +135,8 @@ what it was trained on?"* This table is your answer.
 **Why:** every later step is this one idea in a different place: the API, Docker's ports,
 AWS's firewall, HTTPS.
 
+**Assumes:** P6 (shell). **Watch:** CS50x 2024 Lecture 8, the first part only (internet, TCP/IP, DNS, HTTP).
+
 ### Learn
 - **Client and server.** A server is just a program waiting for messages. A client is anything that
   sends one: a browser, `curl`, another program.
@@ -114,6 +176,10 @@ You can draw: browser → DNS → IP:port → program, and mark where HTTPS and 
 **Why:** the API will show a probability. On the 150,000 test complaints from 2024, the model's
 average prediction is **3.11%**, but **2.31%** actually paid (trap 13). The *ranking* is good. The
 *numbers* aren't honest yet.
+
+**Assumes:** P9 (odds, log-odds, sigmoid); Phase 2 revision cards 3, 11, 18 (the offset, AUC, the drift).
+**Watch:** StatQuest "Odds and Log(Odds)" + "Logistic Regression". No good lecture on calibration itself, so
+the best text is listed under Read below; the rest is taught in chat with our own data.
 
 ### Learn
 - **What calibration means.** Among all complaints the model calls "10%", about 10 in 100 should pay.
@@ -175,6 +241,10 @@ average prediction is **3.11%**, but **2.31%** actually paid (trap 13). The *ran
 
 **Why:** the server has a CPU, about 2 GB of RAM and no GPU. `model.pt` is 266 MB and needs PyTorch to
 run, which is a very large install.
+
+**Assumes:** P10 (done together at the start); Phase 2 revision cards 5, 6, 8 (tokenizer, special tokens, DistilBERT).
+**Watch:** FSDL 2022 Lecture 5 (Deployment): the parts on model-as-service, ONNX, CPU vs GPU, distillation,
+quantization.
 
 ### Learn
 - **What's inside `model.pt`:** only the learned numbers, about 66 million weights at 4 bytes each.
@@ -240,6 +310,10 @@ run, which is a very large install.
 (company × issue rate, shares, trends…). Training read those from `mv_features`. The 13 GB local DB is
 not going to AWS.
 
+**Assumes:** Phase 1 revision (all of it, especially cards 1, 3, 5, 6, 8). **Watch:** FSDL Lecture 5, the
+first part (batch prediction vs model-as-service). *Book:* Chip Huyen ch. 7 (batch vs online prediction).
+No lecture covers our exact design; we work it out together.
+
 ### Learn
 - **Two ways to predict:**
   - **Batch:** score many rows on a schedule and store the answers (e.g. every night).
@@ -291,6 +365,14 @@ not going to AWS.
 
 **Why:** the resume link is an API with a web page (Swagger UI) where anyone can type in a complaint.
 Ground rule 2: no JavaScript.
+
+**Assumes:** P1–P5; step 3.0. **Watch:** freeCodeCamp API course §1, §3, §5, §6, §7, §8, §9, §11, §12.
+**Bridge:**
+- The course builds a social-media app with logins. Ours is mostly reads plus a model. Its structure
+  (routers, schemas, dependencies, environment variables) is exactly ours.
+- From §6 on, the course talks to the DB through an ORM (SQLAlchemy). We use plain SQL, as in §5, because
+  features must stay in SQL (ground rule 4).
+- Watch §6 anyway: you need it to follow §7 onwards. And "why no ORM?" is a good interview question.
 
 ### Learn
 - **An API is a menu plus a waiter.** The menu (the endpoints) lists what you can ask for. The waiter
@@ -350,6 +432,10 @@ Ground rule 2: no JavaScript.
 **Why:** "works on my Mac" doesn't mean "works on AWS". Docker packs a program with everything it needs,
 so the same box runs anywhere. You've used it since Phase 0.1 for Postgres. Now: what's under the
 hood, and building your own image.
+
+**Assumes:** P5, P6, P8; step 3.4 (an app to put in the box). **Watch:** TechWorld with Nana "Docker Tutorial for
+Beginners" (all), then freeCodeCamp API course §15.
+**Bridge:** the course uses Docker on the laptop. We also run the same compose file on the server (3.6).
 
 ### Learn
 - **The problem.** An app needs particular system libraries, a Python version and packages.
@@ -432,6 +518,13 @@ hood, and building your own image.
 
 **Why:** the link must be reachable by anyone for a few months, inside $100 of credits.
 
+**Assumes:** P6, P7, P11; steps 3.0 and 3.5. **Watch:** MIT Missing Semester Lecture 5 (command-line
+environment, SSH); freeCodeCamp API course §14 (deploy on Ubuntu).
+**Bridge:**
+- §14 runs the app directly on Ubuntu (gunicorn + systemd). We run `docker compose` on the server instead,
+  but the server work is the same: SSH, packages, environment variables, NGINX, domain, SSL, firewall.
+- The AWS-only parts (IAM, security group, budget alarms) are small. They're taught here and in chat.
+
 ### Learn
 - **The cloud means renting someone else's computers by the hour.** You pay for what's switched on,
   including what you forgot to switch off.
@@ -476,16 +569,17 @@ hood, and building your own image.
     file prevents out-of-memory kills.
 - **Getting things onto the server.** Code via `git clone`. Big files (model, DB dump) via
   `scp`/`rsync`, never git. Images are built there or pulled from a registry.
-- **Domain + HTTPS (optional).**
-  - Point the domain's DNS *A record* at the static IP.
-  - **Caddy** (a reverse proxy) gets a free Let's Encrypt certificate automatically.
-  - A reverse proxy is a receptionist: it takes every visitor on 80/443 and walks them to the right
-    room (`api:8000`).
+- **Reverse proxy: NGINX**, the same one the course uses in §14. A reverse proxy is a receptionist: it takes
+  every visitor on 80/443 and walks them to the right room (our api container on port 8000).
+- **Domain + HTTPS (optional).** Point the domain's DNS *A record* at the static IP. **certbot** gets a free
+  Let's Encrypt certificate for NGINX (§14 shows it). *Alternative:* Caddy, which does HTTPS automatically;
+  simpler, but not what the course teaches.
 
 ### Build
 - Budget alarms first. MFA on root. An IAM user for yourself.
 - One server (about 2 GB RAM), a static IP, the security group above, an SSH key.
 - Install Docker, add swap, copy the model and the dump, then `docker compose up -d`.
+- NGINX on the server forwards port 80 to the api container.
 - Open `http://<static-ip>/docs` on your phone **with Wi-Fi off**. That proves it's public.
 - Put a calendar reminder for the teardown date.
 
@@ -509,6 +603,8 @@ https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
 **Why:** anyone on the internet can call it, including bots that scan every IP address within hours of
 it going live.
 
+**Assumes:** P11; steps 3.4–3.6. **Watch:** MIT Missing Semester Lecture 9 (if not already watched for P11).
+
 ### Learn
 - **Attack surface:** every open port and every input is a door. Fewer doors, safer house.
 - **Secrets management.** Keep `.env` on the server only (`chmod 600`). At scale you'd use AWS Secrets
@@ -526,7 +622,7 @@ it going live.
 ### Build
 - The read-only DB role.
 - Pydantic limits on every input.
-- Rate limiting, in Caddy or in the app.
+- Rate limiting, in NGINX or in the app.
 - `USER` set to a non-root user in the Dockerfile.
 - From outside, `nc -zv <ip> 5432` must **fail**.
 
@@ -544,6 +640,11 @@ it going live.
 ## 3.8 Testing and CI/CD
 
 **Why:** a machine should check every change, not your memory.
+
+**Assumes:** P7, P8; step 3.4. **Watch:** freeCodeCamp API course §16 (skip the voting tests) and §17 (skip the
+Heroku deploy). *Optional:* FSDL 2022 Lecture 3 (troubleshooting and testing ML).
+**Bridge:** the course's tests create a throwaway test database through the ORM. Ours run the same idea with
+plain SQL, plus the golden-example tests the course doesn't have.
 
 ### Learn
 - **The test pyramid:**
@@ -589,6 +690,9 @@ it going live.
 
 **Why:** a model is right on the day it ships, then slowly gets less right. You've already seen it:
 among complaints with text, payouts fell from 2.74% (2022) to 1.71% (2024).
+
+**Assumes:** step 3.1 (calibration); Phase 1 revision card 2 (window functions). **Watch:** FSDL 2022 Lecture 6
+(Continual Learning). *Book:* Chip Huyen ch. 8–9.
 
 ### Learn
 - **Two kinds of monitoring:**
