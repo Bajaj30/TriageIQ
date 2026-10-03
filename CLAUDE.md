@@ -56,6 +56,7 @@ gets the next step.
 - **Teaching (his request, 2026-10-03):** intuition first (an everyday comparison), then the **complete**
   concept even if the project uses only part of it (e.g. all of Docker, not just Compose), then the same
   idea implemented in TriageIQ, then he explains it back. Phase 3 follows `Learning/Phase3/directions.md`.
+  **Prefers video lectures over blogs/articles** when pointing him to resources.
 
 **Rigor**
 - **Ask when in doubt; never assume.** If an instruction is ambiguous, ask — or state the
