@@ -343,6 +343,12 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   2024 paid 2.31%. A correction tuned on 2023 would still forecast too high for 2024 — and forecasting too high
   is exactly the problem we were fixing. So the correction is tuned on the newest data available (the second
   half of 2024), and checked on months that came *after* the ones it was tuned on.
+- **The newest complaints can't teach yet** — the public file runs to August 2026, so why not train on the
+  freshest data? Because the newest complaints aren't finished: half of those from July–August 2026 have no
+  outcome yet, and the customers' written stories are published weeks or months later — only about 3% of 2026
+  complaints have one so far. The few already public are an unusual early group (6.5–9.5% paid, against the
+  usual 1–2%). Learning from them would be like judging a school year from the first three exams handed back.
+  2025 is complete enough to use — that's the next retrain. *(tech: label lag, publication lag, selection bias)*
 - **The same AI, without the AI toolkit** *(tech: ONNX export)* — the trained model was saved as a single file
   that a small, fast engine can run on an ordinary processor, no graphics card or training software needed.
   Checked on 1,000 real complaints: identical answers to 5 decimal places. One complaint takes about 20

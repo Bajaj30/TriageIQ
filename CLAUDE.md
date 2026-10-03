@@ -484,6 +484,14 @@ b −0.7621; checks fit Jan–Jun → Jul–Dec: predicted 2.22% vs actual 2.10%
 preprocessing.json, calibration.json): tokenizer 1000/1000 identical, ONNX vs PyTorch max |Δlogit| 1e-5, vs Kaggle T4
 fp16 max |Δp| 0.00036, rank corr 0.999999; M4 2 threads p50 20 ms / p95 81 ms (≤128 tok 11 ms, 256–512 54 ms).
 Results: `training/results/calibration_v3.json`, `onnx_v3.json`. int8 deferred: decide on Day 5 from server latency.
+**Later (after deploy / after exams) — v5 "recency" retrain, Shivam's idea 2026-10-03:** the raw CSV runs to
+2026-08-27 (raw file, complaints with text): 2025-H1 695,184 (1.08% pay) · 2025-H2 526,871 (1.46%) · 2026-H1 109,324
+(6.54%) · 2026-Jul/Aug 3,707 (9.50%, 49.73% still 'In progress'). **2026 is unusable** — outcomes not in yet and
+narratives are published late, so the few public 2026 texts are a biased early subset. **2025 is usable.** Plan:
+extend the window through 2025 (check 2025 taxonomy renames), time-decay sample weights (needs its own probability
+correction), test on 2025-H2, champion-vs-challenger vs v3 → the step-3.9 'drift → retrain' story. Evidence it isn't
+urgent: v3's ranking did not decay in 2024 (within-company Jul–Dec 0.8296 vs full year 0.8224); the drift is in the
+base rate, which calibration on the newest data already handles. ~2 days of work → not in the 4-day plan.
 **Cut / deferred:** int8 (ship fp32 ONNX unless time), CI/CD and the drift report (buffer day or later), HTTPS/domain
 (optional), courses + book (after deploy).
 
