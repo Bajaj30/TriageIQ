@@ -164,6 +164,7 @@ sql/                          numbered SQL pipeline, run in pgAdmin — every fo
                               (1–2 lines per file). **Update the log.md whenever a file is added or done.**
 ```
 
+sql/06_serving/ = the serving schema (snapshot, model_input(), lists, demo complaints) → pg_dump.
 Not yet created: `api/`, `deploy/`.
 
 **Postgres:** container `triageiq-postgres`, database `triageiq`, user `triageiq`, `localhost:5433`,
@@ -484,6 +485,12 @@ b −0.7621; checks fit Jan–Jun → Jul–Dec: predicted 2.22% vs actual 2.10%
 preprocessing.json, calibration.json): tokenizer 1000/1000 identical, ONNX vs PyTorch max |Δlogit| 1e-5, vs Kaggle T4
 fp16 max |Δp| 0.00036, rank corr 0.999999; M4 2 threads p50 20 ms / p95 81 ms (≤128 tok 11 ms, 256–512 54 ms).
 Results: `training/results/calibration_v3.json`, `onnx_v3.json`. int8 deferred: decide on Day 5 from server latency.
+**Day 2 DONE (2026-10-03):** `sql/06_serving/` 01–03 + `sql/tests/06_serving_check.sql`. Schema `serving` = scoreboard
+(`snap_*`, as of 2025-01-01, built by `build_serving_snapshot(date)` in ~12 s) + `serving.model_input(...)` (19 inputs,
+~0.06 ms) + lists + `serving.clean_narrative()` (copied via pg_get_functiondef) + `serving.test_complaints` (150k).
+**Skew test: 19/19 inputs identical (max diff 0) on 20,773 complaints of 3 past days.** Quiet-days rule: the 2nd+
+complaint of a company on the same day has gap 0 in training; a live complaint has no same-day predecessor.
+187 MB in Postgres → `training/outputs/serving_v3/serving_db.dump` 57 MB; restore into an empty DB verified.
 **Later (after deploy / after exams) — v5 "recency" retrain, Shivam's idea 2026-10-03:** the raw CSV runs to
 2026-08-27 (raw file, complaints with text): 2025-H1 695,184 (1.08% pay) · 2025-H2 526,871 (1.46%) · 2026-H1 109,324
 (6.54%) · 2026-Jul/Aug 3,707 (9.50%, 49.73% still 'In progress'). **2026 is unusable** — outcomes not in yet and

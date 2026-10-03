@@ -343,6 +343,15 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   2024 paid 2.31%. A correction tuned on 2023 would still forecast too high for 2024 — and forecasting too high
   is exactly the problem we were fixing. So the correction is tuned on the newest data available (the second
   half of 2024), and checked on months that came *after* the ones it was tuned on.
+- **A scoreboard instead of a replay** *(tech: online features, train/serve skew test)* — to train, the AI needed
+  every company's track record as it stood on the day of *each* past complaint: the database replays 4.8 million
+  complaints to get that. A live complaint needs only *today's* record. So the live system keeps a small
+  scoreboard — for each company and kind of problem, how many complaints and payouts so far — and a calculator
+  that applies the same formulas. Two ways of computing the same numbers is dangerous: if they disagree even
+  slightly, the AI gets inputs it never learned on, and nothing warns you. So we rebuilt the scoreboard as of three
+  real past days — including the busiest day in the data — and compared all 19 numbers for 20,773 complaints
+  with what training had used: identical, to the last digit. Everything the live system needs fits in one
+  57 MB file; the 13 GB database stays at home.
 - **The newest complaints can't teach yet** — the public file runs to August 2026, so why not train on the
   freshest data? Because the newest complaints aren't finished: half of those from July–August 2026 have no
   outcome yet, and the customers' written stories are published weeks or months later — only about 3% of 2026
