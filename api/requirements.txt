@@ -1,0 +1,9 @@
+fastapi==0.142.2
+numpy==2.4.6
+onnxruntime==1.30.0
+psycopg==3.3.6
+psycopg-binary==3.3.6
+psycopg-pool==3.3.3
+pydantic==2.13.5
+tokenizers==0.23.2
+uvicorn==0.54.0

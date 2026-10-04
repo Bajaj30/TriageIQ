@@ -352,6 +352,13 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   real past days — including the busiest day in the data — and compared all 19 numbers for 20,773 complaints
   with what training had used: identical, to the last digit. Everything the live system needs fits in one
   57 MB file; the 13 GB database stays at home.
+- **A waiter between you and the kitchen** *(tech: a FastAPI web service)* — you type a company, the kind of
+  problem and the complaint in your own words; the service looks up the company's track record, cleans the text
+  exactly the way the training text was cleaned, asks the AI, and answers "31.7% chance of a payout — send it
+  to a senior analyst" in about 40 thousandths of a second. It also shows real 2024 complaints next to what the
+  company actually did — including the ones the AI got wrong (a credit-card complaint it gave 2%, which was
+  paid). The honest check: 300 real complaints scored through the service matched the scores from the original
+  test to within 0.02 of a percentage point, and every one went to the same desk.
 - **The newest complaints can't teach yet** — the public file runs to August 2026, so why not train on the
   freshest data? Because the newest complaints aren't finished: half of those from July–August 2026 have no
   outcome yet, and the customers' written stories are published weeks or months later — only about 3% of 2026

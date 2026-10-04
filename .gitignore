@@ -24,3 +24,6 @@ Context/*.pages
 
 # model runs (weights are hundreds of MB) — kept on Kaggle / locally, never in git
 training/outputs/
+
+# API virtualenv (rebuilt from api/requirements.txt)
+.venv-api/
