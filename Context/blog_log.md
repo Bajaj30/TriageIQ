@@ -351,7 +351,7 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   slightly, the AI gets inputs it never learned on, and nothing warns you. So we rebuilt the scoreboard as of three
   real past days — including the busiest day in the data — and compared all 19 numbers for 20,773 complaints
   with what training had used: identical, to the last digit. Everything the live system needs fits in one
-  57 MB file; the 13 GB database stays at home.
+  57 MB file; the 16 GB database stays at home.
 - **A waiter between you and the kitchen** *(tech: a FastAPI web service)* — you type a company, the kind of
   problem and the complaint in your own words; the service looks up the company's track record, cleans the text
   exactly the way the training text was cleaned, asks the AI, and answers "31.7% chance of a payout — send it

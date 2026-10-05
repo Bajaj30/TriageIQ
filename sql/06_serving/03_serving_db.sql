@@ -2,7 +2,7 @@
 -- 06_serving/03_serving_db.sql
 -- TARGET  : the rest of schema serving — lists (dims), clean_narrative(), the 150k demo complaints
 -- READS   : dim_*, clean_narrative(), v_training_export (training_set v3 test rows), v_label
--- PROBLEM : "Ship only what the live system needs — one file, not the 13 GB database."
+-- PROBLEM : "Ship only what the live system needs — one file, not the 16 GB database."
 -- ============================================================
 -- CONCEPT : the full database stays on the Mac as the SOURCE (rebuild anything from it). The live system
 --   gets a small, read-mostly copy:

@@ -303,7 +303,7 @@ quantization.
 ## 3.3 Serving features: the same SQL, at request time
 
 **Why:** a new complaint arrives with ids and text, but the model also needs its 19 inputs
-(company × issue rate, shares, trends…). Training read those from `mv_features`. The 13 GB local DB is
+(company × issue rate, shares, trends…). Training read those from `mv_features`. The 16 GB local DB is
 not going to AWS.
 
 **Assumes:** Phase 1 revision (all of it, especially cards 1, 3, 5, 6, 8). **Watch:** FSDL Lecture 5, the

@@ -444,7 +444,7 @@ Code) and will report back; check his account's credit type / expiry date before
 two containers:** `postgres` (small serving DB) + `api` (FastAPI + model on CPU). Budget alarm at
 $10 / $50 / $90. (Rejected for now: 4 GB server ~$20–24/mo — less runway; Lambda — cold starts, more work.)
 
-**What ships — NOT the 13 GB local DB (it stays on the Mac as the rebuild source):**
+**What ships — NOT the 16 GB local DB (measured 2026-10-05) (it stays on the Mac as the rebuild source):**
 | serving table | built by SQL from the full DB | purpose |
 |---|---|---|
 | dims (company, product, sub-product, issue, state names) | copy | pick from lists, not ids |
@@ -499,6 +499,18 @@ text cleaned by serving.clean_narrative, ONNX, Platt, route), `GET /complaint/ra
 `api/requirements.txt`); run `sh api/run_local.sh` → localhost:8000/docs. **Check: 300 random 2024 complaints via the
 API vs the offline score: max |Δp| 0.00017, same route 100%; latency p50 28 ms / p95 94 ms (Mac, incl. DB).**
 Inputs validated (≥20 words like training; unknown company → no-history + note; bad names → 422 with choices).
+**NUMBERS MEASURED ON THE MAC — re-measure on the server (Day 5) and replace them here, in the blog log and in the
+README (Shivam, 2026-10-05).** Each is a Mac/local measurement until then:
+| number | Mac value | how measured | on the server |
+|---|---|---|---|
+| full local DB (stays home) | 16 GB | `pg_database_size`, 2026-10-05 | — (never ships) |
+| serving schema / dump file | 187 MB / 57 MB | `pg_total_relation_size` / file size | restored size: ⏳ |
+| feature lookup `serving.model_input` | 0.06 ms | EXPLAIN ANALYZE (in-DB, no network) | ⏳ |
+| model alone (ONNX, 2 threads) | p50 20 ms / p95 81 ms | `onnx_v3.json`, 300 complaints | ⏳ |
+| API end-to-end `/complaint/{id}` (DB + model) | p50 28 ms / p95 94 ms | 300 calls, 2026-10-04 | ⏳ |
+| API `/predict` (example complaint) | ~41 ms | one call | ⏳ |
+| rebuilding all training features (`mv_features`) | ~80 s | Phase 1, at 40 columns — not re-timed at 48 | — (never ships) |
+| peak RAM of the api container / server free RAM | — | not measured yet | ⏳ (decides int8) |
 **Later (after deploy / after exams) — v5 "recency" retrain, Shivam's idea 2026-10-03:** the raw CSV runs to
 2026-08-27 (raw file, complaints with text): 2025-H1 695,184 (1.08% pay) · 2025-H2 526,871 (1.46%) · 2026-H1 109,324
 (6.54%) · 2026-Jul/Aug 3,707 (9.50%, 49.73% still 'In progress'). **2026 is unusable** — outcomes not in yet and
