@@ -22,7 +22,7 @@ pointless, so we tested authenticity with numbers:
 
 | test | what it measures | result | suspicious if |
 |---|---|---|---|
-| Exact-duplicate rate | share of texts identical to another (MD5 hash of normalised text) | 19.8% raw → 0.3% after the copy cap | — |
+| Exact-duplicate rate | share of texts identical to another (MD5 hash of normalised text) | 19.8% raw → 0.3% after the copy cap (early sample) | — |
 | Sentence-length coefficient of variation | std ÷ mean of sentence lengths. People write unevenly; LLMs are regular | 0.94 | < 0.35 |
 | **Type-token ratio (TTR)** | distinct words ÷ total words: vocabulary variety | 0.065 raw, 0.081 after removing copy-paste floods | < 0.08 |
 | Top repeated opener | share of texts starting with the same 5 words | 3.7%: legal wording from the Fair Credit Reporting Act that people copy from forums, evidence of humans | > 5% |
@@ -91,8 +91,9 @@ pointless, so we tested authenticity with numbers:
 ## 3. Tokenisation (how the model reads)
 
 **Subword tokenisation (WordPiece).**
-- Text is split into pieces from a fixed vocabulary of 30,522. Rare words become several pieces
-  ("overdraft" → "over", "##draft").
+- Text is split into pieces from a fixed vocabulary of 30,522. Rare words become several pieces:
+  "chargeback" → `charge ##back`, "overdraft" → `over ##dra ##ft`.
+- A CFPB blank `XXXX` costs 2 pieces (`xx ##xx`) and a hidden date 6, hence the markers in section 2.
 - DistilBERT-*uncased* also lower-cases and strips accents first.
 
 **Special tokens.**
@@ -287,9 +288,9 @@ them, and a test confirmed it: 19 inputs 0.7500 vs 19 + 16 removed 0.7499.
 | Single-feature AUC | signal in one input alone | used to screen features | |
 | **Calibration**: mean predicted vs actual | do "3%" predictions pay about 3%? | 3.11% vs 2.31% before the fix | probabilities shown to people |
 | **Reliability table** (10 equal-count buckets) | calibration bucket by bucket | riskiest bucket 28.6% → 21.2% predicted vs 19.7% actual | |
-| **Brier score** | mean squared error of probabilities | 0.01474 after Platt (Jul–Dec 2024) | also chose K |
-| **Log loss** | penalty for confident mistakes | 0.04939 after Platt | |
-| **ECE** (expected calibration error) | average gap, predicted vs actual | 0.00172 after Platt | |
+| **Brier score** | mean squared error of probabilities | 0.01474 (Platt fitted on Jan–Jun 2024, scored on Jul–Dec) | also chose K |
+| **Log loss** | penalty for confident mistakes | 0.04939 (same check) | |
+| **ECE** (expected calibration error) | average gap, predicted vs actual | 0.00172 (same check) | |
 | **Spearman rank correlation** | did the ONNX export keep the ranking? | 0.999999 vs the GPU model | serving parity |
 
 **Deliberately not used:**
@@ -323,7 +324,9 @@ the fusion (0.8195 vs 0.8224): DistilBERT already reads "$760" in the text.
 **Platt scaling** sigmoid(a·z + b) fixes over-confidence (a = 0.70) and drift (b = −0.76). It was fitted on the
 newest data (Jul–Dec 2024) and checked on later months.
 
-**Temperature scaling** (a only) and **intercept shift** (b only) were compared.
+**Intercept shift** (b only) was compared too. It fixes the drift but not the over-confidence.
+
+**Temperature scaling** (a only) is the usual neural-network variant. It wasn't needed, because Platt covers it.
 
 **Isotonic regression** was rejected: its ties lowered the ranking score (0.8296 → 0.8290).
 
