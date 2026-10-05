@@ -528,7 +528,18 @@ $10/$50/$90 of the $140 credits. AWS CLI 2.37.8 installed, NOT signed in yet (`a
 Claude Design, Part B build contract). `vercel.json` rewrites the API paths to the EC2 server; Vercel adds a secret
 header and NGINX will accept only requests carrying it, and rate-limit on Vercel's `x-real-ip` (the visitor) instead
 of the connecting IP (which would be Vercel's). OPEN: Vercel docs show only https rewrite targets — test http first;
-if refused, add HTTPS on the server (Let's Encrypt on an sslip.io name). Waiting on: the design from Claude Design.
+if refused, add HTTPS on the server (Let's Encrypt on an sslip.io name).
+**BUILT (2026-10-05, Shivam: "choose whatever design, elegant, not AI slop" — no Claude Design):** `web/` = static
+site, plain HTML/CSS/JS, no build step: `index.html` (score form + assessment: big serif %, route badge, log-scale risk
+bar with the senior line, "what the model saw" ledger), `real.html` (random 2024 complaint as a case file: CFPB blanks
+as black redaction bars, model call vs what happened, stamp Caught / Missed / False alarm / Right call), `how.html`
+(3 steps, live stats from /model-info, limits, stack), `styles.css` (paper/ink/oxblood, Source Serif 4 + IBM Plex
+Sans/Mono, hairline rules, no gradients/shadows/emoji), `app.js`, `vercel.json` (cleanUrls + rewrites of /predict,
+/complaint/*, /options/*, /model-info, /health, /docs, /openapi.json → http://3.106.107.237; rewrite caching off),
+`dev_server.py` (local stand-in for Vercel: `API=http://3.106.107.237 python3 web/dev_server.py` → localhost:3000).
+Verified locally against the LIVE API with headless-Chrome screenshots (desktop + 390 px mobile + error state).
+NEXT: Shivam runs `npx vercel login` → deploy `web/` → test the http rewrite → lock NGINX to Vercel (secret header via
+`routes` transforms + env var ORIGIN_SECRET; `routes` can't mix with `rewrites`/`cleanUrls`) → README link.
 **Day 5 DONE (2026-10-05) — LIVE: http://3.106.107.237/docs** (Swagger UI behind NGINX). AWS account = **Free plan**,
 $140 credits, plan expires **2027-04-02**; member of an AWS Organization whose SCP **denies EC2 in ap-south-1** → deployed
 in **ap-southeast-2 (Sydney)**. CLI: `export AWS_PROFILE=triageiq` (signed in via `aws login`, role
