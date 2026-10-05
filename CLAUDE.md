@@ -166,7 +166,9 @@ sql/                          numbered SQL pipeline, run in pgAdmin — every fo
 
 sql/06_serving/ = the serving schema (snapshot, model_input(), lists, demo complaints) → pg_dump.
 api/ = FastAPI app (main.py endpoints · scorer.py model · db.py queries · schemas.py) · requirements.txt · run_local.sh.
-deploy/ = api.Dockerfile · docker-compose.yml (db + api) · initdb/01_restore.sh · .env.example (real .env git-ignored).
+deploy/ = api.Dockerfile · docker-compose.yml (db + api + nginx[profile public]) · nginx/default.conf · initdb/01_restore.sh
+          · server_setup.sh · push.sh <ip> · .env.example (real .env git-ignored).
+frontend.md = the frontend brief (design for Claude Design + build contract); not built yet.
 
 **Postgres:** container `triageiq-postgres`, database `triageiq`, user `triageiq`, `localhost:5433`,
 password in `.env`. CSV mounted read-only at `/import/complaints.csv`. **Division of labour:** I do
@@ -510,6 +512,18 @@ Docker Desktop shows 1.07 GB incl. its compressed copy). **Checks: 300 complaint
 same route 100%.** Container on the Mac (Linux VM): p50 70 ms / p95 247 ms; RAM api 455 MiB + db 45 MiB (≈ 0.5 GB →
 fits a 2 GB server; int8 not needed for memory). The Mac's Docker builds ARM64 (aarch64) images — Day 5: pick an ARM
 (Graviton) server, or build on the server itself.
+**Day 5 PREP (2026-10-05):** `deploy/nginx/default.conf` (reverse proxy api:8000 → port 80; 5 req/s per IP, burst 20,
+429 over the limit; body ≤ 64 KB; tested locally: 60 rapid calls → 19 × 200 / 41 × 429) as compose service `nginx`
+under profile `public` (server only); the api is now published on 127.0.0.1:8000 only. `deploy/server_setup.sh`
+(swap 2 GB, Docker via get.docker.com, deploy/.env with a random password made ON the server) · `deploy/push.sh <ip>`
+(rsync of the ~330 MB needed files — macOS's openrsync: no --info flag — then setup + `compose --profile public up
+-d --build`). AWS plan: region **ap-south-1** (Shivam is in IST), Ubuntu 24.04 ARM64, **t4g.small** (matches the
+Mac's ARM images), 20 GB gp3 encrypted, IMDSv2, CPU credits *standard* (no surplus charges), Elastic IP, security
+group: 80 from anywhere, 22 from Shivam's IP only, no 5432/8000. Budgets: monthly cap + cumulative alerts at
+$10/$50/$90 of the $140 credits. AWS CLI 2.37.8 installed, NOT signed in yet (`aws login` = Shivam's step).
+**Frontend (Shivam, 2026-10-05):** brief in `frontend.md` (Part A for Claude Design, Part B build contract).
+Recommended: server-rendered pages (FastAPI + Jinja2 templates, HTML forms) — keeps ground rule 2 (no JavaScript),
+same origin as the API (no CORS / mixed-content), served through the same NGINX. A JS app would need CORS + HTTPS.
 **NUMBERS MEASURED ON THE MAC — re-measure on the server (Day 5) and replace them here, in the blog log and in the
 README (Shivam, 2026-10-05).** Each is a Mac/local measurement until then:
 | number | Mac value | how measured | on the server |
