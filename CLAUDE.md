@@ -538,9 +538,21 @@ Sans/Mono, hairline rules, no gradients/shadows/emoji), `app.js`, `vercel.json` 
 /complaint/*, /options/*, /model-info, /health, /docs, /openapi.json → http://3.106.107.237; rewrite caching off),
 `dev_server.py` (local stand-in for Vercel: `API=http://3.106.107.237 python3 web/dev_server.py` → localhost:3000).
 Verified locally against the LIVE API with headless-Chrome screenshots (desktop + 390 px mobile + error state).
-NEXT: Shivam runs `npx vercel login` → deploy `web/` → test the http rewrite → lock NGINX to Vercel (secret header via
-`routes` transforms + env var ORIGIN_SECRET; `routes` can't mix with `rewrites`/`cleanUrls`) → README link.
-**Day 5 DONE (2026-10-05) — LIVE: http://3.106.107.237/docs** (Swagger UI behind NGINX). AWS account = **Free plan**,
+**DEPLOYED (2026-10-05) — PUBLIC LINK: https://triageiq-mu.vercel.app** (`triageiq.vercel.app` was taken). Vercel account
+`bajaj30`, project `triageiq` (CLI linked in `web/.vercel/`, git-ignored). Deploy the site: `cd web && npx vercel deploy
+--prod --yes`. Vercel → **plain-http** destination WORKS (verified; no HTTPS needed on the server). `vercel.json` now uses
+**`routes`** (not rewrites — `routes` can't mix with rewrites/cleanUrls/headers): API paths → http://3.106.107.237 with a
+`request.headers` transform adding `x-origin-secret` = Vercel env **ORIGIN_SECRET** (sensitive, production); then
+`handle: filesystem`; `/real`, `/how` → .html. Query strings are forwarded. **The server is locked to Vercel:**
+`deploy/nginx/default.conf.template` (nginx image envsubst) — `map $http_x_origin_secret` → 403 without the secret;
+rate limit keyed on Vercel's `x-real-ip` ONLY when the secret matches (requests reach NGINX from many Vercel IPs).
+Secret = 48 chars, generated ON the server into deploy/.env by `server_setup.sh`, piped to Vercel (`vercel env add …
+--value "$V" --sensitive --yes`; stdin piping via npx did NOT work), never printed/committed. Checks: through Vercel all
+pages + API 200, /predict 31.7%; direct to the IP 403 (also with a guessed header); 40 rapid calls via Vercel → 22 × 200
+/ 18 × 429. **Trap (cost ~3 min downtime):** a 48-char map key overflows NGINX's default `map_hash_bucket_size` 64 →
+`[emerg] could not build map_hash` → container restart loop; fixed with `map_hash_bucket_size 128;`. Local test had used
+a short secret — test with production-like values. `web/dev_server.py` needs `ORIGIN_SECRET=…` to reach the live server.
+**Day 5 DONE (2026-10-05) — server live at 3.106.107.237 (now reachable ONLY through Vercel — see the frontend note).** AWS account = **Free plan**,
 $140 credits, plan expires **2027-04-02**; member of an AWS Organization whose SCP **denies EC2 in ap-south-1** → deployed
 in **ap-southeast-2 (Sydney)**. CLI: `export AWS_PROFILE=triageiq` (signed in via `aws login`, role
 AccountFullAccessRole; default region ap-southeast-2). Prices (Pricing API): t4g.small $0.0212/h ($15.48/mo) + gp3

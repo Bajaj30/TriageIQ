@@ -2,7 +2,8 @@
 
 **Part A** is the design brief: paste it into Claude Design. **Part B** is the build contract: how the site is
 put together and what each screen calls.
-Status (2026-10-05): brief only — nothing built yet. The API runs on AWS behind NGINX (`/docs` = Swagger UI).
+Status (2026-10-05): **built and live at https://triageiq-mu.vercel.app** (code in `web/`; the design was chosen by
+Claude, not Claude Design). The API runs on AWS behind NGINX, which accepts only requests that come through Vercel.
 
 ---
 

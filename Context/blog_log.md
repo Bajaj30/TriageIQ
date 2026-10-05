@@ -376,6 +376,18 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   everything and a 200-complaint test ran it at a fifth of its speed — half a second per complaint instead of a
   tenth. Credits refill whenever it's quiet, which for a demo link is almost always. We kept the setting that can
   never cost extra, instead of the one that is always fast but bills for heavy use.
+- **A front door people actually want to open** *(tech: static site on Vercel, reverse-proxy rewrites)* — the API
+  page is fine for engineers; a recruiter needs a website. It's styled like a case file — paper, ink, one dark-red
+  accent, hidden details shown as real black redaction bars — and it shows the model's misses next to its hits. The
+  site lives on Vercel; when you press "Score it", Vercel quietly carries the request to the server in Sydney and
+  brings back the answer, so the browser only ever talks to one secure address.
+- **A password the server checks on every knock** *(tech: origin secret header, rate limiting by real visitor IP)* —
+  the server now ignores everyone except Vercel: Vercel attaches a long secret to every request it forwards, and
+  anything without it is turned away. That also lets the server count requests per real visitor (Vercel says who
+  they are) instead of per Vercel machine. One embarrassing minute: the secret was 48 characters long, and the
+  receptionist's lookup table only had room for shorter keys — it refused to start, and the site was down for about
+  three minutes until one setting was raised. The test had used a short practice secret; real values break things
+  that practice values don't.
 - **The newest complaints can't teach yet** — the public file runs to August 2026, so why not train on the
   freshest data? Because the newest complaints aren't finished: half of those from July–August 2026 have no
   outcome yet, and the customers' written stories are published weeks or months later — only about 3% of 2026

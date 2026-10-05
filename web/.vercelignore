@@ -1,0 +1,3 @@
+# files Vercel must not publish
+dev_server.py
+__pycache__

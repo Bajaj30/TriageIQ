@@ -1,0 +1,42 @@
+# NGINX — the receptionist in front of the API (a "reverse proxy"). TEMPLATE: the official nginx image fills in
+# ${ORIGIN_SECRET} from the environment at start (envsubst) and writes the result to conf.d/default.conf.
+# NGINX's own variables ($http_..., $binary_remote_addr) have no braces, so they are left alone.
+#
+# Visitors reach the site on Vercel (https://triageiq-mu.vercel.app); Vercel forwards the API paths here and adds a
+# secret header (x-origin-secret). Rules:
+#   - only requests carrying the secret get in: the server is reachable through Vercel only (403 otherwise)
+#   - per-visitor limits use Vercel's x-real-ip (the real visitor) — trusted ONLY because the secret proves the
+#     request came through Vercel; anyone else can't reach the server to fake it
+#   - the api (8000) and the database (5432) are never exposed
+# This file is included inside NGINX's `http { }` block.
+
+map_hash_bucket_size 128;                         # the 48-character secret needs a bigger slot than the default 64
+map $http_x_origin_secret $from_vercel {
+    default             0;
+    "${ORIGIN_SECRET}"  1;
+}
+map $from_vercel $visitor {                       # whose limit does this request count against?
+    1       $http_x_real_ip;                      # through Vercel: the real visitor
+    default $binary_remote_addr;                  # anything else (it will be refused anyway)
+}
+limit_req_zone $visitor zone=per_ip:10m rate=5r/s;   # ~5 requests a second per visitor
+limit_req_status 429;                                 # over the limit -> "429 Too Many Requests"
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    server_tokens off;                 # don't advertise the NGINX version
+    client_max_body_size 64k;          # a complaint is at most 20,000 characters
+
+    location / {
+        if ($from_vercel = 0) { return 403; }        # not through Vercel -> refused
+        limit_req zone=per_ip burst=20 nodelay;      # short bursts are fine (a page load makes ~4 calls)
+        proxy_pass http://api:8000;                  # the api's service name on the private network
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $visitor;
+        proxy_set_header X-Forwarded-For $visitor;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 30s;
+    }
+}

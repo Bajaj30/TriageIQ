@@ -32,4 +32,9 @@ if [ ! -f deploy/.env ]; then
     unset PW
 fi
 
+if ! grep -q '^ORIGIN_SECRET=' deploy/.env; then
+    echo "== adding ORIGIN_SECRET to deploy/.env (shared with Vercel; not printed)"
+    printf 'ORIGIN_SECRET=%s\n' "$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 48)" >> deploy/.env
+fi
+
 echo "== server ready: $(docker --version | cut -d, -f1) · $(sudo docker compose version --short 2>/dev/null) · swap $(free -h | awk '/Swap/{print $2}')"

@@ -1,7 +1,8 @@
 """Local stand-in for Vercel: serves the site from web/ and forwards the API paths, like vercel.json's rewrites.
 
     python web/dev_server.py                                  -> forwards to the local API (http://127.0.0.1:8000)
-    API=http://3.106.107.237 python web/dev_server.py         -> forwards to the live AWS server
+    API=http://3.106.107.237 ORIGIN_SECRET=… python web/dev_server.py   -> the live AWS server (it refuses requests
+                                                              without Vercel's secret header; value in the server's deploy/.env)
     then open http://localhost:3000
 
 Standard library only. For local testing — Vercel does this job in production.
@@ -27,8 +28,10 @@ class Handler(SimpleHTTPRequestHandler):
         body = None
         if self.command == "POST":
             body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
-        req = urllib.request.Request(API + self.path, data=body, method=self.command,
-                                     headers={"Content-Type": self.headers.get("Content-Type", "application/json")})
+        headers = {"Content-Type": self.headers.get("Content-Type", "application/json")}
+        if os.environ.get("ORIGIN_SECRET"):                 # what Vercel adds on every forwarded request
+            headers["x-origin-secret"] = os.environ["ORIGIN_SECRET"]
+        req = urllib.request.Request(API + self.path, data=body, method=self.command, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 status, ctype, data = r.status, r.headers.get("Content-Type", ""), r.read()

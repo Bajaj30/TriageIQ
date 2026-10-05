@@ -1,19 +1,24 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/predict", "destination": "http://3.106.107.237/predict" },
-    { "source": "/complaint/:path*", "destination": "http://3.106.107.237/complaint/:path*" },
-    { "source": "/options/:path*", "destination": "http://3.106.107.237/options/:path*" },
-    { "source": "/model-info", "destination": "http://3.106.107.237/model-info" },
-    { "source": "/health", "destination": "http://3.106.107.237/health" },
-    { "source": "/docs", "destination": "http://3.106.107.237/docs" },
-    { "source": "/openapi.json", "destination": "http://3.106.107.237/openapi.json" }
-  ],
-  "headers": [
+  "routes": [
     {
-      "source": "/(predict|complaint/.*|options/.*|model-info|health)",
-      "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "0" }]
-    }
+      "src": "/(predict|health|model-info|docs|openapi\\.json)",
+      "dest": "http://3.106.107.237/$1",
+      "transforms": [
+        { "type": "request.headers", "op": "set", "target": { "key": "x-origin-secret" },
+          "args": "$ORIGIN_SECRET", "env": ["ORIGIN_SECRET"] }
+      ]
+    },
+    {
+      "src": "/((?:complaint|options)/.*)",
+      "dest": "http://3.106.107.237/$1",
+      "transforms": [
+        { "type": "request.headers", "op": "set", "target": { "key": "x-origin-secret" },
+          "args": "$ORIGIN_SECRET", "env": ["ORIGIN_SECRET"] }
+      ]
+    },
+    { "handle": "filesystem" },
+    { "src": "/real", "dest": "/real.html" },
+    { "src": "/how", "dest": "/how.html" }
   ]
 }

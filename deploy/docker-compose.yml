@@ -69,8 +69,10 @@ services:
     profiles: ["public"]
     ports:
       - "80:80"
+    environment:
+      ORIGIN_SECRET: ${ORIGIN_SECRET:-}       # filled into the template at start; set on the server by server_setup.sh
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
     depends_on:
       api:
         condition: service_healthy            # NGINX looks up "api" at start — it must exist

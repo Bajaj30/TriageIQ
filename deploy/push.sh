@@ -14,7 +14,7 @@ KEY="${KEY:-$HOME/.ssh/triageiq-key.pem}"
 cd "$(dirname "$0")/.."                                 # the repo root
 
 FILES="api/__init__.py api/main.py api/scorer.py api/db.py api/schemas.py api/requirements.txt
-       deploy/api.Dockerfile deploy/docker-compose.yml deploy/initdb/01_restore.sh deploy/nginx/default.conf
+       deploy/api.Dockerfile deploy/docker-compose.yml deploy/initdb/01_restore.sh deploy/nginx/default.conf.template
        deploy/server_setup.sh .dockerignore
        training/outputs/serving_v3/model.onnx training/outputs/serving_v3/tokenizer.json
        training/outputs/serving_v3/preprocessing.json training/outputs/serving_v3/calibration.json

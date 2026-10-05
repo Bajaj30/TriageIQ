@@ -27,3 +27,6 @@ training/outputs/
 
 # API virtualenv (rebuilt from api/requirements.txt)
 .venv-api/
+
+# Vercel CLI link (project/org ids) — local only
+web/.vercel/

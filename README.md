@@ -7,9 +7,9 @@ complaint ends with the company paying the customer. Risky complaints go to a se
 rest get a standard reply.
 
 > [!TIP]
-> **Try it live: http://3.106.107.237/docs** — open `GET /complaint/random` → **Try it out** → **Execute** to see a
-> real 2024 complaint, the model's call, and what the company actually did. Or `POST /predict` to score your own
-> (an example is filled in). A friendlier web page is on its way.
+> **Try it live: https://triageiq-mu.vercel.app** — score a complaint yourself (two examples are one click away),
+> or open **Real 2024 complaints** to see the model's call next to what the company actually did, misses included.
+> For developers: the API and its interactive docs are at **https://triageiq-mu.vercel.app/docs**.
 
 > [!NOTE]
 > **Work in progress.** Numbers marked **⏳** don't exist yet. They get filled in as each step finishes.
@@ -411,7 +411,7 @@ flowchart LR
 | Load the complaints | ✅ done | 4.8M complaints, 1.6M stories, 14.5M timeline rows — 21 of 21 checks pass |
 | Build the track record | ✅ done | 19 clues per complaint, stored for all 4.8 million complaints; the no-peeking test passed |
 | Train the AI reader | ✅ done | the fine-tuned model and the scores above |
-| Put it online | ✅ live | **http://3.106.107.237/docs** — anyone can try it |
+| Put it online | ✅ live | **https://triageiq-mu.vercel.app** — anyone can try it |
 
 ---
 
@@ -437,6 +437,7 @@ flowchart LR
 | Text model | DistilBERT fine-tuned on Kaggle's free T4 GPU | ✅ Phase 2 |
 | Fusion | text model + SQL features combined | ✅ Phase 2 |
 | Serving | FastAPI + ONNX Runtime (CPU) in Docker Compose on one AWS EC2 server (t4g.small, Sydney), NGINX in front | ✅ live |
+| Website | plain HTML/CSS/JS on Vercel; Vercel forwards API calls to the server, which accepts only Vercel's requests | ✅ live |
 
 **Design rules:** no leakage (every feature computable at complaint receipt) · one source of truth for
 features (training and serving read the same SQL view) · temporal split, never random · case-control
