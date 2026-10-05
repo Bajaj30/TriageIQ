@@ -10,6 +10,7 @@ rest get a standard reply.
 > **Try it live: https://triageiq-mu.vercel.app** — score a complaint yourself (two examples are one click away),
 > or open **Real 2024 complaints** to see the model's call next to what the company actually did, misses included.
 > For developers: the API and its interactive docs are at **https://triageiq-mu.vercel.app/docs**.
+> **The story behind it — [Finding the two percent](https://bajaj30.github.io/TriageIQ/)**, an illustrated essay.
 
 > [!NOTE]
 > **Work in progress.** Numbers marked **⏳** don't exist yet. They get filled in as each step finishes.
@@ -327,22 +328,22 @@ flowchart LR
 
 ---
 
-## 6. Results so far
+## 6. Results
 
-The AI model isn't trained yet. These scores come from a **simple starting model** (word counts plus
-track record) — the bar the AI has to beat. It was tested on **150,000 complaints from 2024** that it
-never saw while learning.
+Every score below comes from **150,000 complaints from 2024** that the models never saw while learning.
+Two models are compared: a **simple starting model** (word counts plus track record) — the bar to beat — and
+the **final model**, an AI that reads the words, plus the track record.
 
 **How to read the score:** take one complaint that ended with a payout and one that didn't. How often
 does the model rank the payout one higher? **50 = a coin flip, 100 = perfect.**
 
-We test it three ways, from easiest to most realistic:
+We test the final model three ways, from easiest to most realistic:
 
 ```
 Coin flip (no skill at all)            ██████████            50
 Easy test      any two complaints      ███████████████████▍  97
 Fair test      same product + problem  ██████████████████▉   95
-Real-life test same company only       ████████████████▎     81
+Real-life test same company only       ████████████████▍     82
 ```
 
 > [!IMPORTANT]
@@ -350,7 +351,7 @@ Real-life test same company only       █████████████�
 > credit-card complaints pay out more often than credit-report complaints. That's true, but useless to a
 > bank sorting its *own* complaints. The real-life test takes those easy points away.
 
-**Words vs track record — which matters more?**
+**Words vs track record — which matters more?** *(the simple starting model)*
 
 | test | 📝 words only | 🧮 track record only | ⚖️ both |
 |---|:---:|:---:|:---:|
@@ -360,7 +361,7 @@ Real-life test same company only       █████████████�
 Inside one company — the situation a real complaints team is in — **what the customer wrote matters
 more than the history.** Together they do best.
 
-**The final model** (an AI that reads the words, plus the track record):
+**The final model vs the simple starting model:**
 
 | | simple starting model | AI + track record |
 |---|:---:|:---:|

@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Finding the two percent — TriageIQ</title>
+  <meta name="description" content="About two in a hundred consumer complaints end with the company paying money. How I built a system that spots them before anyone has read them — from 4.8 million real complaints, on a student budget.">
+  <meta property="og:title" content="Finding the two percent">
+  <meta property="og:description" content="Building TriageIQ: a database that refuses to peek at the future, an AI that reads complaints, and an honest score — from 4.8 million real CFPB complaints.">
+  <meta property="og:type" content="article">
+  <meta name="author" content="Shivam Bajaj">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 fill=%22%23f6f4ef%22/%3E%3Crect x=%224%22 y=%224%22 width=%228%22 height=%228%22 fill=%22%238b2e1d%22/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="blog.css">
+  <script src="data.js" defer></script>
+  <script src="blog.js" defer></script>
+</head>
+<body>
+<div id="progress" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="in">
+    <a class="name" href="https://triageiq-mu.vercel.app">TriageIQ</a>
+    <nav aria-label="Project links">
+      <a href="https://triageiq-mu.vercel.app">Live demo</a>
+      <a href="https://github.com/Bajaj30/TriageIQ">Code</a>
+    </nav>
+  </div>
+</header>
+
+<nav id="toc" aria-label="Contents">
+  <p>Contents</p>
+  <ol>
+    <li><a href="#problem">Two in a hundred</a></li>
+    <li><a href="#data">Real people, real mess</a></li>
+    <li><a href="#database">A snowflake-shaped database</a></li>
+    <li><a href="#future">No peeking at the future</a></li>
+    <li><a href="#clues">Small numbers lie</a></li>
+    <li><a href="#reader">Teaching a machine to read</a></li>
+    <li><a href="#scoring">Keeping score honestly</a></li>
+    <li><a href="#results">Is the database worth it?</a></li>
+    <li><a href="#limits">Where it fails</a></li>
+    <li><a href="#calibration">Honest percentages</a></li>
+    <li><a href="#shipping">Shipping it</a></li>
+    <li><a href="#lessons">What I learned</a></li>
+  </ol>
+</nav>
+
+<main>
+  <div class="hero">
+    <p class="kicker">A machine-learning project, from raw data to a live link</p>
+    <h1>Finding the two percent</h1>
+    <p class="dek">Most complaints to a bank end with an apology and a form letter. About two in a hundred end with
+      the bank paying money. I built a system that tries to spot those two before anyone has read them — from
+      4.8 million real complaints, on a student budget.</p>
+    <div class="byline"><span>By <strong>Shivam Bajaj</strong></span><span>October 2026</span><span>About 20 minutes</span></div>
+    <div class="cta">
+      <a class="btn" href="https://triageiq-mu.vercel.app">Try the live demo →</a>
+      <a class="btn quiet" href="https://github.com/Bajaj30/TriageIQ">Read the code</a>
+    </div>
+  </div>
+
+  <div class="tldr"><div class="box">
+    <h2>The short version</h2>
+    <ul>
+      <li><strong>The data:</strong> 4.8 million real complaints that Americans sent to their consumer-finance regulator
+        in 2022–2024. Nothing invented.</li>
+      <li><strong>The idea:</strong> two readers, one score. A database works out each company's track record as it stood
+        on the day a complaint arrived; an AI reads what the customer wrote; one model weighs both.</li>
+      <li><strong>The result:</strong> on 150,000 complaints from 2024 it had never seen, reading the riskiest 10% catches
+        92.6% of the ones that end with the company paying.</li>
+      <li><strong>The honest part:</strong> inside one company's own queue it puts a paying complaint above a
+        non-paying one 82 times in 100 — and most of its misses come down to decisions the complaint never mentions.</li>
+    </ul>
+  </div></div>
+
+  <!-- ============================================================ 1 -->
+  <section class="chapter" id="problem">
+    <div class="chapter-head"><span class="num">01 — THE PROBLEM</span><h2>Two in a hundred</h2></div>
+    <div class="col">
+      <p class="lede">In the United States, anyone with a problem with a bank, a lender or a credit bureau can file a
+        complaint with the Consumer Financial Protection Bureau — the CFPB, a government agency. The CFPB forwards it to
+        the company, which is expected to respond within 15 days, and then publishes the complaint in a public
+        database.</p>
+      <p>Every complaint gets closed one way or another. The ending that matters most to the company is the rarest one:
+        <em>closed with monetary relief</em>. The company paid — a refund, a reversed fee, some compensation.</p>
+      <p>So a complaints team faces the same question thousands of times a day: does this one need a senior analyst who
+        reads every line, or will a standard reply do? Get it wrong one way and expensive people spend their week on
+        form letters. Get it wrong the other way and a complaint that will cost money gets a template.</p>
+
+      <figure>
+        <div class="fig">
+          <p class="fig-title">One square = one complaint</p>
+          <div class="controls" role="group" aria-label="Which complaints">
+            <button type="button" data-waffle="story" aria-pressed="true">With a written story</button>
+            <button type="button" data-waffle="all" aria-pressed="false">All complaints</button>
+          </div>
+          <div class="waffle" id="waffle" aria-hidden="true"></div>
+          <p class="readout" id="waffle-readout"></p>
+        </div>
+        <figcaption><span class="label">Figure 1</span>Of every 400 complaints that include the customer's written story
+          (2022–24), about 9 ended with the company paying; across all complaints, about 5. Highlighted squares are
+          payouts — their positions are only illustrative.</figcaption>
+      </figure>
+
+      <p>That's the first difficulty: it's a needle in a haystack. The second is that the needles aren't where the hay
+        is.</p>
+
+      <figure>
+        <div class="fig">
+          <div class="share-row"><span>Complaints</span>
+            <div class="share-bar"><div class="s-credit" style="width:83.2%">83%</div><div class="s-cards" style="width:6.4%" title="cards and bank accounts 6%"></div><div class="s-other" style="width:10.4%">10%</div></div></div>
+          <div class="share-row"><span>Payouts</span>
+            <div class="share-bar"><div class="s-credit" style="width:3.3%" title="credit reports 3%"></div><div class="s-cards" style="width:76.2%">76%</div><div class="s-other" style="width:20.5%">20%</div></div></div>
+          <div class="legend"><span><i style="background:#8d8676"></i>Credit reports</span><span><i style="background:var(--accent)"></i>Credit cards &amp; bank accounts</span><span><i style="background:#3b3f45"></i>The other eight product types</span></div>
+        </div>
+        <figcaption><span class="label">Figure 2</span>Credit-report complaints are 83% of everything but only 3% of the
+          payouts. Credit cards and bank accounts are 6% of complaints and 76% of payouts. All complaints,
+          2022–24.</figcaption>
+      </figure>
+
+      <p>An obvious shortcut is a rule: send every credit-card complaint to a senior. But only about one in seven of
+        those pays, so most of that senior time is still wasted — and a rule ignores the rare expensive case elsewhere.
+        Picture a student-loan complaint about a $200,000 loan that was never paid out. Student-loan complaints end in a
+        payout about once in 90 times, so a product rule sends it a template. Only reading the actual words catches
+        it.</p>
+      <p class="pull">Which complaints will cost money — and can a machine tell before a person has read them?</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2 -->
+  <section class="chapter" id="data">
+    <div class="chapter-head"><span class="num">02 — THE DATA</span><h2>Real people, real mess</h2></div>
+    <div class="col">
+      <p>My first design was wrong before it started. It imagined customers with histories — how much each had spent,
+        how often they had complained before. The CFPB data has no customers at all: every complaint is anonymous. The
+        only way to make that design work would have been to invent the customers, and invented data can't be checked
+        by anyone. So the plan changed: track <em>companies</em>, and how each one handles each kind of problem.</p>
+      <p>The raw file is 9.2 GB — too big to open in one go — so it was read in slices of 250,000 rows. Before building
+        anything on it, I wanted proof the complaints were written by people and not generated by a machine, because a
+        language model trained on machine-made text would learn nothing real.
+        <span class="note"><b>The tests.</b> How unevenly sentence lengths vary (people: 0.94; machine text is
+          suspiciously regular, under 0.35) · how many different words appear in a fixed 100,000-word sample · how
+          often texts open the same way · leftover template slots like {name}.</span></p>
+      <p>They passed, with one scare. The most repeated opening line looked like a template: <em>“in accordance with the
+        Fair Credit Reporting Act…”</em>. It turned out to be legal wording that real people copy from credit-repair
+        forums. Copy-paste, it turns out, is very human. One template appeared 30,110 times.</p>
+      <p>Those copies matter more than they look. Complaints with a unique text ended in a payout 3.84% of the time; texts
+        that appear twice or more, 0.05% or less. They're mostly form letters disputing credit reports — and an exam full
+        of them is an easy exam. So the final test never contains a text that also appears in the lessons.
+        <span class="tech">complaints with a story, from April 2022</span></p>
+
+      <figure>
+        <div class="fig funnel">
+          <div class="step"><div class="bar" style="width:100%">17.4 million</div><div class="what">Everything the CFPB has published, December 2011 to August 2026</div></div>
+          <div class="step"><div class="bar" style="width:78%">4.8 million</div><div class="what">2022 to 2024 — used to build every company's track record</div></div>
+          <div class="step"><div class="bar" style="width:56%">1.6 million</div><div class="what">Those with the customer's own written story — what the AI can read</div></div>
+          <div class="step"><div class="bar" style="width:34%">292,940</div><div class="what">Sampled and split by date to train and test the AI</div></div>
+        </div>
+        <figcaption><span class="label">Figure 3</span>From the raw file to the training set. Bar lengths are not to scale
+          — the real drop is far steeper.</figcaption>
+      </figure>
+
+      <p>One decision here shaped everything after it. About two thirds of the complaints have no written story, so the
+        AI can never read them, and it was tempting to throw them away. But they hold <strong>42% of all payouts</strong>.
+        Without them every company's track record would be wrong — by a different amount for each company. So all
+        4.8 million stay: the AI reads 1.6 million, but the track records are built from every one.
+        <span class="tech">tech: features over the full population, training on a sample</span></p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3 -->
+  <section class="chapter" id="database">
+    <div class="chapter-head"><span class="num">03 — THE DATABASE</span><h2>A database shaped like a snowflake</h2></div>
+    <div class="col">
+      <p>Everything lives in one database — PostgreSQL, on my laptop. One big table sits in the middle, one row per
+        complaint; around it sit lookup tables for companies, products, problem types and states. Two of those branch
+        again, like the arms of a snowflake. Explore it:</p>
+    </div>
+
+    <figure class="wide">
+      <div class="fig">
+        <p class="fig-title">The database — tap or click a table</p>
+        <div class="snow">
+          <div><div id="snow-svg"></div><div class="snow-chips" id="snow-chips" role="group" aria-label="Tables"></div></div>
+          <div class="panel" id="snow-panel" aria-live="polite"></div>
+        </div>
+      </div>
+      <figcaption style="margin-left:auto;margin-right:auto"><span class="label">Figure 4</span>Black: the main table, one
+        row per complaint. Red border: side tables holding a complaint's written story and its timeline (where the
+        answer lives). Dashed: translation tables for renamed categories. Row counts are for 2022–24.</figcaption>
+    </figure>
+
+    <div class="col">
+      <p>A few of the rules behind that shape sounded fussy and turned out to matter:</p>
+      <ul>
+        <li><strong>The answer is kept away from the clues.</strong> Whether a complaint paid lives in its timeline, not in
+          the main table. To feed the answer to the model by accident, you'd have to go out of your way to fetch it.</li>
+        <li><strong>Never assume a category means one thing.</strong> I assumed each sub-category belonged to a single
+          category. It was false for 87.5% of complaints — the same sub-product name sits under several products. So a
+          sub-category is identified by its name <em>and</em> its parent.</li>
+        <li><strong>A blank isn't automatically missing.</strong> The "tags" column is empty for 94.5% of complaints and
+          looks like junk. But empty means a box wasn't ticked: complaints from older Americans (62+) ended in a payout
+          10.08% of the time, against 1.06% for untagged ones.</li>
+      </ul>
+
+      <h3>The day the categories changed</h3>
+      <p>In late August 2023 the CFPB changed its complaint form — renaming some products, splitting others, and renaming
+        one of the most common problem types. Loaded naively, the database would have treated the new names as brand-new
+        categories, and every affected company's history would have restarted from zero, weeks before my test period
+        began. The renamed problem type alone covered 893,566 complaints.</p>
+      <p>The fix was a small translation table — old name in, today's name out — that re-labels 1,334,958 complaints by
+        product and 337,252 by problem type. It wasn't a leak: both names are known the day a complaint arrives. It was a
+        <em>shift</em>, and a shift gets fixed at the source. Doing it early took minutes; doing it after the models were
+        built would have broken everything on top. <span class="tech">tech: crosswalk table</span></p>
+      <p>The database also checks itself. Twelve deliberately wrong inserts — a mortgage sub-product filed under credit
+        cards, for example — were all refused. One final query checks 21 facts about the load against numbers computed by
+        a completely separate program, and prints PASS or FAIL for each. I fed it a wrong expected number to make sure it
+        could fail.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 4 -->
+  <section class="chapter" id="future">
+    <div class="chapter-head"><span class="num">04 — THE TRACK RECORD</span><h2>No peeking at the future</h2></div>
+    <div class="col">
+      <p>The whole project rests on one rule: <strong>to score a complaint, use only what was known on the day it
+        arrived.</strong> A model that sees even a sliver of the future looks brilliant in testing and fails in real life,
+        like a student who had the answer key.</p>
+      <p>The track record asks a simple question — <em>how often has this company paid on this kind of problem, before
+        today?</em> — and two details make it tricky. First, companies take time to answer: if a complaint arrived last
+        week, its outcome isn't known yet. So the track record only counts complaints at least 60 days old.
+        <span class="note">The CFPB never records <i>when</i> a company answered, so 60 days is an assumption — a
+          cautious one, well past the 15-day deadline.</span></p>
+      <p>Second, many complaints share a date. On 43% of the days a company received complaints, it received more than
+        one — once, 4,245 in a single day. The database's default way of looking back quietly includes everything from
+        the same day, <em>including the complaint being scored</em>, so its own answer would leak into its own score.
+        Every look-back therefore has an explicit rule. <span class="tech">tech: window-function frames</span></p>
+    </div>
+
+    <figure class="wide">
+      <div class="fig tl">
+        <p class="fig-title">Drag the day a complaint arrives</p>
+        <div id="timeline"></div>
+        <input type="range" id="tl-day" min="70" max="700" value="430" aria-label="Day the complaint arrives">
+        <p class="readout" id="tl-readout"></p>
+        <div class="legend"><span><i style="background:var(--ink-2);border-radius:50%"></i>outcome known — counts</span><span><i style="background:var(--accent);border-radius:50%"></i>…and paid</span><span><i style="border:1.5px solid var(--ink-2);border-radius:50%"></i>last 60 days — answer not in yet</span><span><i style="background:var(--rule);border-radius:50%"></i>the future — invisible</span></div>
+      </div>
+      <figcaption style="margin-left:auto;margin-right:auto"><span class="label">Figure 5</span>An illustration with a
+        made-up company. Only solid dots — complaints at least 60 days old — feed the track record.</figcaption>
+    </figure>
+
+    <div class="col">
+      <h3>Proving there's no peeking</h3>
+      <p>Rules like this are easy to write and easy to get wrong, so I tested this one by trying to break it. I took one
+        company's busiest day — 3,495 complaints — secretly flipped every answer (paid ↔ not paid), and recomputed its
+        track record. For complaints on that same day and up to 59 days later, not one digit moved. On day 60 the payout
+        rate jumped from 0.0034% to 0.34% — exactly when those outcomes are allowed to be known. Then the flip was undone.
+        <span class="tech">tech: leakage test in a rolled-back transaction</span></p>
+      <p class="pull">A test that can also fail is the only kind worth trusting.</p>
+      <p>And the track record is useful before any AI reads a word. Complaints whose company had paid out more than 15% of
+        the time on that kind of problem really paid 28.74% of the time; where the company's rate was 1% or less, 0.03% did
+        <span class="tech">all complaints</span>.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 5 -->
+  <section class="chapter" id="clues">
+    <div class="chapter-head"><span class="num">05 — THE CLUES</span><h2>Small numbers lie</h2></div>
+    <div class="col">
+      <p>A company with three complaints, one of which paid, has a payout rate of 33%. It isn't a "33% payer". It's three
+        complaints. Most of the 4,946 companies are small, and a model that takes tiny samples literally overreacts to
+        noise.</p>
+      <p>The fix is one line. Before looking at a company, pretend it already has <em>K</em> imaginary complaints that paid
+        at its product's usual rate — then add its real ones:</p>
+      <p class="pull" style="font-family:var(--mono);font-size:19px;font-weight:500;letter-spacing:0">smoothed rate =
+        (payouts + K × product's rate) ÷ (complaints + K)</p>
+      <p>A company with three complaints is mostly imaginary complaints, so it leans on its product's rate. A company with
+        three thousand drowns the imaginary ones out. <span class="tech">tech: shrinkage, empirical Bayes</span></p>
+    </div>
+
+    <figure class="wide">
+      <div class="fig smooth">
+        <div>
+          <p class="fig-title">Try it</p>
+          <div class="controls" role="group" aria-label="Company size">
+            <button type="button" data-co="small" aria-pressed="true">3 complaints, 1 paid</button>
+            <button type="button" data-co="big" aria-pressed="false">3,000 complaints, 1,000 paid</button>
+          </div>
+          <label for="k-slider" class="readout" style="display:block;margin:0">Imaginary complaints, K = <b id="k-value">5</b></label>
+          <input type="range" id="k-slider" min="0" max="11" value="4">
+          <div class="gauge" id="gauge"></div>
+          <div class="big-num" id="smooth-out">21.9%</div>
+          <p class="readout" id="smooth-read" style="margin-top:6px"></p>
+        </div>
+        <div>
+          <p class="fig-title">Measured, not guessed</p>
+          <div class="kbars" id="kbars"></div>
+          <p class="readout">How well the smoothed rate alone separated complaints that paid from those that didn't —
+            companies with little history, October–December 2023 (score out of 100).</p>
+        </div>
+      </div>
+      <figcaption style="margin-left:auto;margin-right:auto"><span class="label">Figure 6</span>Left: the formula, live,
+        for a credit-card company whose product pays about 15% of the time. Right: K chosen by test. Anything from 2 to 7
+        was about equally good — the win is in smoothing at all, so K = 5.</figcaption>
+    </figure>
+
+    <div class="col">
+      <h3>Clues that are secretly clocks</h3>
+      <p>Complaint volume grew fast: an average company's 90-day complaint count rose 5.5× from 2022 to 2024. A model
+        trained on 2022–23 would see every 2024 company as unusually busy — it would be reading the calendar, not the
+        complaint. Measuring each company's <em>share</em> of all complaints instead (up only 1.5×) fixes most of it, the
+        way you'd compare a shop's market share rather than its raw sales in a growing economy.</p>
+      <p>The finished table stores 48 facts about every complaint. The model reads 19. The rest aren't wrong; they're
+        clocks, counts that swell as time passes. To check, I trained a simple model on the 19, then on the 19 plus 16 of
+        the left-out ones: 75.00 against 74.99. They added nothing. Choosing what <em>not</em> to feed a model is half the
+        job.
+        <span class="note"><b>A one-setting speed-up.</b> The first check of these counts ran for 11 minutes and wrote
+          28 GB of scratch files: by default, Postgres sorts in 4 MB of memory. Given 256 MB, the same check took
+          16 seconds.</span></p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 6 -->
+  <section class="chapter" id="reader">
+    <div class="chapter-head"><span class="num">06 — THE AI READER</span><h2>Teaching a machine to read</h2></div>
+    <div class="col">
+      <p>The second reader is a language model called DistilBERT — a smaller, faster version of Google's BERT. Before it
+        ever saw a complaint, it had learned English by reading enormous amounts of text and guessing hidden words. I then
+        trained it further on one narrow question: given what this customer wrote, did the company end up paying?
+        <span class="tech">tech: fine-tuning a pre-trained transformer</span></p>
+      <p>It doesn't read words, exactly. It reads <em>word-pieces</em> from a vocabulary of about 30,000: common words are
+        one piece, rarer ones get split — "chargeback" becomes <em>charge</em> + <em>back</em>. It can read at most 512
+        pieces, about 410 words, which covers 92% of complaints in full.</p>
+      <p>Then there's the CFPB's privacy tool. Before publishing, it replaces names, dates and account numbers with XXXX.
+        Each XXXX costs the model two word-pieces; a hidden date costs six; across complaints, one piece in six is a blank.
+        So before the AI reads anything, each run of blanks becomes a single marker — [REDACTED] or [DATE]. Not deleted:
+        <em>where</em> the blanks fall is itself a clue.</p>
+    </div>
+
+    <figure class="wide">
+      <div class="fig">
+        <p class="fig-title">A real complaint, as the AI sees it</p>
+        <div class="controls" role="group" aria-label="Version">
+          <button type="button" data-tok="raw" aria-pressed="true">As published</button>
+          <button type="button" data-tok="clean" aria-pressed="false">After clean-up</button>
+        </div>
+        <div class="tok-count"><span><b id="tok-n">92</b>word-pieces</span><span><b id="tok-blank">16</b>spent on blanks</span></div>
+        <div class="tokens" id="tokens"></div>
+      </div>
+      <figcaption style="margin-left:auto;margin-right:auto"><span class="label">Figure 7</span>CFPB complaint 11216352,
+        December 2024, split by the model's own tokenizer. The clean-up shrinks it from 92 pieces to 80 without losing a
+        word of meaning. The model gave this complaint a 36.4% chance of a payout and sent it to a senior analyst. The
+        company paid.</figcaption>
+    </figure>
+
+    <div class="col">
+      <p>I also tried the classic text clean-ups — on paper first. Reducing words to their dictionary form ("charged" →
+        "charge") would, even done perfectly, have squeezed only 22% of the long complaints under the limit, while handing
+        the AI unnatural sentences. Deleting common words would fit more, but the standard list of common words includes
+        <em>not</em>, <em>no</em> and <em>never</em>: "I did <strong>not</strong> authorise this charge" becomes
+        "authorise charge". Those tricks were made for programs that count words; a modern reader needs the
+        <em>not</em>.</p>
+      <p>Training ran on a free Kaggle graphics card in about half an hour: three passes over 62,940 complaints, with the
+        pre-trained part frozen for the first pass so the new layers could settle without scrambling what it already
+        knew. One more trick mattered. The textbook speed-up — padding each batch only to its longest text — gained
+        nothing here, because nearly every batch contains one very long complaint. Grouping similar lengths together cut
+        the wasted work 2.23×.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 7 -->
+  <section class="chapter" id="scoring">
+    <div class="chapter-head"><span class="num">07 — MEASUREMENT</span><h2>Keeping score honestly</h2></div>
+    <div class="col">
+      <p>Here is how to build a model that is 97.7% accurate: answer "no payout" to every complaint. On 2024's complaints
+        that's right 97.7% of the time — and completely useless. Accuracy lies about rare events, so I never used it.</p>
+      <p>The main score asks the question a triage desk actually has. Take one complaint that ended with a payout and one
+        that didn't: how often does the model put the payout first? 50 is a coin flip; 100 is perfect.
+        <span class="tech">tech: ROC-AUC</span></p>
+      <p>Even that can flatter. Compare <em>any</em> two complaints and the model earns easy points just by knowing that
+        credit-card complaints pay more than credit-report ones — true, and useless to a bank sorting its <em>own</em>
+        queue. So every result is reported three ways:</p>
+
+      <figure>
+        <div class="fig bars">
+          <div class="barrow"><span class="lab"><b>Coin flip</b>no skill at all</span><div class="track"><div class="fill" style="width:50%;background:var(--rule-strong)"></div></div><span class="v">50</span></div>
+          <div class="barrow"><span class="lab"><b>Any two complaints</b>easy test</span><div class="track"><div class="fill" style="width:97.3%"></div></div><span class="v">97</span></div>
+          <div class="barrow"><span class="lab"><b>Same product and problem</b>fair test</span><div class="track"><div class="fill" style="width:94.9%"></div></div><span class="v">95</span></div>
+          <div class="barrow key"><span class="lab"><b>Same company only</b>real-life test</span><div class="track"><div class="fill" style="width:82.2%"></div></div><span class="v">82</span></div>
+        </div>
+        <figcaption><span class="label">Figure 8</span>The same model, three tests, on 150,000 complaints from 2024 it
+          never saw. The headline is the lowest: a bank only ever sorts its own complaints. "Same company" is averaged over
+          the 24 companies with enough 2024 payouts to measure.</figcaption>
+      </figure>
+
+      <p>The test is also arranged in time. The model learned from complaints up to September 2023, tuned its settings on
+        October–December 2023, and sat its final exam on all of 2024. That matters because payouts keep getting rarer:
+        2.7% of complaints with a story paid in 2022, 1.7% in 2024. A random test would hide that; a test on the future
+        can't.
+        <span class="note"><b>Sampling you can undo.</b> With so few payouts, the model learned from every one of the
+          15,735 payouts in its lessons plus three non-payouts for each — 62,940 complaints, a quarter of them payouts.
+          That inflates its guesses by a known amount, which is subtracted exactly afterwards. The tune and exam sets keep
+          the real-world rarity.</span></p>
+      <p>And because the headline rests on 24 companies, every score comes with a range: redraw the test complaints 1,000
+        times and see where the score lands 95% of the time. The final model's 82.2 is really "somewhere between 81.5 and
+        83.0". Two models whose ranges overlap may differ only by luck. <span class="tech">tech: bootstrap interval</span></p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 8 -->
+  <section class="chapter" id="results">
+    <div class="chapter-head"><span class="num">08 — RESULTS</span><h2>Is the database worth it?</h2></div>
+    <div class="col">
+      <p>The fair question about a project built around a database: would a good AI alone have done just as well? So I
+        trained the pieces separately and together, and compared them on the same 2024 exam.</p>
+
+      <figure>
+        <div class="fig bars">
+          <div class="barrow"><span class="lab"><b>Track record only</b>small model, no reading</span><div class="track"><div class="fill" style="width:75.4%"></div><div class="ci" style="left:74.4%;width:1.9%"></div></div><span class="v">75.4</span></div>
+          <div class="barrow"><span class="lab"><b>Words only</b>the AI reader</span><div class="track"><div class="fill" style="width:80.4%"></div><div class="ci" style="left:79.6%;width:1.6%"></div></div><span class="v">80.4</span></div>
+          <div class="barrow"><span class="lab"><b>Both</b>simple word-counting model</span><div class="track"><div class="fill" style="width:81.2%"></div></div><span class="v">81.2</span></div>
+          <div class="barrow key"><span class="lab"><b>Both</b>the AI reader + track record</span><div class="track"><div class="fill" style="width:82.2%"></div><div class="ci" style="left:81.5%;width:1.5%"></div></div><span class="v">82.2</span></div>
+        </div>
+        <figcaption><span class="label">Figure 9</span>Inside one company, 2024 exam. Pale marks inside the bars show the
+          95% range where it was measured. Each reader sees something the other can't; together they're best — and the
+          ranges of "words only" and "both" don't overlap.</figcaption>
+      </figure>
+
+      <p>In the language a complaints manager uses: if seniors read only the riskiest 10% of complaints, the AI alone would
+        put 88.8% of the paying ones in front of them; the AI plus the track record, 92.6%. On the 2024 exam that's about
+        130 more paying complaints found for the same amount of reading.</p>
+    </div>
+
+    <figure class="wide">
+      <div class="fig curve">
+        <p class="fig-title">How much reading catches how many payouts?</p>
+        <div id="curve"></div>
+        <label for="curve-slider" class="readout" style="display:block;margin:6px 0 0">Seniors read the riskiest <b id="curve-k">10%</b></label>
+        <input type="range" id="curve-slider" min="1" max="100" value="20">
+        <p class="readout" id="curve-read"></p>
+      </div>
+      <figcaption style="margin-left:auto;margin-right:auto"><span class="label">Figure 10</span>All 150,000 complaints
+        from 2024, sorted by the model's score. The red line is the share of the 3,471 payouts found as you read down the
+        list; the dashed line is reading in random order.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============================================================ 9 -->
+  <section class="chapter" id="limits">
+    <div class="chapter-head"><span class="num">09 — LIMITS</span><h2>Where it fails — and why a bigger model won't fix it</h2></div>
+    <div class="col">
+      <p>Scores are averages, so I read the model's worst mistakes one by one — the payouts it ranked lowest and the
+        non-payouts it ranked highest, inside their own company.</p>
+      <p>The <strong>missed payouts</strong> were mostly complaints about credit reports or logging into an account — the
+        kinds that almost never pay — where the company paid anyway, probably as a goodwill gesture. The <strong>false
+        alarms</strong> read exactly like refund cases: a named fee, an amount, an unauthorised charge. And the company
+        simply said no.</p>
+      <p class="pull">In both cases, the deciding fact lives inside the company, not in the complaint.</p>
+      <p>That's why a bigger AI can't simply push the score to 90: the information isn't in the text. It also made
+        several tempting ideas easy to retire — after measuring them.</p>
+    </div>
+
+    <figure class="wide">
+      <div class="fig grave">
+        <div><h4>Feed it eight times more data</h4><p>About 480,000 extra "didn't pay" complaints sat unused to save GPU
+          time. Before spending 3.5 GPU-hours on them, I ran the cheap test in reverse: train on half the data. If losing
+          half hurts, gaining more helps.</p><span class="ev">half the data: 81.7 vs 82.2 — inside the noise</span></div>
+        <div><h4>A model that reads longer texts</h4><p>8.4% of 2024 complaints get cut at 512 pieces. If the deciding
+          words hid in those tails, a model that reads every word would win on exactly those complaints.</p><span class="ev">read-every-word model 96.1 · the AI 96.1</span></div>
+        <div><h4>Pull the dollar amount out separately</h4><p>One story in five mentions an amount, and those pay 7.1% of the
+          time against 1.0%. As a separate clue it lifted the database-only model — and the AI not at all. It already
+          reads "$760".</p><span class="ev">database-only 75.4 → 77.8 · AI 82.2 vs 82.0</span></div>
+        <div><h4>Classic text clean-ups</h4><p>Dictionary forms and common-word lists save little room and delete meaning,
+          including "not".</p><span class="ev">best case: 22% of long complaints would fit</span></div>
+        <div><h4>Blend real complaints into new ones</h4><p>A standard fix for rare classes creates examples by blending real
+          ones. Fine for numbers like transactions; half of one complaint glued to half of another isn't a complaint.</p><span class="ev">rejected before training</span></div>
+        <div><h4>Train on the newest complaints</h4><p>The public file runs to August 2026, but half of July–August 2026's
+          complaints have no outcome yet, and stories are published months later. The few already public are an unusual
+          early group.</p><span class="ev">6.5–9.5% paid, against the usual 1–2%</span></div>
+      </div>
+      <figcaption style="margin-left:auto;margin-right:auto"><span class="label">Figure 11</span>Ideas that didn't survive
+        measurement. All scores are "same company only", 2024 exam, except the read-every-word comparison, which is
+        measured on the cut complaints.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============================================================ 10 -->
+  <section class="chapter" id="calibration">
+    <div class="chapter-head"><span class="num">10 — CALIBRATION</span><h2>Honest percentages</h2></div>
+    <div class="col">
+      <p>Ranking is what routing needs, but the live system also shows a number — "a 31.7% chance this complaint costs
+        money" — and that number should mean something. A good weather forecaster is right about <em>how often</em>: on
+        the days they say 30% rain, it rains about three days in ten.</p>
+      <p>Mine wasn't, at first. Over 2024 it predicted 3.1% of complaints would pay; 2.3% did. It had learned from 2022–23,
+        when payouts were more common, and payouts kept falling. Two numbers fix it — one squeezes the model's
+        over-confident extremes, one shifts everything down — fitted on January–June 2024 and checked on July–December.
+        <span class="tech">tech: Platt scaling</span></p>
+
+      <figure>
+        <div class="fig cal">
+          <div><h5>Average forecast, Jul–Dec 2024</h5><div class="bars">
+            <div class="barrow"><span class="lab"><b>Before</b></span><div class="track"><div class="fill" style="width:97%;background:var(--rule-strong)"></div></div><span class="v">2.91%</span></div>
+            <div class="barrow key"><span class="lab"><b>After</b></span><div class="track"><div class="fill" style="width:74%"></div></div><span class="v">2.22%</span></div>
+            <div class="barrow"><span class="lab"><b>What happened</b></span><div class="track"><div class="fill" style="width:70%;background:var(--ink)"></div></div><span class="v">2.10%</span></div>
+          </div></div>
+          <div><h5>The riskiest tenth of complaints</h5><div class="bars">
+            <div class="barrow"><span class="lab"><b>Before</b></span><div class="track"><div class="fill" style="width:95.5%;background:var(--rule-strong)"></div></div><span class="v">28.6%</span></div>
+            <div class="barrow key"><span class="lab"><b>After</b></span><div class="track"><div class="fill" style="width:70.6%"></div></div><span class="v">21.2%</span></div>
+            <div class="barrow"><span class="lab"><b>What happened</b></span><div class="track"><div class="fill" style="width:65.7%;background:var(--ink)"></div></div><span class="v">19.7%</span></div>
+          </div></div>
+        </div>
+        <figcaption><span class="label">Figure 12</span>Forecasts before and after the correction, on months it never saw.
+          The ranking is untouched: the correction never changes which complaint comes first.</figcaption>
+      </figure>
+
+      <p>Why not tune the correction on the late-2023 practice data? Because payouts kept falling — October–December 2023
+        paid 3.50%, 2024 paid 2.31%. A correction tuned on 2023 would still forecast too high for 2024, which is exactly the
+        problem being fixed. A fancier, free-form correction fitted slightly better, but it lumped complaints into ties and
+        quietly lowered the ranking score. The simple one won.</p>
+      <p>Finally, the routing line: the riskiest 10% of complaints — a forecast of 3.67% or more — go to a senior analyst.
+        In 2024, 21% of that group paid. Of everything else, 0.2%.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 11 -->
+  <section class="chapter" id="shipping">
+    <div class="chapter-head"><span class="num">11 — DEPLOYMENT</span><h2>Shipping it on a student budget</h2></div>
+    <div class="col">
+      <p>A model in a notebook is a science project. Putting it online meant solving three problems without breaking the
+        rule that training and the live system see exactly the same numbers.</p>
+      <h3>A scoreboard instead of a replay</h3>
+      <p>Training needed each company's track record as it stood on the day of every past complaint; the database replays
+        all 4.8 million to get that. A live complaint needs only <em>today's</em> record, in milliseconds. So the live
+        system keeps a small scoreboard — counts of complaints and payouts per company and kind of problem — and a
+        calculator that applies the same formulas.</p>
+      <p>Two ways of computing the same numbers is how deployed models quietly go wrong: if they disagree even slightly,
+        the AI gets inputs it never learned from, and nothing raises an alarm. So I rebuilt the scoreboard as of three real
+        past days — including the busiest day in the data — and compared all 19 inputs for 20,773 complaints with what
+        training had used. Identical, to the last digit. <span class="tech">tech: train/serve skew test</span>
+        <span class="note"><b>Small enough to ship.</b> The full database is 16 GB and stays on my laptop. Everything the
+          live system needs fits in a 57 MB file.</span></p>
+      <h3>Two sealed boxes</h3>
+      <p>The trained model was exported to a single file that a small engine runs on an ordinary processor — no graphics
+        card, no training software. On 1,000 real complaints it matched the original to five decimal places, in about
+        20 thousandths of a second each. The service and the model went into one sealed box, a small database into
+        another, and one command starts both in the right order. <span class="tech">tech: ONNX, Docker Compose</span></p>
+      <h3>A rented computer and a receptionist</h3>
+      <p>The boxes run on a small rented server in Sydney for about $21 a month, paid from free cloud credits. A
+        receptionist program stands at the only open door. The demo site lives on Vercel: when you press "Score it",
+        Vercel carries the request to Sydney and brings back the answer, so your browser only ever talks to one secure
+        address.</p>
+    </div>
+
+    <figure class="wide">
+      <div class="journey">
+        <div class="hop home"><span class="w">01 — you</span><b>Press "Score it"</b><p>Company, product, problem type and
+          the complaint, typed into the demo.</p></div>
+        <div class="hop"><span class="w">02 — Vercel</span><b>The front door</b><p>Secure address, served near you; adds a
+          secret only it knows, then forwards to Sydney.</p></div>
+        <div class="hop"><span class="w">03 — receptionist</span><b>NGINX, in Sydney</b><p>Turns away anything without the
+          secret, and anyone sending more than a few requests a second.</p></div>
+        <div class="hop"><span class="w">04 — the service</span><b>FastAPI</b><p>Cleans the text exactly as training did;
+          looks up the 19 track-record numbers on the scoreboard.</p></div>
+        <div class="hop home"><span class="w">05 — the model</span><b>One score, one route</b><p>Words + track record →
+          a corrected probability → senior analyst or template.</p></div>
+      </div>
+      <figcaption style="margin-left:auto;margin-right:auto"><span class="label">Figure 13</span>What happens when you press
+        "Score it". The database and the service are never reachable from the internet.</figcaption>
+    </figure>
+
+    <div class="col">
+      <p>Two things went wrong, both instructive. The cheapest cloud servers run at full speed only while they have
+        "credits" saved up, and a new one starts with none — so my first speed test ran at a fifth of the server's speed.
+        Credits refill whenever it's quiet, which for a demo is almost always; I kept the setting that can never cost
+        extra. And when I locked the server so it would answer only Vercel, the secret I'd generated was 48 characters
+        long — too long for the receptionist's default lookup table. It refused to start, and the site was down for about
+        three minutes. My local test had used a short practice secret.</p>
+      <p class="pull">Real values break things that practice values don't.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 12 -->
+  <section class="chapter" id="lessons">
+    <div class="chapter-head"><span class="num">12 — LESSONS</span><h2>What I'd tell myself at the start</h2></div>
+    <div class="col">
+      <ol class="lessons">
+        <li><b>Every number needs its group.</b> "1.26%" means nothing until you say <em>of what</em>. Mixing figures from
+          different groups forced a full round of corrections early on; after that, every number came from one generated
+          file.</li>
+        <li><b>Test on the future, and trust your lowest score.</b> The flattering version of a result is usually measuring
+          something easier than the job.</li>
+        <li><b>Build the check that can fail.</b> Flip the answers and see what moves. Feed the tester a wrong number. A
+          check that can't fail proves nothing.</li>
+        <li><b>Measure before you build.</b> Half the data before eight times the data; the best case of a clean-up trick
+          before writing it; K from a test, not a hunch.</li>
+        <li><b>Choosing what not to feed a model is half the job.</b> The clues that would have hurt most were the ones
+          quietly encoding the calendar.</li>
+        <li><b>One source of truth.</b> The same SQL formulas and the same text clean-up feed training and the live system —
+          and a test proves they agree.</li>
+        <li><b>The ceiling is often information, not intelligence.</b> When the deciding fact isn't in the data, a bigger
+          model can't find it.</li>
+      </ol>
+      <p>Next: retraining on 2025's complaints now that their outcomes are in; showing the most similar past complaints
+        next to each score; and watching the live system for drift by replaying a year, month by month.</p>
+      <p><a class="btn" href="https://triageiq-mu.vercel.app">Try the live demo →</a></p>
+    </div>
+  </section>
+
+  <div class="endnote">
+    <h2>About this project</h2>
+    <dl>
+      <dt>Try it</dt><dd><a href="https://triageiq-mu.vercel.app">triageiq-mu.vercel.app</a> · API and interactive docs:
+        <a href="https://triageiq-mu.vercel.app/docs">/docs</a></dd>
+      <dt>Code</dt><dd><a href="https://github.com/Bajaj30/TriageIQ">github.com/Bajaj30/TriageIQ</a> — every number in this
+        essay is produced by code in the repository.</dd>
+      <dt>Data</dt><dd>The CFPB Consumer Complaint Database, which is public. Not affiliated with the CFPB.</dd>
+      <dt>The groups</dt><dd>"All complaints": 4.8 million, 2022–24. "Complaints with a story": the 1.6 million with a
+        published narrative. "The 2024 exam": 150,000 complaints from 2024, 3,471 of which paid.</dd>
+      <dt>Built with</dt><dd>PostgreSQL · DistilBERT on a free Kaggle GPU · ONNX Runtime · FastAPI · Docker · AWS ·
+        Vercel</dd>
+      <dt>Help</dt><dd>Built with an AI pair-programmer (Claude), which wrote much of the code under my review — and made
+        mistakes I caught, as I made some it caught.</dd>
+    </dl>
+  </div>
+</main>
+
+<footer>
+  <span>© 2026 Shivam Bajaj</span>
+  <span>Written for readers new to machine learning — small grey tags name the technical term.</span>
+</footer>
+</body>
+</html>
