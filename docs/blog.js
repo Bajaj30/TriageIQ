@@ -261,9 +261,26 @@ function curve() {
   draw();
 }
 
+/* ---------------------------------------------------------------- dark / light toggle */
+function themeToggle() {
+  const btn = $("#theme-btn");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const isDark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  });
+  // If the OS preference changes and the user hasn't explicitly chosen, follow the OS
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+    if (!localStorage.getItem("theme")) {
+      document.documentElement.classList.toggle("dark", e.matches);
+    }
+  });
+}
+
 /* ---------------------------------------------------------------- start */
 document.addEventListener("DOMContentLoaded", () => {
   chrome();
+  themeToggle();
   waffle();
   snowflake();
   timeline();

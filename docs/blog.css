@@ -28,7 +28,7 @@
   --home-text: #c9c4b8;           /* dark boxes in Figure 13 */
   --home-label: #e6b2a6;
   --ci: rgba(255, 255, 255, .28); /* 95% range marks inside bars */
-  color-scheme: light dark;
+
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --sans: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -36,9 +36,8 @@
   --wide: 980px;
 }
 
-/* A designed dark theme — used when the reader's system is set to dark, so no browser tool has to guess. */
-@media (prefers-color-scheme: dark) {
-  :root {
+/* A designed dark theme — activated by a manual toggle or by the reader's system preference. */
+html.dark {
     --paper: #151412;
     --paper-2: #211f1b;
     --card: #1b1a17;
@@ -65,8 +64,22 @@
     --home-text: #4a463f;
     --home-label: #8b2e1d;
     --ci: rgba(0, 0, 0, .35);
-  }
+    color-scheme: dark;
 }
+html:not(.dark) { color-scheme: light; }
+
+/* ---------- theme toggle ---------- */
+.theme-toggle {
+  background: none; border: 1px solid var(--rule-strong); border-radius: 4px;
+  cursor: pointer; padding: 5px 8px; display: inline-flex; align-items: center;
+  color: var(--ink-2); transition: color .2s ease, border-color .2s ease;
+  font-size: 0; /* hide any accidental text */
+}
+.theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+.theme-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* show moon in light, sun in dark */
+html:not(.dark) .icon-sun { display: none; }
+html.dark .icon-moon { display: none; }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
