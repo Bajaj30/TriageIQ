@@ -524,19 +524,35 @@ $10/$50/$90 of the $140 credits. AWS CLI 2.37.8 installed, NOT signed in yet (`a
 **Frontend (Shivam, 2026-10-05):** brief in `frontend.md` (Part A for Claude Design, Part B build contract).
 Recommended: server-rendered pages (FastAPI + Jinja2 templates, HTML forms) — keeps ground rule 2 (no JavaScript),
 same origin as the API (no CORS / mixed-content), served through the same NGINX. A JS app would need CORS + HTTPS.
+**Day 5 DONE (2026-10-05) — LIVE: http://3.106.107.237/docs** (Swagger UI behind NGINX). AWS account = **Free plan**,
+$140 credits, plan expires **2027-04-02**; member of an AWS Organization whose SCP **denies EC2 in ap-south-1** → deployed
+in **ap-southeast-2 (Sydney)**. CLI: `export AWS_PROFILE=triageiq` (signed in via `aws login`, role
+AccountFullAccessRole; default region ap-southeast-2). Prices (Pricing API): t4g.small $0.0212/h ($15.48/mo) + gp3
+$0.096/GB-mo × 20 ($1.92) + public IPv4 $0.005/h ($3.65) ≈ **$21.05/month** → ≈ $124 by the plan's end.
+**Resources (all tagged project=triageiq) — delete ALL at teardown, then RELEASE the Elastic IP (it bills while idle):**
+instance `i-0c9bd599b5b3d3a29` (t4g.small, Ubuntu 24.04.5 ARM64, 20 GB gp3 encrypted, IMDSv2, CPU credits **standard**)
+· security group `sg-065abe94829601344` `triageiq-web` (80 from anywhere v4+v6; 22 from Shivam's IP only — his ISP IP may
+change → re-authorize) · Elastic IP `3.106.107.237` (`eipalloc-03a976f274a89c888`) · key pair `triageiq-key`
+(private key `~/.ssh/triageiq-key.pem`, never in the repo) · budget `triageiq-guard` ($25/mo, actual + forecast > 100%,
+same email as the pre-existing "My Monthly Cost Budget" $65). Deploy/update: `sh deploy/push.sh 3.106.107.237`.
+**Checks from outside:** health/docs 200; the 3 Postman examples identical (31.7% / 0% / 40.5%); ports 5432 and 8000
+closed; 200 real complaints via the public link vs offline max |Δp| 0.00017, same route 100%.
+**CPU credits (trap):** T4g in *standard* mode starts with 0 credits → throttled to the 20% baseline during setup and the
+200-call test (CPUCreditBalance ≈ 0, CPU 19.8%, steal 32%). Earns 24 credits/h when idle (max 576). Kept *standard*
+on purpose: it can never bill surplus credits (*unlimited* would). Re-measure latency once credits have built up.
 **NUMBERS MEASURED ON THE MAC — re-measure on the server (Day 5) and replace them here, in the blog log and in the
 README (Shivam, 2026-10-05).** Each is a Mac/local measurement until then:
 | number | Mac value | how measured | on the server |
 |---|---|---|---|
 | full local DB (stays home) | 16 GB | `pg_database_size`, 2026-10-05 | — (never ships) |
-| serving schema / dump file | 187 MB / 57 MB | `pg_total_relation_size` / file size | restored size: ⏳ |
+| serving schema / dump file | 187 MB / 57 MB | `pg_total_relation_size` / file size | restored DB 188 MB |
 | feature lookup `serving.model_input` | 0.06 ms | EXPLAIN ANALYZE (in-DB, no network) | ⏳ |
 | model alone (ONNX, 2 threads) | p50 20 ms / p95 81 ms | `onnx_v3.json`, 300 complaints | ⏳ |
-| API end-to-end `/complaint/{id}` (DB + model) | p50 28 ms / p95 94 ms | 300 calls, 2026-10-04 | ⏳ |
-| API `/predict` (example complaint) | ~41 ms | one call | ⏳ |
+| API end-to-end `/complaint/{id}` (DB + model) | p50 28 ms / p95 94 ms | 300 calls, 2026-10-04 | **throttled (0 credits):** server-side p50 501 ms / p95 3,590 ms; from India incl. the trip to Sydney p50 1,212 / p95 4,231 ms (200 calls) — ⏳ re-measure with credits |
+| API `/predict` (example complaint) | ~41 ms | one call | 103–143 ms server-side (throttled, 3 calls) — ⏳ re-measure |
 | rebuilding all training features (`mv_features`) | ~80 s | Phase 1, at 40 columns — not re-timed at 48 | — (never ships) |
 | API in Docker on the Mac `/complaint/{id}` | p50 70 ms / p95 247 ms | 300 calls, 2026-10-05 | ⏳ |
-| RAM: api container / db container | 455 MiB / 45 MiB | `docker stats` after 300 calls | ⏳ (decides int8 + server size) |
+| RAM: api container / db container | 455 MiB / 45 MiB | `docker stats` after 300 calls | api 460 MiB · db 63 MiB · nginx 9 MiB; 857 MiB still available, swap ~3 MiB used → int8 NOT needed for memory |
 **Later (after deploy / after exams) — v5 "recency" retrain, Shivam's idea 2026-10-03:** the raw CSV runs to
 2026-08-27 (raw file, complaints with text): 2025-H1 695,184 (1.08% pay) · 2025-H2 526,871 (1.46%) · 2026-H1 109,324
 (6.54%) · 2026-Jul/Aug 3,707 (9.50%, 49.73% still 'In progress'). **2026 is unusable** — outcomes not in yet and

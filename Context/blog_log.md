@@ -366,6 +366,16 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   actually answers. From empty to ready took about ten seconds, uses about half a gigabyte of memory, and gave
   the same answers as before on 300 real complaints. The database box has no door to the outside world: only the
   service box next to it can talk to it.
+- **Live on the internet** *(tech: AWS EC2, NGINX reverse proxy)* — the two boxes now run on a small rented computer
+  in Sydney (the closest region this AWS account is allowed to use), for about $21 a month paid from free credits. A
+  receptionist program sits at the only open door: it passes visitors to the service, turns away anyone sending more
+  than a few requests a second, and keeps the database completely out of reach. Checked from outside: 200 real 2024
+  complaints got the same scores as in the original test, and every one went to the same desk.
+- **The server that started out of breath** *(tech: burstable instances, CPU credits)* — the cheapest cloud servers
+  run at full speed only while they have "credits" saved up, and a brand-new one starts with none. Installing
+  everything and a 200-complaint test ran it at a fifth of its speed — half a second per complaint instead of a
+  tenth. Credits refill whenever it's quiet, which for a demo link is almost always. We kept the setting that can
+  never cost extra, instead of the one that is always fast but bills for heavy use.
 - **The newest complaints can't teach yet** — the public file runs to August 2026, so why not train on the
   freshest data? Because the newest complaints aren't finished: half of those from July–August 2026 have no
   outcome yet, and the customers' written stories are published weeks or months later — only about 3% of 2026

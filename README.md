@@ -6,6 +6,11 @@ TriageIQ reads a new complaint, checks the company's track record, and estimates
 complaint ends with the company paying the customer. Risky complaints go to a senior analyst; the
 rest get a standard reply.
 
+> [!TIP]
+> **Try it live: http://3.106.107.237/docs** — open `GET /complaint/random` → **Try it out** → **Execute** to see a
+> real 2024 complaint, the model's call, and what the company actually did. Or `POST /predict` to score your own
+> (an example is filled in). A friendlier web page is on its way.
+
 > [!NOTE]
 > **Work in progress.** Numbers marked **⏳** don't exist yet. They get filled in as each step finishes.
 
@@ -110,9 +115,9 @@ flowchart LR
 
 | | |
 |---|---|
-| Chance this complaint ends with a payout | ⏳ % |
+| Chance this complaint ends with a payout | a percentage — e.g. **31.7%** for a disputed overdraft fee |
 | Suggested route | 👩‍💼 senior analyst, or 📄 template reply |
-| The 5 most similar past complaints | ⏳ of 5 ended with a payout |
+| The 5 most similar past complaints | ⏳ of 5 ended with a payout *(not built yet)* |
 
 ---
 
@@ -355,14 +360,14 @@ Real-life test same company only       █████████████�
 Inside one company — the situation a real complaints team is in — **what the customer wrote matters
 more than the history.** Together they do best.
 
-**Still to come:**
+**The final model** (an AI that reads the words, plus the track record):
 
 | | simple starting model | AI + track record |
 |---|:---:|:---:|
 | Real-life test score | 81 | **82** |
 | Fair test score | 95 | **95** |
 | Share of payouts caught if seniors read only the riskiest 10% | 92% | **93%** |
-| Time to score one complaint | — | ⏳ |
+| Time to score one complaint | — | ≈ 0.1–0.5 s on the small cloud server *(re-measuring)* |
 
 ---
 
@@ -392,12 +397,11 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    A["✅ Understand<br/>the data"] --> B["✅ Design<br/>the database"] --> C["✅ Load the<br/>complaints"] --> D["✅ Build the<br/>track record"] --> E["⏳ Train the<br/>AI reader"] --> F["⏳ Put it<br/>online"]
+    A["✅ Understand<br/>the data"] --> B["✅ Design<br/>the database"] --> C["✅ Load the<br/>complaints"] --> D["✅ Build the<br/>track record"] --> E["✅ Train the<br/>AI reader"] --> F["✅ Put it<br/>online"]
     classDef done fill:#d1fae5,stroke:#059669,color:#064e3b
     classDef doing fill:#fef3c7,stroke:#d97706,color:#78350f
     classDef todo fill:#f3f4f6,stroke:#9ca3af,color:#374151
-    class A,B,C,D done
-    class E,F todo
+    class A,B,C,D,E,F done
 ```
 
 | step | status | what it produces |
@@ -406,8 +410,8 @@ flowchart LR
 | Design the database | ✅ done | 11 linked tables, with rules the database enforces itself |
 | Load the complaints | ✅ done | 4.8M complaints, 1.6M stories, 14.5M timeline rows — 21 of 21 checks pass |
 | Build the track record | ✅ done | 19 clues per complaint, stored for all 4.8 million complaints; the no-peeking test passed |
-| Train the AI reader | ⏳ | the fine-tuned model, and the ⏳ scores above |
-| Put it online | ⏳ | a live link anyone can try: ⏳ |
+| Train the AI reader | ✅ done | the fine-tuned model and the scores above |
+| Put it online | ✅ live | **http://3.106.107.237/docs** — anyone can try it |
 
 ---
 
@@ -430,13 +434,13 @@ flowchart LR
 |---|---|---|
 | Database | PostgreSQL 16 + pgvector, in Docker Compose (port 5433) | ✅ running |
 | Track record | SQL window functions — point-in-time, as-of each complaint's date; materialized view `mv_features` | ✅ Phase 1 |
-| Text model | DistilBERT fine-tuned on Kaggle's free T4 GPU | ⏳ Phase 2 |
-| Fusion | text model + SQL features combined | ⏳ Phase 2 |
-| Serving | FastAPI on Google Cloud Run | ⏳ Phase 3 |
+| Text model | DistilBERT fine-tuned on Kaggle's free T4 GPU | ✅ Phase 2 |
+| Fusion | text model + SQL features combined | ✅ Phase 2 |
+| Serving | FastAPI + ONNX Runtime (CPU) in Docker Compose on one AWS EC2 server (t4g.small, Sydney), NGINX in front | ✅ live |
 
 **Design rules:** no leakage (every feature computable at complaint receipt) · one source of truth for
 features (training and serving read the same SQL view) · temporal split, never random · case-control
-sampling on the train split only, then recalibration (logit offset −2.2572) · reproducible (SEED = 42).
+sampling on the train split only, then recalibration (case-control offset −2.4165, then Platt scaling fitted on Jul–Dec 2024) · reproducible (SEED = 42).
 
 ### Baseline numbers in full
 
