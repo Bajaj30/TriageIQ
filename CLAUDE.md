@@ -171,6 +171,7 @@ api/ = FastAPI app (main.py endpoints · scorer.py model · db.py queries · sch
 deploy/ = api.Dockerfile · docker-compose.yml (db + api + nginx[profile public]) · nginx/default.conf · initdb/01_restore.sh
           · server_setup.sh · push.sh <ip> · .env.example (real .env git-ignored).
 frontend.md = the frontend brief (design for Claude Design + build contract); not built yet.
+NLP.md = every NLP / ML concept and metric used in the project, where and how (Shivam asked 2026-10-05).
 
 **Postgres:** container `triageiq-postgres`, database `triageiq`, user `triageiq`, `localhost:5433`,
 password in `.env`. CSV mounted read-only at `/import/complaints.csv`. **Division of labour:** I do
