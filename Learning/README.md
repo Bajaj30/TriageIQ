@@ -44,8 +44,11 @@ Two jobs, two kinds of file:
    baseline. Reading the riskiest 10% catches 92.6% of payouts.
 6. **What I learned.** The SQL features earn their place; more data and a longer-reading model don't
    help; error analysis shows the ceiling is the company's own decision, which isn't in the text.
-7. **Deployment** *(fill in after Phase 3)*. CPU model behind FastAPI on AWS, features from the same SQL,
-   calibrated probabilities, drift monitored by replaying 2024.
+7. **Deployment.** The model runs on a CPU (exported to ONNX) behind FastAPI and NGINX on one small AWS server;
+   the live track records come from the same SQL formulas as training, proven identical by a skew test on 20,773
+   complaints; probabilities are re-calibrated on the newest data. The website lives on Vercel, which is the only
+   thing allowed to reach the server. Live: triageiq-mu.vercel.app · the story: bajaj30.github.io/TriageIQ.
+   Next: drift monitoring by replaying 2024, and a 2025 retrain.
 
 ## Card format (all revision files)
 

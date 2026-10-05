@@ -544,6 +544,9 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 > 🔔 **Reminder:** when building the blog web page, turn each diagram into a proper visual —
 > hover or click to see what each table or step holds, how big it is, and *why* it exists.
 
+**BUILT (2026-10-05): https://bajaj30.github.io/TriageIQ/** — the essay "Finding the two percent" in `docs/`, made
+from this log; the snowflake is interactive there. The table below is what was reused.
+
 **Source of truth: [`README.md`](../README.md).** Copy the diagrams from there when building the page —
 never keep a second copy here; two copies drift apart. What to reuse, by README section:
 

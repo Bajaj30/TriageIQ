@@ -85,8 +85,13 @@ gets the next step.
   **Write it for readers with little tech knowledge** (his standing rule, also for the README): plain
   words, everyday comparisons, intuitive and interesting; jargon only as a small *(tech: …)* tag;
   frames described in words ("all complaints", not "F1").
-  **Future deliverable (promised 2026-09-28):** a good-looking, working **web-page blog** built from
-  `blog_log.md` — plan for it when the project nears its end. Must include an interactive
+  **Deliverable DONE (2026-10-05): the blog is LIVE at https://bajaj30.github.io/TriageIQ/** — "Finding the two
+  percent", `docs/` (index.html · blog.css · blog.js · data.js · .nojekyll), GitHub Pages from `main` /docs (legacy
+  build, auto-rebuilds on push). 12 chapters, 13 figures; interactive: waffle (2 in 100), the **snowflake** (click a
+  table), the 60-day timeline (illustration), the smoothing-K slider + measured K bars, real word-pieces of complaint
+  11216352 (raw 92 → clean 80), the read-X%-catch-Y% curve (from the 2024 test scores). `data.js` is GENERATED from
+  project files (recall curve, tokens) — regenerate, don't hand-edit. Same look as the demo site. Add new chapters by
+  writing them in blog_log.md first. (The original requirement:) an interactive
   **snowflake-schema visual**. Diagrams live ONLY in `README.md` (§5 = snowflake, journey,
   track-record steps); `blog_log.md` §8 lists what to reuse. Never duplicate a diagram.
 - **Learning folder (standing duty, 2026-10-03):** when a phase finishes, write its `Learning/PhaseN/revision.md`
