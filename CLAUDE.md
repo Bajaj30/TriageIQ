@@ -106,7 +106,9 @@ updates. Personal documents (`Context/*.docx`, `*.pages`) are gitignored — nev
 ## 3. Ground rules — never violate without writing down why
 
 1. **Sequencing:** SQL now, MLOps later. Each phase ends in a demo-able artifact.
-2. **No JavaScript, ever.** Frontend is FastAPI's Swagger UI.
+2. ~~No JavaScript, ever.~~ **LIFTED by Shivam 2026-10-05** — the rule existed only because he doesn't write
+   frontend code; Claude builds it. Frontend = a static JS site on **Vercel** (free Hobby plan) that reaches the API
+   through Vercel **rewrites** (same https address, no CORS / mixed content). Swagger UI stays (`/docs`).
 3. **Free tier or student laptop only.** No GPU bills.
 4. **One source of truth for features.** All feature logic in SQL. Python never re-implements a
    feature. The central architectural claim.
@@ -521,9 +523,11 @@ under profile `public` (server only); the api is now published on 127.0.0.1:8000
 Mac's ARM images), 20 GB gp3 encrypted, IMDSv2, CPU credits *standard* (no surplus charges), Elastic IP, security
 group: 80 from anywhere, 22 from Shivam's IP only, no 5432/8000. Budgets: monthly cap + cumulative alerts at
 $10/$50/$90 of the $140 credits. AWS CLI 2.37.8 installed, NOT signed in yet (`aws login` = Shivam's step).
-**Frontend (Shivam, 2026-10-05):** brief in `frontend.md` (Part A for Claude Design, Part B build contract).
-Recommended: server-rendered pages (FastAPI + Jinja2 templates, HTML forms) — keeps ground rule 2 (no JavaScript),
-same origin as the API (no CORS / mixed-content), served through the same NGINX. A JS app would need CORS + HTTPS.
+**Frontend (Shivam, 2026-10-05, revised same day):** JS static site on **Vercel**, brief in `frontend.md` (Part A for
+Claude Design, Part B build contract). `vercel.json` rewrites the API paths to the EC2 server; Vercel adds a secret
+header and NGINX will accept only requests carrying it, and rate-limit on Vercel's `x-real-ip` (the visitor) instead
+of the connecting IP (which would be Vercel's). OPEN: Vercel docs show only https rewrite targets — test http first;
+if refused, add HTTPS on the server (Let's Encrypt on an sslip.io name). Waiting on: the design from Claude Design.
 **Day 5 DONE (2026-10-05) — LIVE: http://3.106.107.237/docs** (Swagger UI behind NGINX). AWS account = **Free plan**,
 $140 credits, plan expires **2027-04-02**; member of an AWS Organization whose SCP **denies EC2 in ap-south-1** → deployed
 in **ap-southeast-2 (Sydney)**. CLI: `export AWS_PROFILE=triageiq` (signed in via `aws login`, role

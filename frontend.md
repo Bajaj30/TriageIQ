@@ -1,30 +1,36 @@
 # TriageIQ — frontend brief
 
-**Part A** is the design brief: paste it into Claude Design. **Part B** is the build contract: what each screen
-calls and shows, so the approved design can be wired to the live API.
-Status (2026-10-05): brief only — nothing built yet. The API runs behind NGINX (`/docs` = Swagger UI).
+**Part A** is the design brief: paste it into Claude Design. **Part B** is the build contract: how the site is
+put together and what each screen calls.
+Status (2026-10-05): brief only — nothing built yet. The API runs on AWS behind NGINX (`/docs` = Swagger UI).
 
 ---
 
-## The decision: server-rendered pages, no JavaScript
+## The decision: a JavaScript site on Vercel, the API stays on AWS
 
-- **The JSON API stays exactly as it is** (Swagger UI, Postman). The website is a few extra pages served by
-  the same FastAPI app: HTML built on the server from templates (Jinja2). A form submits to the server, and the
-  answer comes back as a page.
-- **Why:**
-  - ground rule 2 ("no JavaScript, ever") holds;
-  - the pages live on the same server and the same address as the API, so there's no cross-site (CORS) setup;
-  - it works over plain HTTP today and over HTTPS later, unchanged.
-- **The alternative and its costs:** a JavaScript app hosted somewhere else would break ground rule 2. It would
-  also need CORS on the API, plus HTTPS on the API: a browser blocks an https page from calling an http API
-  ("mixed content").
-- **So the design must work with plain HTML + CSS.** Native HTML already gives us everything the design needs:
-  - dropdowns, including dropdowns grouped into sections;
-  - type-ahead suggestions (`<datalist>`);
-  - checkboxes and text areas;
-  - expandable sections (`<details>`).
+*Decided by Shivam on 2026-10-05: ground rule 2 ("no JavaScript") is lifted. It existed only because he
+doesn't write frontend code himself; Claude builds the site.*
 
-  It does not give live search, client-side charts or animations driven by script. CSS effects are fine.
+```
+visitor ──https──▶ Vercel (triageiq.vercel.app)
+                     ├─ the pages (HTML/CSS/JS, served from Vercel's CDN, close to the visitor)
+                     └─ /predict, /complaint/…, /options/…, /model-info, /docs ──rewrite──▶ AWS server (NGINX → API)
+```
+
+- **A static site.** HTML, CSS and JavaScript (plain, or React if the design comes that way), with no server
+  code on Vercel. It's hosted free on Vercel's Hobby plan (personal, non-commercial).
+- **One address for everything.** The browser only ever talks to `https://<project>.vercel.app`. API calls
+  go to the same address (e.g. `/predict`), and Vercel forwards them to the AWS server (a *rewrite*). So there is:
+  - no "mixed content" block: an https page calling an http server is forbidden by browsers, but the page
+    never calls the server directly;
+  - no CORS setup: to the browser it's all one site;
+  - one clean link for the resume, with the Swagger docs at `/docs` on the same address.
+- **Server side:**
+  - Vercel attaches a secret header to every request it forwards, and NGINX rejects anything without it;
+  - rate limits use the visitor's real IP, which Vercel passes on.
+- **Open check:** Vercel's docs show only `https` targets for rewrites, and our server is plain `http`. That's
+  tested first. If it fails, the server gets free HTTPS (Let's Encrypt on an sslip.io name) and the rewrite
+  targets that instead.
 
 ---
 
@@ -35,9 +41,9 @@ Status (2026-10-05): brief only — nothing built yet. The API runs behind NGINX
 senior analyst first. A fine-tuned language model reads the complaint; a database supplies the company's
 track record.
 
-**Who opens it.** Recruiters and interviewers clicking a link on a resume. Some are technical, some are not. They
-use a laptop or a phone and give it about a minute of attention. A secondary persona is a compliance analyst
-triaging a queue.
+**Who opens it.** Recruiters and interviewers clicking a link on a resume. Some are technical, some are not.
+They use a laptop or a phone and give it about a minute of attention. A secondary persona is a compliance
+analyst triaging a queue.
 
 **The one-minute goal.** Understand what it does → try it once → see that it's real and honest (it shows its
 misses too).
@@ -57,19 +63,19 @@ misses too).
 
 | field | control | notes |
 |---|---|---|
-| Company | text input with type-ahead suggestions (4,946 names) | unknown names are allowed; they're scored as "no track record" |
+| Company | search box with live suggestions as you type (4,946 names) | unknown names are allowed; they're scored as "no track record" |
 | Product | dropdown (11) | |
-| Sub-product | dropdown grouped by product (62 in total) | must belong to the chosen product |
-| Issue | dropdown (93) | long labels, so it needs width |
+| Sub-product | dropdown that updates when the product changes | only the chosen product's sub-products (62 in total) |
+| Issue | searchable dropdown (93) | long labels |
 | State | dropdown, optional | 2-letter codes |
 | Older American (62+) · Servicemember | two checkboxes | |
-| Complaint | large text area | at least 20 words, at most 20,000 characters. Hint: "Written like CFPB complaints: amounts as {$35.00}, hidden details as XXXX" |
+| Complaint | large text area with a live word counter | at least 20 words, at most 20,000 characters. Hint: "Written like CFPB complaints: amounts as {$35.00}, hidden details as XXXX" |
 
-- **Two "try an example" links** that open the form pre-filled: "A fee refund (bank)" and "A credit-report dispute".
-- **Primary button:** "Score it".
+- **Two "try an example" buttons** that fill the form: "A fee refund (bank)" and "A credit-report dispute".
+- **Primary button:** "Score it". It shows a loading state, because a score can take up to a few seconds.
 
-**2. Result** (shown under the form)
-- **A big number:** "31.7% chance the company pays".
+**2. Result** (appears below the form, no page reload)
+- **A big number:** "31.7% chance the company pays". A small animated gauge is fine.
 - **A route badge:** **Senior analyst** (accent colour) or **Template response** (neutral). Below it: "Seniors read
   the riskiest 10% — complaints at 3.67% or more."
 - **"What the model saw":** the company's track record (6–8 numbers with plain labels, see Part B), plus a note
@@ -92,16 +98,17 @@ misses too).
 **4. How it works**
 - **A 3-step picture:** the complaint text is read by the language model, while the company and issue track
   record comes from the database → one combined score → senior analyst or template.
-- **Result tiles** (live numbers from the API):
+- **Result tiles** (live numbers from `/model-info`):
   - within one company it ranks 82 of 100 paid/unpaid pairs correctly (range 0.815–0.830);
   - the riskiest 10% catches 92.6% of payouts;
   - tested on 150,000 complaints (3,471 payouts).
-- **The limits list** (from the API).
-- **Links:** API docs, GitHub, the blog.
+- **The limits list** (from `/model-info`).
+- **Links:** API docs (`/docs`), GitHub, the blog.
 
 ### States to design
 - an empty form;
-- field errors, inline under the field, e.g. "write at least 20 words…" or "unknown sub-product — choose one of …";
+- loading;
+- field errors shown under the field, e.g. "write at least 20 words…" or "unknown sub-product — choose one of …";
 - the unknown-company note;
 - a result;
 - "Too many requests — wait a few seconds";
@@ -117,23 +124,32 @@ misses too).
 | Real 2024 complaint: Synchrony credit card, "duped into signing up" | 2.5% | Template — **missed** (the company paid) |
 
 ### What to hand back
-- Desktop and mobile frames of the 4 screens and the error states.
+- Desktop and mobile frames of the 4 screens and the states above.
 - The colour palette and type scale.
-- HTML/CSS if it can export them. JavaScript isn't needed or wanted.
+- The code, if it can export it (HTML/CSS/JS or React).
 
 ---
 
 ## Part B — Build contract (for the implementation)
 
-**Routes** — added to the FastAPI app; the JSON API doesn't change:
+**Site layout** (static, on Vercel):
 
-| page | route | does |
+| page | path | calls |
 |---|---|---|
-| Home + form | `GET /` | the lists (products → sub-products, issues, states, all company names), read once at startup from schema `serving` |
-| Score | `POST /score` (an HTML form) | the same steps as `POST /predict` → renders the result on the Home page |
-| Real complaints | `GET /real?paid=true\|false` | the same as `GET /complaint/random` |
-| How it works | `GET /how` | renders the contents of `GET /model-info` |
-| API docs | `/docs` | unchanged (today `/` redirects there; `/` becomes the Home page) |
+| Home + form + result | `/` | at load: `GET /options/products`, `GET /options/issues`, `GET /options/states` (cache in memory) · while typing: `GET /options/companies?search=` (≥ 2 characters, wait ~250 ms after the last keystroke) · on submit: `POST /predict` |
+| Real complaints | `/real` | `GET /complaint/random?paid=true\|false` |
+| How it works | `/how` | `GET /model-info` |
+| API docs | `/docs` | Swagger UI, forwarded to the API unchanged |
+
+**`vercel.json` rewrites** (a static file wins first, so the site's own pages are never forwarded):
+`/predict`, `/complaint/:path*`, `/options/:path*`, `/model-info`, `/health`, `/docs`, `/openapi.json` → the
+same path on the AWS server. Plus the secret header (Vercel's `routes` transform), so NGINX accepts only
+requests that come through Vercel.
+
+**Request and response shapes:** exactly the API's (`/docs`). `POST /predict` takes
+`{company, product, sub_product, issue, state, older_american, servicemember, narrative}` and returns
+`{payout_probability, route, senior_threshold, model_version, features_as_of, inputs{19}, text_word_pieces,
+text_cut_at_512, notes[], latency_ms}`.
 
 **Display labels for the model's inputs:**
 
@@ -152,16 +168,10 @@ misses too).
 Ids and the two tags are the visitor's own choices, so they aren't repeated back.
 
 **How errors are shown:**
-- **422:** the message goes under the field it names. Pydantic's error says which field; our name-lookup errors
-  name the field in the message.
-- **429** (from NGINX): a banner, "Too many requests — wait a few seconds".
-- **500 / 503:** a banner, "The service is having trouble — try again in a minute".
+- **422:** the message goes under the field it names. Pydantic's error has the field in `loc`; our name-lookup
+  errors name the field in `detail`.
+- **429:** "Too many requests — wait a few seconds".
+- **500 / 502 / 503 / 504:** "The service is having trouble — try again in a minute".
+- **Timeout:** abort after 20 s and show the same message.
 
-**Constraints:**
-- no JavaScript;
-- one CSS file;
-- a system font stack unless the design needs a web font;
-- the company suggestion list is about 200 KB (estimated). If that turns out too heavy, use a two-step "find
-  your company" form instead.
-
-**Out of scope:** logins, saved history, live search, charts drawn by script.
+**Out of scope:** logins, saved history, analytics or tracking scripts.
