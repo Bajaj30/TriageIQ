@@ -90,7 +90,11 @@ gets the next step.
   build, auto-rebuilds on push). 12 chapters, 13 figures; interactive: waffle (2 in 100), the **snowflake** (click a
   table), the 60-day timeline (illustration), the smoothing-K slider + measured K bars, real word-pieces of complaint
   11216352 (raw 92 → clean 80), the read-X%-catch-Y% curve (from the 2024 test scores). `data.js` is GENERATED from
-  project files (recall curve, tokens) — regenerate, don't hand-edit. Same look as the demo site. Add new chapters by
+  project files (recall curve, tokens) — regenerate, don't hand-edit. Same look as the demo site.
+  **Dark theme (2026-10-05):** every colour is a CSS variable in `blog.css` `:root`, redefined under
+  `prefers-color-scheme: dark`; `color-scheme` + `darkreader-lock` metas stop Dark Reader / Chrome force-dark from
+  re-colouring it (they once made the snowflake's SVG text invisible). **Never hard-code a colour in docs/, and never
+  name a colour in a caption that flips between themes** ("black box"). Text in figures = HTML, not SVG `<text>`. Add new chapters by
   writing them in blog_log.md first. (The original requirement:) an interactive
   **snowflake-schema visual**. Diagrams live ONLY in `README.md` (§5 = snowflake, journey,
   track-record steps); `blog_log.md` §8 lists what to reuse. Never duplicate a diagram.
