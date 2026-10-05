@@ -89,27 +89,27 @@ const EDGES = [["company", "fact"], ["state", "fact"], ["product", "fact"], ["su
   ["product", "subprod"], ["issue", "subiss"], ["fact", "story"], ["fact", "events"], ["pxwalk", "product", true], ["ixwalk", "issue", true]];
 
 function snowflake() {
-  const svg = el("svg", { viewBox: "0 0 900 520", role: "img", "aria-label": "The database tables and how they connect" }, $("#snow-svg"));
+  // Lines are drawn in SVG; the tables are ordinary buttons on top. Buttons keep their text and background
+  // together, so they stay readable in dark mode, with keyboard access and big tap targets for free.
+  const map = $("#snowmap");
+  const svg = el("svg", { viewBox: "0 0 900 520", preserveAspectRatio: "none", "aria-hidden": "true" }, map);
   const edges = EDGES.map(([a, b, dash]) => {
     const A = TABLES[a], B = TABLES[b];
-    const line = el("line", { x1: A.x, y1: A.y, x2: B.x, y2: B.y, class: "edge" + (dash ? " dash" : "") }, svg);
-    return { a, b, line };
+    return { a, b, line: el("line", { x1: A.x, y1: A.y, x2: B.x, y2: B.y, class: "edge" + (dash ? " dash" : "") }, svg) };
   });
   const nodes = {};
   for (const [key, t] of Object.entries(TABLES)) {
     const kind = key === "fact" ? " fact" : (key === "story" || key === "events") ? " side" : t.cross ? " cross" : "";
-    const g = el("g", { class: "node" + kind, tabindex: "0", role: "button", "aria-label": t.title }, svg);
-    el("rect", { x: t.x - t.w / 2, y: t.y - 27, width: t.w, height: 54, rx: 2 }, g);
-    const name = el("text", { x: t.x, y: t.y - 4, "text-anchor": "middle", "font-size": 13, "font-weight": 600 }, g);
-    name.textContent = t.label;
-    const rows = el("text", { x: t.x, y: t.y + 15, "text-anchor": "middle", "font-size": 11, class: "sub" }, g);
-    rows.textContent = t.rows + (t.cross ? "" : " rows");
-    nodes[key] = g;
-    const pick = () => select(key);
-    g.addEventListener("click", pick);
-    g.addEventListener("mouseenter", pick);
-    g.addEventListener("focus", pick);
-    g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tnode" + kind;
+    b.setAttribute("aria-label", t.title);
+    Object.assign(b.style, { left: (t.x - t.w / 2) / 9 + "%", top: (t.y - 27) / 5.2 + "%",
+                             width: t.w / 9 + "%", height: 54 / 5.2 + "%" });
+    b.innerHTML = `<span class="nm">${t.label}</span><span class="rw">${t.rows}${t.cross ? "" : " rows"}</span>`;
+    for (const ev of ["click", "mouseenter", "focus"]) b.addEventListener(ev, () => select(key));
+    map.appendChild(b);
+    nodes[key] = b;
   }
   const chips = $("#snow-chips");
   for (const [key, t] of Object.entries(TABLES)) {
@@ -121,7 +121,7 @@ function snowflake() {
   function select(key) {
     const t = TABLES[key];
     $$("button", chips).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.key === key)));
-    Object.entries(nodes).forEach(([k, g]) => g.classList.toggle("on", k === key));
+    Object.entries(nodes).forEach(([k, n]) => n.classList.toggle("on", k === key));
     edges.forEach((e) => e.line.classList.toggle("on", e.a === key || e.b === key));
     $("#snow-panel").innerHTML = `<p class="t">${t.title}</p><p class="code">${t.label}</p>
       <div class="rows">${t.rows}</div><div class="rows-l">${t.cross ? "translation rules" : "rows, 2022–24"}</div>
@@ -137,12 +137,12 @@ function timeline() {
   const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Past complaints of a made-up company on a timeline" }, host);
   const defs = el("defs", {}, svg);
   const pat = el("pattern", { id: "hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
-  el("rect", { width: 6, height: 6, fill: "#f1eee7" }, pat);
-  el("line", { x1: 0, y1: 0, x2: 0, y2: 6, stroke: "#e2ddd2", "stroke-width": 3 }, pat);
+  el("rect", { width: 6, height: 6, class: "hatch-a" }, pat);
+  el("line", { x1: 0, y1: 0, x2: 0, y2: 6, class: "hatch-b", "stroke-width": 3 }, pat);
   const xs = (d) => X0 + (X1 - X0) * d / DAYS;
   const pend = el("rect", { y: 26, height: 96, class: "zone-pending" }, svg);
   const fut = el("rect", { y: 26, height: 96, class: "zone-future" }, svg);
-  el("line", { x1: X0, x2: X1, y1: 122, y2: 122, stroke: "#b9b2a3" }, svg);
+  el("line", { x1: X0, x2: X1, y1: 122, y2: 122, class: "baseline" }, svg);
   ["Jan 2022", "Jul 2022", "Jan 2023", "Jul 2023", "Dec 2023"].forEach((lab, i) => {
     const t = el("text", { x: xs([0, 181, 365, 546, 729][i]), y: 142, class: "axis", "text-anchor": i === 0 ? "start" : i === 4 ? "end" : "middle" }, svg);
     t.textContent = lab;

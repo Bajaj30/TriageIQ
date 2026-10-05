@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">  <!-- the page has its own dark theme -->
+  <meta name="darkreader-lock">                     <!-- so tools like Dark Reader should not re-colour it -->
   <title>Finding the two percent — TriageIQ</title>
   <meta name="description" content="About two in a hundred consumer complaints end with the company paying money. How I built a system that spots them before anyone has read them — from 4.8 million real complaints, on a student budget.">
   <meta property="og:title" content="Finding the two percent">
@@ -114,7 +116,7 @@
             <div class="share-bar"><div class="s-credit" style="width:83.2%">83%</div><div class="s-cards" style="width:6.4%" title="cards and bank accounts 6%"></div><div class="s-other" style="width:10.4%">10%</div></div></div>
           <div class="share-row"><span>Payouts</span>
             <div class="share-bar"><div class="s-credit" style="width:3.3%" title="credit reports 3%"></div><div class="s-cards" style="width:76.2%">76%</div><div class="s-other" style="width:20.5%">20%</div></div></div>
-          <div class="legend"><span><i style="background:#8d8676"></i>Credit reports</span><span><i style="background:var(--accent)"></i>Credit cards &amp; bank accounts</span><span><i style="background:#3b3f45"></i>The other eight product types</span></div>
+          <div class="legend"><span><i style="background:var(--s-credit)"></i>Credit reports</span><span><i style="background:var(--accent)"></i>Credit cards &amp; bank accounts</span><span><i style="background:var(--s-other)"></i>The other eight product types</span></div>
         </div>
         <figcaption><span class="label">Figure 2</span>Credit-report complaints are 83% of everything but only 3% of the
           payouts. Credit cards and bank accounts are 6% of complaints and 76% of payouts. All complaints,
@@ -184,11 +186,11 @@
       <div class="fig">
         <p class="fig-title">The database — tap or click a table</p>
         <div class="snow">
-          <div><div id="snow-svg"></div><div class="snow-chips" id="snow-chips" role="group" aria-label="Tables"></div></div>
+          <div><div class="snowmap" id="snowmap"></div><div class="snow-chips" id="snow-chips" role="group" aria-label="Tables"></div></div>
           <div class="panel" id="snow-panel" aria-live="polite"></div>
         </div>
       </div>
-      <figcaption style="margin-left:auto;margin-right:auto"><span class="label">Figure 4</span>Black: the main table, one
+      <figcaption style="margin-left:auto;margin-right:auto"><span class="label">Figure 4</span>Filled box: the main table, one
         row per complaint. Red border: side tables holding a complaint's written story and its timeline (where the
         answer lives). Dashed: translation tables for renamed categories. Row counts are for 2022–24.</figcaption>
     </figure>
@@ -424,8 +426,8 @@
           <div class="barrow"><span class="lab"><b>Both</b>simple word-counting model</span><div class="track"><div class="fill" style="width:81.2%"></div></div><span class="v">81.2</span></div>
           <div class="barrow key"><span class="lab"><b>Both</b>the AI reader + track record</span><div class="track"><div class="fill" style="width:82.2%"></div><div class="ci" style="left:81.5%;width:1.5%"></div></div><span class="v">82.2</span></div>
         </div>
-        <figcaption><span class="label">Figure 9</span>Inside one company, 2024 exam. Pale marks inside the bars show the
-          95% range where it was measured. Each reader sees something the other can't; together they're best — and the
+        <figcaption><span class="label">Figure 9</span>Inside one company, 2024 exam. The small mark near the end of a bar
+          shows the 95% range where it was measured. Each reader sees something the other can't; together they're best — and the
           ranges of "words only" and "both" don't overlap.</figcaption>
       </figure>
 
