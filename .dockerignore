@@ -1,0 +1,11 @@
+# What `docker build` may see from the repo root. ALLOW-LIST: block everything, then let in only what the
+# API image needs. Without this, the build would upload the 9.2 GB CSV, the model runs and .env.
+*
+!api/
+!training/outputs/serving_v3/model.onnx
+!training/outputs/serving_v3/tokenizer.json
+!training/outputs/serving_v3/preprocessing.json
+!training/outputs/serving_v3/calibration.json
+!training/outputs/serving_v3/model_card.json
+api/__pycache__
+api/run_local.sh

@@ -359,6 +359,13 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   company actually did — including the ones the AI got wrong (a credit-card complaint it gave 2%, which was
   paid). The honest check: 300 real complaints scored through the service matched the scores from the original
   test to within 0.02 of a percentage point, and every one went to the same desk.
+- **Packing it into shipping containers** *(tech: Docker, Docker Compose)* — "it works on my laptop" isn't a
+  deployment. So the whole service was packed into two sealed boxes: one holds the code, the AI model and exactly
+  the 9 software packages it needs; the other is a small database that, the very first time it starts, fills
+  itself from the 57 MB file. One command starts both, in the right order — the service waits until the database
+  actually answers. From empty to ready took about ten seconds, uses about half a gigabyte of memory, and gave
+  the same answers as before on 300 real complaints. The database box has no door to the outside world: only the
+  service box next to it can talk to it.
 - **The newest complaints can't teach yet** — the public file runs to August 2026, so why not train on the
   freshest data? Because the newest complaints aren't finished: half of those from July–August 2026 have no
   outcome yet, and the customers' written stories are published weeks or months later — only about 3% of 2026

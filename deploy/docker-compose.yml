@@ -1,0 +1,65 @@
+# ============================================================
+# deploy/docker-compose.yml — the whole TriageIQ service: database + API, one command.
+#   docker compose -f deploy/docker-compose.yml up -d --build      then open http://localhost:8000/docs
+# The SAME file runs on the Mac and on the AWS server; only deploy/.env (passwords) differs.
+#
+# Separate from the repo-root docker-compose.yml (the 16 GB development database on port 5433): own project
+# name, own volume. `down -v` on THIS file deletes only the serving copy, which rebuilds from the dump.
+#
+# CONCEPTS
+#   services talk by NAME on a private network: the api reaches the database at host "db", port 5432.
+#   ports      : only the api is published (8000). The database has NO ports entry — unreachable from outside.
+#   volumes    : servingdata keeps the database between restarts; the dump and init script are mounted
+#                read-only (:ro) — files from the host, not baked into an image.
+#   depends_on + healthcheck : the api starts only when the database ANSWERS, not merely when it starts.
+#   restart    : unless-stopped — comes back after a crash or a server reboot.
+# ============================================================
+name: triageiq-serving
+
+services:
+  db:
+    image: postgres:16-alpine                 # small Postgres; pg_restore 16 reads the pg_dump 16 file
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - servingdata:/var/lib/postgresql/data
+      - ../training/outputs/serving_v3/serving_db.dump:/seed/serving_db.dump:ro
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # over TCP (-h 127.0.0.1) on purpose: during the first-start restore the server accepts only local
+      # socket connections, so "ready over TCP" means the restore has finished.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..                             # repo root; .dockerignore lets in only api/ + the model files
+      dockerfile: deploy/api.Dockerfile
+    image: triageiq-api:v3
+    environment:
+      PGHOST: db                              # the service name — not localhost (that is the api container)
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      ORT_THREADS: "2"
+    ports:
+      - "8000:8000"                           # host:container
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  servingdata:
