@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TriageIQ — will this complaint cost the company money?</title>
+  <meta name="description" content="TriageIQ reads a consumer complaint and the company's track record, and estimates the chance the company pays — so the riskiest complaints reach a senior analyst first.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body data-page="score">
+  <header class="masthead">
+    <div class="wrap">
+      <a class="brand" href="/"><span class="brand-name">TriageIQ</span><span class="brand-tag">Complaint triage</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="/" aria-current="page">Score a complaint</a>
+        <a href="/real">Real 2024 complaints</a>
+        <a href="/how">How it works</a>
+        <a href="/docs">API docs</a>
+        <a href="https://github.com/Bajaj30/TriageIQ">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="intro">
+      <p class="kicker">Consumer complaints · US CFPB data</p>
+      <h1>Will this complaint cost the company money?</h1>
+      <p class="lead">TriageIQ reads a complaint the way it was filed with the Consumer Financial Protection Bureau,
+        checks the company's track record, and estimates the chance the company ends up paying. The riskiest
+        complaints go to a senior analyst first.</p>
+      <ul class="facts" id="facts">
+        <li>Tested on 150,000 complaints from 2024 it never saw</li>
+        <li>Reading the riskiest 10% catches 92.6% of payouts</li>
+      </ul>
+    </section>
+
+    <div class="case">
+      <section aria-labelledby="form-title">
+        <p class="kicker" id="form-title">Case details</p>
+        <p class="examples">Start from an example:
+          <button type="button" class="linkbtn" data-example="fee">a disputed bank fee</button> or
+          <button type="button" class="linkbtn" data-example="report">a credit-report dispute</button>
+        </p>
+        <p class="banner" id="banner" role="alert" hidden></p>
+
+        <form id="score-form" novalidate>
+          <div class="field">
+            <label for="company">Company</label>
+            <input type="text" id="company" list="company-list" autocomplete="off" spellcheck="false"
+                   placeholder="Start typing — e.g. Wells Fargo">
+            <datalist id="company-list"></datalist>
+            <p class="hint">A company that isn't in the data is scored as having no track record.</p>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="product">Product</label>
+              <select id="product"><option>Loading…</option></select>
+            </div>
+            <div class="field">
+              <label for="sub_product">Sub-product</label>
+              <select id="sub_product" disabled></select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="issue">Issue</label>
+            <select id="issue"><option>Loading…</option></select>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="state">State</label>
+              <select id="state"><option value="">Not given</option></select>
+            </div>
+            <div class="field">
+              <span class="legend">Consumer</span>
+              <div class="checks">
+                <label class="check"><input type="checkbox" id="older_american"> Older American (62+)</label>
+                <label class="check"><input type="checkbox" id="servicemember"> Servicemember</label>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="narrative">The complaint, in the consumer's words</label>
+            <textarea id="narrative" maxlength="20000"
+              placeholder="What happened, what the company did, and what the consumer is asking for."></textarea>
+            <p class="hint">Written like CFPB complaints: amounts as {$35.00}, hidden details as XXXX.</p>
+          </div>
+          <div class="form-foot">
+            <span class="count" id="word-count" aria-live="polite">0 words — at least 20 needed</span>
+            <button class="btn" id="score-btn" type="submit">Score it</button>
+          </div>
+        </form>
+      </section>
+
+      <section aria-labelledby="assessment-title">
+        <div class="sticky" id="assessment" aria-live="polite">
+          <p class="kicker" id="assessment-title">Assessment</p>
+          <div class="assess-empty">
+            <p>The assessment appears here: the chance of a payout, where the complaint should go, and the track
+               record the model weighed alongside the text.</p>
+            <p>Fill in a complaint, or start from an example.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="colophon">
+    <div class="wrap">
+      <span>Built by Shivam Bajaj · data: CFPB Consumer Complaint Database (public) · not affiliated with the CFPB</span>
+      <span>A demo, not financial or legal advice</span>
+    </div>
+  </footer>
+</body>
+</html>

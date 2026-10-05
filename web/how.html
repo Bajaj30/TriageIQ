@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How it works — TriageIQ</title>
+  <meta name="description" content="How TriageIQ combines a language model with a SQL-built company track record, how it was tested, and its limits.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body data-page="how">
+  <header class="masthead">
+    <div class="wrap">
+      <a class="brand" href="/"><span class="brand-name">TriageIQ</span><span class="brand-tag">Complaint triage</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="/">Score a complaint</a>
+        <a href="/real">Real 2024 complaints</a>
+        <a href="/how" aria-current="page">How it works</a>
+        <a href="/docs">API docs</a>
+        <a href="https://github.com/Bajaj30/TriageIQ">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="intro">
+      <p class="kicker">Method</p>
+      <h1>Two readers, one score</h1>
+      <p class="lead">Only about 2 in every 100 complaints end with the company paying money. A compliance team with a 15-day
+        deadline can't read them all with equal care — so TriageIQ estimates which ones will cost money, and sends
+        those to a senior analyst first.</p>
+
+      <div class="steps">
+        <div class="step"><span class="n">01 — THE WORDS</span>
+          <h3>A language model reads the complaint</h3>
+          <p>DistilBERT, fine-tuned on how past complaints actually ended. It reads up to about 410 words — enough
+             for 9 in 10 complaints in full.</p></div>
+        <div class="step"><span class="n">02 — THE TRACK RECORD</span>
+          <h3>A database recalls the company's history</h3>
+          <p>19 numbers computed in SQL from 4.8 million complaints: how often this company paid on this kind of
+             problem, as known on the day the complaint arrived — never later.</p></div>
+        <div class="step"><span class="n">03 — THE CALL</span>
+          <h3>One score, one route</h3>
+          <p>Both are combined into one probability, re-tuned on the newest data. The riskiest 10% go to a senior
+             analyst; the rest get a template reply.</p></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <p class="kicker">How well it works</p>
+      <h2>Tested on <span id="stat-n">150,000</span> complaints from 2024 it never saw</h2>
+      <div class="stats">
+        <div class="stat"><div class="v" id="stat-wc">0.82</div>
+          <p>Inside one company, it ranks a complaint that paid above one that didn't about 82 times in 100
+             (range <span id="stat-wc-range">0.815–0.830</span>). The honest test: a bank only sorts its own queue.</p></div>
+        <div class="stat"><div class="v" id="stat-top">92.6%</div>
+          <p>of all <span id="stat-payouts">3,471</span> payouts sit in the riskiest 10% — what seniors would read.</p></div>
+        <div class="stat"><div class="v">+1.9</div>
+          <p>points from adding the track record to the language model (0.804 → 0.822) — the database earns its place.</p></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <p class="kicker">Honest limits</p>
+      <ul class="limits" id="limits">
+        <li>Track records are frozen at the end of 2024.</li>
+        <li>The label is company cost (money paid), not how badly the consumer was harmed.</li>
+      </ul>
+    </section>
+
+    <section class="block">
+      <p class="kicker">Under the hood</p>
+      <dl class="stack">
+        <dt>Data</dt><dd>4.8M real CFPB complaints (2022–24) in PostgreSQL; 1.6M with the consumer's own words</dd>
+        <dt>Features</dt><dd>Point-in-time window functions in SQL, leak-tested; the live service reads the same formulas</dd>
+        <dt>Model</dt><dd>DistilBERT + a small network over the SQL features, trained on a free Kaggle T4 GPU</dd>
+        <dt>Serving</dt><dd>ONNX Runtime on CPU · FastAPI · Docker Compose · NGINX · AWS EC2</dd>
+        <dt>This site</dt><dd>Plain HTML, CSS and JavaScript on Vercel, forwarding to the API</dd>
+        <dt>Links</dt><dd><a href="/docs">API docs</a> · <a href="https://github.com/Bajaj30/TriageIQ">Source on GitHub</a></dd>
+      </dl>
+    </section>
+  </main>
+
+  <footer class="colophon">
+    <div class="wrap">
+      <span>Built by Shivam Bajaj · data: CFPB Consumer Complaint Database (public) · not affiliated with the CFPB</span>
+      <span>A demo, not financial or legal advice</span>
+    </div>
+  </footer>
+</body>
+</html>

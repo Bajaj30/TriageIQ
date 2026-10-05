@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/predict", "destination": "http://3.106.107.237/predict" },
+    { "source": "/complaint/:path*", "destination": "http://3.106.107.237/complaint/:path*" },
+    { "source": "/options/:path*", "destination": "http://3.106.107.237/options/:path*" },
+    { "source": "/model-info", "destination": "http://3.106.107.237/model-info" },
+    { "source": "/health", "destination": "http://3.106.107.237/health" },
+    { "source": "/docs", "destination": "http://3.106.107.237/docs" },
+    { "source": "/openapi.json", "destination": "http://3.106.107.237/openapi.json" }
+  ],
+  "headers": [
+    {
+      "source": "/(predict|complaint/.*|options/.*|model-info|health)",
+      "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "0" }]
+    }
+  ]
+}
