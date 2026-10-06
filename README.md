@@ -13,7 +13,9 @@ rest get a standard reply.
 > **The story behind it — [Finding the two percent](https://bajaj30.github.io/TriageIQ/)**, an illustrated essay.
 
 > [!NOTE]
-> **Work in progress.** Numbers marked **⏳** don't exist yet. They get filled in as each step finishes.
+> **Status: built and live (October 2026).** This is a learning project: the goal was to build every stage of a
+> machine-learning product by hand, from a raw CSV to a public link. One optional feature, marked **⏳**, was
+> planned but not built.
 
 ---
 
@@ -28,7 +30,7 @@ rest get a standard reply.
 | 📝 **1 in 3** | complaints include the customer's own written story |
 | 🎯 **81 / 100** | a simple starting model, on the most realistic test |
 | 🤖 **82 / 100** | the fine-tuned AI model, on the same test |
-| 💰 **$0** | budget — a student laptop and free cloud tools |
+| 💰 **$0** | out of pocket — a laptop, Kaggle's free GPU and free AWS credits |
 
 ---
 
@@ -118,7 +120,7 @@ flowchart LR
 |---|---|
 | Chance this complaint ends with a payout | a percentage — e.g. **31.7%** for a disputed overdraft fee |
 | Suggested route | 👩‍💼 senior analyst, or 📄 template reply |
-| The 5 most similar past complaints | ⏳ of 5 ended with a payout *(not built yet)* |
+| The 5 most similar past complaints | ⏳ of 5 ended with a payout *(planned, not built)* |
 
 ---
 
@@ -302,9 +304,7 @@ flowchart TD
     classDef done fill:#d1fae5,stroke:#059669,color:#064e3b
     classDef doing fill:#fef3c7,stroke:#d97706,color:#78350f
     classDef todo fill:#f3f4f6,stroke:#9ca3af,color:#374151
-    class A,B,C,D done
-    class E doing
-    class F,G,H todo
+    class A,B,C,D,E,F,G,H done
 ```
 
 Training and the live service read **the same rows** — so the model is never tested on numbers
@@ -368,7 +368,7 @@ more than the history.** Together they do best.
 | Real-life test score | 81 | **82** |
 | Fair test score | 95 | **95** |
 | Share of payouts caught if seniors read only the riskiest 10% | 92% | **93%** |
-| Time to score one complaint | — | ≈ 0.1–0.5 s on the small cloud server *(re-measuring)* |
+| Time to score one complaint | — | about 0.2 s typically, 0.8 s for the slowest 1 in 20 (the small cloud server) |
 
 ---
 
@@ -390,7 +390,7 @@ flowchart TB
 
 - **Senior time goes where money is at stake:** reading the riskiest **10%** of complaints catches **93%** of all payouts (2024 test, all companies together).
 - **Fewer surprises:** rare but expensive cases inside "low-risk" products get flagged by their words.
-- **Each score comes with examples:** the most similar past complaints and how they ended (⏳).
+- **Each score could come with examples:** the most similar past complaints and how they ended (⏳ planned, not built).
 
 ---
 
@@ -431,67 +431,99 @@ flowchart LR
 
 ### How it's built
 
-| part | tool | status |
+```
+visitor ─https─▶ Vercel (static site) ─forwards API paths + a secret header─▶ NGINX on AWS EC2
+                                                                           (403 without the secret · 5 req/s per visitor)
+                                                                                    │
+                     FastAPI ◀──────────────────────────────────────────────────────┘
+                       ├─ Postgres `serving` schema: the 19 track-record inputs as of 2025-01-01 (same SQL formulas
+                       │  as training) + the text clean-up function + 150,000 real 2024 complaints for the demo
+                       └─ ONNX Runtime on CPU: DistilBERT + the 19 inputs → logit → Platt calibration → senior / template
+```
+
+| part | tool | where |
 |---|---|---|
-| Database | PostgreSQL 16 + pgvector, in Docker Compose (port 5433) | ✅ running |
-| Track record | SQL window functions — point-in-time, as-of each complaint's date; materialized view `mv_features` | ✅ Phase 1 |
-| Text model | DistilBERT fine-tuned on Kaggle's free T4 GPU | ✅ Phase 2 |
-| Fusion | text model + SQL features combined | ✅ Phase 2 |
-| Serving | FastAPI + ONNX Runtime (CPU) in Docker Compose on one AWS EC2 server (t4g.small, Sydney), NGINX in front | ✅ live |
-| Website | plain HTML/CSS/JS on Vercel; Vercel forwards API calls to the server, which accepts only Vercel's requests | ✅ live |
+| Database | PostgreSQL 16 + pgvector, Docker Compose (port 5433) — 4.8M complaints, snowflake schema, 16 GB | [`sql/00–02`](sql/) |
+| Track record | SQL window functions, point-in-time ("as of" each complaint's date, outcomes ≥ 60 days old), smoothed toward the product rate (K = 5); materialized view `mv_features` → view `v_model_input` (19 inputs); recount + leak tests | [`sql/03_features/`](sql/03_features/), [`sql/tests/`](sql/tests/) |
+| Training set | temporal split, case-control sampling on train only, one text = one split, `clean_narrative()` → Parquet | [`sql/04–05`](sql/), [`training/export_training_set.py`](training/export_training_set.py) |
+| Text model | DistilBERT fine-tuned with the 19 inputs fused in (3 epochs, Kaggle's free T4) | [`training/fusion_distilbert.ipynb`](training/fusion_distilbert.ipynb) |
+| Calibration | case-control offset −2.4165, then Platt scaling fitted on Jul–Dec 2024; senior if p ≥ 0.0367 (the riskiest 10%) | [`training/serving/calibrate.py`](training/serving/calibrate.py) |
+| Packaging | ONNX export (no PyTorch at serving time) — matches PyTorch to 1e-5 | [`training/serving/export_onnx.py`](training/serving/export_onnx.py) |
+| Serving features | `serving.model_input()` from an end-of-data snapshot — **skew test: 19/19 inputs identical** to training on 20,773 complaints | [`sql/06_serving/`](sql/06_serving/) |
+| API | FastAPI: `POST /predict`, `GET /complaint/random`, `GET /complaint/{id}`, `/options/*`, `/model-info`, `/health` | [`api/`](api/) |
+| Deployment | Docker Compose (db restored from a 57 MB dump + api + NGINX) on one EC2 t4g.small (ARM, Sydney), ≈ $21/month | [`deploy/`](deploy/) |
+| Website | plain HTML/CSS/JS on Vercel | [`web/`](web/) |
+| Essay | GitHub Pages | [`docs/`](docs/) |
 
-**Design rules:** no leakage (every feature computable at complaint receipt) · one source of truth for
-features (training and serving read the same SQL view) · temporal split, never random · case-control
-sampling on the train split only, then recalibration (case-control offset −2.4165, then Platt scaling fitted on Jul–Dec 2024) · reproducible (SEED = 42).
+**Design rules:** no leakage (every input computable at complaint receipt) · one source of truth for features
+(all feature logic in SQL; training and serving use the same formulas, proven by the skew test) · temporal split,
+never random · reproducible (SEED = 42, every quoted number has the code that made it).
 
-### Baseline numbers in full
+### Every model on the same exam
 
-TF-IDF + logistic regression on **training set v3** — train 62,940 (case-control), test 150,000 complaints
-from 2024, 2.31% payouts. Features = the 19 SQL inputs (`sql/03_features/feature_dictionary.md`).
+150,000 complaints from 2024 (3,471 payouts), never seen in training. Scores are ROC-AUC; the bracket is the 95%
+range of the within-company score.
 
-| model | pooled ROC-AUC | pooled PR-AUC | within product × issue | within company |
-|---|---|---|---|---|
-| text only | 0.9599 | 0.3523 | 0.8916 | 0.7956 |
-| features only | 0.9642 | 0.3645 | 0.9276 | 0.7500 |
-| **fusion** | **0.9713** | **0.4262** | **0.9457** | **0.8115** |
+| model | reads | within company | within product × issue | pooled PR-AUC | riskiest 10% catches |
+|---|---|---|---|---|---|
+| TF-IDF + logistic regression | text | 0.7956 | 0.8916 | 0.3523 | 87.2% |
+| TF-IDF + logistic regression | SQL features | 0.7500 | 0.9276 | 0.3645 | 88.8% |
+| TF-IDF + logistic regression | text + SQL | 0.8115 | 0.9457 | 0.4262 | 91.7% |
+| small network | SQL features | 0.7537 (0.744–0.763) | 0.9266 | 0.3847 | 89.1% |
+| DistilBERT | text | 0.8036 (0.796–0.812) | 0.9163 | 0.3759 | 88.8% |
+| **DistilBERT (shipped)** | **text + SQL** | **0.8224 (0.815–0.830)** | **0.9492** | **0.4395** | **92.6%** |
 
-Reproduce with `training/test.ipynb`. Every number in the project lives in
-[`Context/FACTS.md`](Context/FACTS.md) (v2 numbers are kept there as history).
+Pooled ROC-AUC of the shipped model: 0.9731. Adding dollar-amount features (data v4) gave 0.8195 (0.811–0.827) —
+no better, so the simpler model shipped. Every number lives in [`Context/FACTS.md`](Context/FACTS.md).
+
+**Speed** (300 real complaints): about 0.2 s typical / 0.8 s for the slowest 5% on the 2-core cloud server; 0.02 s /
+0.08 s on an M4 laptop. The feature lookup takes under a millisecond — the model is nearly all of it.
 
 ### What's in this repo
 
 | path | what's inside |
 |---|---|
 | [`sql/`](sql/) | the database pipeline, run in number order — every folder has a `log.md` |
-| [`Context/`](Context/) | design docs: full spec, numbers, database decisions, blog notes |
+| [`training/`](training/) | training notebook, evaluation, calibration and ONNX export; `results/` holds every measured score |
+| [`api/`](api/) | the FastAPI service |
+| [`deploy/`](deploy/) | Dockerfile, Compose file, NGINX config, server setup and deploy scripts |
+| [`web/`](web/) | the website (Vercel) |
+| [`docs/`](docs/) | the essay (GitHub Pages) |
+| [`Context/`](Context/) | design docs: full spec, numbers, database decisions, interview notes, blog notes |
+| [`Learning/`](Learning/) | study notes and interview revision cards, one folder per phase |
+| [`NLP.md`](NLP.md) | every NLP / ML concept and metric used, and where |
 | [`Data/`](Data/) | data exploration notebook and data profile (the raw CSV is not in git) |
-| [`training/`](training/) | scripts that reproduce every quoted number |
-| [`Learning/`](Learning/) | study notes |
-| [`docker-compose.yml`](docker-compose.yml) | the database container |
+| [`docker-compose.yml`](docker-compose.yml) | the full local database |
 
 ### Run it yourself
 
+**The full pipeline** (rebuilds everything from the public data):
 1. Install Docker Desktop.
 2. Download the complaints CSV from the
    [CFPB Consumer Complaint Database](https://www.consumerfinance.gov/data-research/consumer-complaints/)
    and save it as `Data/complaints.csv` (about 9 GB).
 3. Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`.
 4. `docker compose up -d` — Postgres starts on `localhost:5433`.
-5. Run the SQL files marked ✅ in each folder's `log.md`, in number order: `sql/00_staging/` →
-   `sql/01_schema/` → `sql/02_load/`. Use pgAdmin's Query Tool, or:
-   ```bash
-   docker exec -i triageiq-postgres psql -U triageiq -d triageiq < sql/00_staging/01_load_raw.sql
-   ```
-   Each file ends with checks and the numbers to expect.
+5. Run the SQL files in each folder's `log.md` order: `sql/00_staging/` → `01_schema/` → `02_load/` →
+   `03_features/` → `04_training_set/` → `05_export/` → `06_serving/` (pgAdmin's Query Tool, or
+   `docker exec -i triageiq-postgres psql -U triageiq -d triageiq < sql/00_staging/01_load_raw.sql`).
+   Each file ends with checks and the numbers to expect; `sql/tests/` re-checks the features by hand.
+6. Train on Kaggle (`training/KAGGLE_SETUP.md`), then `training/serving/calibrate.py` and `export_onnx.py`.
+
+**Just the service:** with the model bundle in `training/outputs/serving_v3/` (model files are too large for git),
+`docker compose -f deploy/docker-compose.yml up -d --build` → http://localhost:8000/docs.
 
 ### Go deeper
 
 | read | for |
 |---|---|
+| [Finding the two percent](https://bajaj30.github.io/TriageIQ/) | the whole story, for any reader |
 | [`Context/WHAT_WHY.md`](Context/WHAT_WHY.md) | the pitch — what and why |
 | [`Context/TriageIQ.md`](Context/TriageIQ.md) | the full engineering spec |
 | [`Context/schema_explanation.md`](Context/schema_explanation.md) | every database decision, and why |
 | [`Context/metrics.md`](Context/metrics.md) | how every score is defined and computed |
+| [`NLP.md`](NLP.md) | every NLP / ML concept used |
+| [`Context/interview.md`](Context/interview.md) | what broke, and how it was fixed |
 | [`Context/blog_log.md`](Context/blog_log.md) | discarded ideas, surprises, lessons |
 
 </details>

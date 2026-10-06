@@ -101,7 +101,7 @@ The cell prints, with no assertion error:
   test 150,000 / 3,471. Train's rate is high on purpose (all payouts + 3× negatives).
 - two lines `cuda:0 Tesla T4 …` and `cuda:1 Tesla T4 …`.
 
-Report back the output. Next step after this: re-baseline on v3.
+Report back the output. *(Done 2026-10-01; v3 baselines in `training/test.ipynb`, model runs in `training/results/`.)*
 
 ---
 

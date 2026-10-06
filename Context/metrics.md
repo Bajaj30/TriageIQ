@@ -72,6 +72,25 @@ non-payout one. 0.5 = coin flip, 1.0 = perfect. Unaffected by how rare payouts a
 | **Question** | When the model says "3% chance", do ~3% pay? |
 | **Computed** | Mean predicted probability after the case-control correction (logit + offset −2.4165, from the manifest) vs the actual test payout rate |
 | **Caveat** | The offset fixes the *sampling*, not the *drift* (payouts fall year by year) — trap 13. Ranking metrics are unaffected; any probability shown to a person must be re-tuned on recent data |
+| **Done (Phase 3)** | Platt scaling on the newest labelled data (`training/serving/calibrate.py` → `training/results/calibration_v3.json`), checked fit-on-earlier → test-on-later before the final fit; the API applies `calibration.json` |
+
+## Expected calibration error (ECE) and log loss
+
+| | |
+|---|---|
+| **Question** | ECE: averaged over buckets of similar predictions, how far is "predicted" from "happened"? Log loss: how surprised is the model by the real outcomes? |
+| **Computed** | ECE: sort by prediction into equal-size buckets (by rank, so no bucket is empty), mean \|predicted − actual\| weighted by bucket size. Log loss: mean of −[y·ln p + (1−y)·ln(1−p)] |
+| **Used** | Comparing calibration methods (offset only / intercept shift / Platt / isotonic) in `training/serving/calibrate.py`, alongside Brier and within-company AUC |
+| **Caveat** | Isotonic can win ECE and still lose within-company AUC (its flat steps create ties) — so a calibration method is also checked on ranking |
+
+## Latency p50 / p95
+
+| | |
+|---|---|
+| **Question** | How long does a person wait for a score — typically (p50, the median) and on a bad request (p95)? |
+| **Computed** | Time 300 real 2024 complaints one by one; sort; read the 50th and 95th percentiles. Separately: model alone, feature lookup, whole API |
+| **Code** | `training/serving/export_onnx.py` (model alone, Mac); measurement runs recorded in `CLAUDE.md` §12 (Mac vs server table) |
+| **Caveat** | Measure on the real machine in its real state: a burstable cloud server with no CPU credits looked 2–4× slower than it is |
 
 ## Brier score
 
@@ -79,7 +98,7 @@ non-payout one. 0.5 = coin flip, 1.0 = perfect. Unaffected by how rare payouts a
 |---|---|
 | **Question** | How close are the predicted probabilities to what happened (0 or 1)? |
 | **Computed** | mean of (predicted − actual)² — lower is better |
-| **Used** | Choosing the smoothing strength K (`sql/03_features/05a_choose_k.sql`, together with AUC) |
+| **Used** | Choosing the smoothing strength K (`sql/03_features/05a_choose_k.sql`, together with AUC); comparing calibration methods (`training/serving/calibrate.py`) |
 
 ## Single-feature AUC (feature screening)
 

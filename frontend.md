@@ -29,9 +29,8 @@ visitor ──https──▶ Vercel (triageiq.vercel.app)
 - **Server side:**
   - Vercel attaches a secret header to every request it forwards, and NGINX rejects anything without it;
   - rate limits use the visitor's real IP, which Vercel passes on.
-- **Open check:** Vercel's docs show only `https` targets for rewrites, and our server is plain `http`. That's
-  tested first. If it fails, the server gets free HTTPS (Let's Encrypt on an sslip.io name) and the rewrite
-  targets that instead.
+- **Checked:** Vercel's docs show only `https` targets, but forwarding to our plain-`http` server works (tested
+  2026-10-05), so the server needs no certificate of its own. The visitor's side is https throughout.
 
 ---
 

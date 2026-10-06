@@ -9,6 +9,10 @@ fine-tuned transformer fusion model + containerized cloud deployment.
 it, what to expect, and where it will hurt.* When reality contradicts this doc, update the doc —
 that habit is itself a portfolio signal.
 
+**Build status (2026-10-06): every phase is built and live** — https://triageiq-mu.vercel.app. This bible is the
+*plan*; where the build differs, an **As built** note says so (Phase 2 and 3). The day-by-day record is
+`CLAUDE.md` §12; every number is in `Context/FACTS.md`.
+
 **v1 is archived at `Context/old_context/TriageIQ_v1_archive.md`.** Do not delete it. The delta between v1 and
 v2 is a portfolio artifact in its own right — see §0.5.
 
@@ -86,7 +90,7 @@ leakage-free label.
 **Exit criteria:** ERD committed; all tables loaded; row counts and integrity checks documented;
 label distribution measured and written down.
 
-### 0.1 Development environment — *status: partial*
+### 0.1 Development environment — *status: complete* (host port 5433 — Postgres.app owns 5432)
 
 Local PostgreSQL 16+ in Docker via a single Compose file from day one. Use the
 `pgvector/pgvector:pg16` image from the start so Phase 2 needs zero migration. Named volume for
@@ -116,7 +120,7 @@ be re-litigated. Full profiling lives in `Data/EDA.ipynb`.
 > `Data/data/interim/triageiq_training_v2.parquet` (301,460 rows, case-control train split),
 > built by EDA Cell 8. See §2.2 and `Context/FACTS.md`.
 
-### 0.3 Schema design — *status: in progress*
+### 0.3 Schema design — *status: complete*
 
 **Shape: a snowflake over one real fact table.** There is no synthetic transactional world. Every
 decision below, with the concept it rests on, is in **`Context/schema_explanation.md`**. Sizes are
@@ -443,6 +447,10 @@ point-in-time design and the `(date_received, complaint_id)` tiebreak convention
 **Goal:** a fine-tuned transformer + tabular fusion model with an ablation proving both modalities
 matter, plus pgvector similarity search.
 
+**As built:** DistilBERT fusion (text + 19 SQL inputs) — within-company 0.8224 (0.815–0.830) vs text-only 0.8036;
+full ablation in FACTS.md. **Not built:** the pgvector store (2.1) and similarity search (2.5) — optional, cut for
+the deployment timeline. Expected-cost ranking (2.6) — also not built.
+
 ### 2.1 pgvector embedding store
 
 Enable the extension; add a vector column on the complaint table sized to the encoder's hidden
@@ -569,6 +577,18 @@ fallback. This layer is thin, transparent, and business-facing — keep it out o
 **Goal:** the system live behind a public URL, containerized, talking to managed Postgres, with CI/CD
 and prediction logging.
 
+**As built (live 2026-10-05) — what changed and why:**
+- **Cloud:** one AWS EC2 server (t4g.small, Sydney) running Docker Compose, paid from free credits — not Cloud Run
+  + managed Postgres. Postgres runs in a container next to the API.
+- **Data shipped:** not the full DB — a 187 MB `serving` schema (`sql/06_serving/`): a track-record snapshot as of
+  2025-01-01 computed by the same SQL formulas, proven identical by a skew test (19/19 inputs, 20,773 complaints).
+- **Model:** exported to ONNX (no PyTorch in the image), Platt-calibrated on Jul–Dec 2024.
+- **Endpoints:** `/predict`, `/complaint/random`, `/complaint/{id}`, `/options/*`, `/model-info`, `/health`;
+  `/similar-complaints` not built (no embedding store).
+- **Front:** a static site on Vercel forwards API calls with a secret header; NGINX on the server rejects
+  anything else and rate-limits per visitor.
+- **Deferred (optional):** read-only DB role (3.3), CI/CD (3.4), prediction logging + drift checks (3.5).
+
 ### 3.1 FastAPI inference service
 
 Four endpoints: `POST /predict` (company + product + issue + state + narrative → score, factors,
@@ -628,6 +648,9 @@ analyzed with the same skill the project started with.
 ## Cross-cutting
 
 ### Repository structure
+
+*As built, the layout differs: `sql/` (00–06 + tests), `training/` (+ `serving/`, `results/`), `api/`, `deploy/`,
+`web/` (site), `docs/` (blog), `Context/` (design docs), `Learning/`. See README "What's in this repo".*
 
 Top-level README leads with the architecture diagram, the one-line pitch, the ablation table, and the
 live URL — a hiring manager gives you 90 seconds, so the proof goes above the fold.

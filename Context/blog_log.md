@@ -7,7 +7,7 @@ everyday comparisons, and the reason behind every choice. Technical names appear
 **How numbers are described.** Every number says which group of complaints it comes from:
 - **all complaints** — the 4,826,564 complaints from 2022–2024
 - **complaints with a story** — the 1,639,068 where the customer's own written account is published
-- **the training set** — the 301,460 complaints used to train and test the AI
+- **the training set** — the 292,940 complaints used to train and test the AI (v3; an earlier version had 301,460)
 
 *(Internally these are called F1 / F2 / F3 — never use those names in the blog; readers will think of
 the "F1-score".)*
@@ -30,7 +30,13 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
    *which product* or *which company* a complaint was about. We changed how we test.
 4. **Designing the database.** 17 decisions, each tied to one idea you could explain on a whiteboard.
 5. **Loading the data.** 17.4 million raw complaints copied in, then sorted into linked tables. ✅ Done.
-6. **Next:** build every company's track record in the database → train the AI reader → put it online.
+6. **The track records.** Every company's history, as it stood on the day each complaint arrived, built in the
+   database for all 4.8 million complaints and checked by hand-recounts and a "no peeking" test. ✅ Done.
+7. **The AI reader.** DistilBERT trained on a free GPU, combined with the track record: inside one company it
+   puts a paid complaint above an unpaid one 82 times in 100 (2024 exam). ✅ Done.
+8. **Putting it online.** Honest percentages, a small cloud server, a website anyone can open:
+   https://triageiq-mu.vercel.app. ✅ Done (5 October 2026).
+9. **Writing it up.** The essay "Finding the two percent": https://bajaj30.github.io/TriageIQ/. ✅ Done.
 
 ---
 
@@ -373,8 +379,8 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   complaints got the same scores as in the original test, and every one went to the same desk.
 - **The server that started out of breath** *(tech: burstable instances, CPU credits)* — the cheapest cloud servers
   run at full speed only while they have "credits" saved up, and a brand-new one starts with none. Installing
-  everything and a 200-complaint test ran it at a fifth of its speed — half a second per complaint instead of a
-  tenth. Credits refill whenever it's quiet, which for a demo link is almost always. We kept the setting that can
+  everything and a 200-complaint test ran it at a fifth of its speed — half a second per complaint instead of about
+  a fifth of a second (measured at full speed the next day). Credits refill whenever it's quiet, which for a demo link is almost always. We kept the setting that can
   never cost extra, instead of the one that is always fast but bills for heavy use.
 - **A front door people actually want to open** *(tech: static site on Vercel, reverse-proxy rewrites)* — the API
   page is fine for engineers; a recruiter needs a website. It's styled like a case file — paper, ink, one dark-red
@@ -501,7 +507,7 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   one wrong expected number and it flags FAIL. A check that can't fail proves nothing.
 - **Why a database at all?** One source of truth: training and the live service read the same numbers
   from the same place. The heavy work on 4.8 million complaints stays in the database; the GPU only sees
-  the 301,460-complaint training set.
+  the 292,940-complaint training set.
 - **Coming next:** company track records built with look-back windows, the "did it pay?" answer as a saved
   query, and a repeatable way to draw the training sample.
 
@@ -529,10 +535,9 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
 ## 7. Loose ends
 
 - Word variety sat below our own threshold on the raw data — explain it properly, or drop that test.
-- Smoothing: pull small companies toward their product's rate, not the overall rate — decide when
-  building the track records.
-- 721 complaint texts appear in more than one of learn / tune / exam — fix before training the AI.
-- Where to draw the "send to a senior" line — decide from how many complaints the team can handle.
+- ~~Smoothing: pull small companies toward their product's rate~~ — done: toward the product's rate, K = 5.
+- ~~721 complaint texts appear in more than one of learn / tune / exam~~ — fixed: one text, one split.
+- ~~Where to draw the "send to a senior" line~~ — decided: the riskiest 10% (a 3.67% chance or more).
 - We *assume* outcomes are known within 60 days — the CFPB never records when a company answered.
 - "Payouts peak at medium length (39.6%)" — the group behind that number wasn't recorded; re-check it
   before publishing.

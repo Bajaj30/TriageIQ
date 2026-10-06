@@ -9,10 +9,12 @@ Each file builds one view; 08 stitches them into the materialized view the model
   **Drift, decide in 08:** counts grow with calendar time (avg company all-time count, all complaints:
   2022 63,274 → 2024 751,264). `company_n_prior` mostly measures *how far into the data we are* — a clock.
   Candidates: drop it, or use ratios (company 30d ÷ 90d, company ÷ national) that don't grow with time.
+  **Decided in 08:** dropped as a model input; shares and trends (07) carry volume instead.
 - `04_outcome_rates.sql` — view `v_outcome_rates`: payout / untimely rates to date, 60-day lag (frame A); recount 21/21, leak test 3/3. ✅
   **Warm-up, decide in `04_training_set`:** 14.07% of 2022 complaints have no known company history
   (0.10% in 2023, 0.06% in 2024) — the first 60 days of data see no outcomes at all. Consider starting
   training rows later than 2022-01-01, or rely on the no-history flags.
+  **Decided in `04_training_set`:** training rows start 2022-04-01 (warm-up), plus the no-history flags.
 - `05a_choose_k.sql` — tuning: AUC + Brier of the smoothed rate for 12 values of K on Oct–Dec 2023; best K ≈ 5. ✅
 - `04_outcome_rates.sql` also holds RECENT windows (365 days ending 60 days back; added 2026-10-02) — recount 21/21 + leak test 3/3 re-run.
 - `05_smoothing.sql` — table `feature_params` (K = 5, 2021 fallback 2.86%) + view `v_smoothed`: every 04 column plus 4 smoothed rates, never NULL. ✅
@@ -20,9 +22,10 @@ Each file builds one view; 08 stitches them into the materialized view the model
   **Clocks, decide in 08:** `days_since_start` is the calendar itself, and `company_tenure_days` equals it for
   91.68% of complaints (111 companies present on 2022-01-01). Together with `company_n_prior` (03), these
   mostly tell the model *when*, not *what* — candidates to drop, or replace with a 'new company' flag.
+  **Decided in 08:** all three clocks dropped (feature_dictionary.md); `company_no_history` flags new companies.
   Gap signal is weak: same-day 1.18% payout (busy companies) vs 1.79–3.82% otherwise (all complaints).
 - `07_trends.sql` — view `v_trends`: v_volume + log-ratio trends (last 90 vs the 90 before) + shares of national volume; test 21/21. ✅
   Shares fix most of the count drift: avg company 90d count ×5.5 from 2022 to 2024, avg share ×1.5
   (15.6% → 23.4%, a real shift toward the bureaus). Trends read high in 2022 (avg 1.968) — warm-up.
-- `08_assembly.sql` — materialized view `mv_features` (40 columns, 1.75 GB, ~80 s build) + view `v_model_input` (the 19 model inputs); leak guard 0 label columns; lookup 0.036 ms. ✅
+- `08_assembly.sql` — materialized view `mv_features` (40 columns, 1.75 GB, ~80 s build; **48 columns / 2,081 MB since v4**) + view `v_model_input` (19 inputs; **23 since v4** — the shipped v3 model reads the first 19); leak guard 0 label columns; lookup 0.036 ms. ✅
 - `feature_dictionary.md` — every stored column: meaning, frame, and why it is (or is not) a model input.

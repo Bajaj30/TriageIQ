@@ -11,7 +11,7 @@ Two jobs, two kinds of file:
 | `Phase0/` — data, schema, bulk load, label | `directions.md` · `learning_log.md` (yours, 0.1–0.3) · `revision.md` | done |
 | `Phase1/` — point-in-time features in SQL | `revision.md` | done |
 | `Phase2/` — training set, DistilBERT fusion, evaluation | `revision.md` | done |
-| `Phase3/` — calibration, API, Docker, AWS, monitoring | `directions.md` (the roadmap you are on) · `learning_log.md` (start it at 3.0) | **now** |
+| `Phase3/` — calibration, ONNX, serving DB, API, Docker, AWS, NGINX, website | `directions.md` (roadmap + lectures) · `revision.md` | built and live; lectures after exams |
 | *(root)* — the book | `book_DMLS.md`: how to read *Designing ML Systems*, chapter order, what to do per chapter · `book_DMLS_notes.md` (yours) · `book_chat_prompt.md` (start the separate reading chat) | alongside Phase 3 |
 
 **Where numbers come from:** `Context/FACTS.md` only (generated). Every number in these files states its group:
@@ -22,10 +22,11 @@ Two jobs, two kinds of file:
 ## Before an interview — read in this order (≈ 2–3 hours)
 
 1. **The 2-minute story** (below) — say it out loud twice.
-2. `Phase0/revision.md` → `Phase1/revision.md` → `Phase2/revision.md` → (after it's built) Phase 3.
+2. `Phase0/revision.md` → `Phase1/revision.md` → `Phase2/revision.md` → `Phase3/revision.md`.
    For each card: cover the answer, say it, then check.
 3. `Context/metrics.md` — every metric, defined once.
-4. `Context/interview.md` — "what broke and how we fixed it" stories (Phase 0 → Phase 2 planning).
+4. `Context/interview.md` — "what broke and how we fixed it" stories (Phase 0 → Phase 3).
+   `NLP.md` — every NLP / ML concept and metric, if the interview goes deep on the model.
 5. `Context/FACTS.md` — glance at the headline numbers last, so they're fresh.
 
 ## The 2-minute story
@@ -48,7 +49,7 @@ Two jobs, two kinds of file:
    the live track records come from the same SQL formulas as training, proven identical by a skew test on 20,773
    complaints; probabilities are re-calibrated on the newest data. The website lives on Vercel, which is the only
    thing allowed to reach the server. Live: triageiq-mu.vercel.app · the story: bajaj30.github.io/TriageIQ.
-   Next: drift monitoring by replaying 2024, and a 2025 retrain.
+   Next (optional): drift monitoring by replaying 2024, and a 2025 retrain.
 
 ## Card format (all revision files)
 

@@ -206,13 +206,13 @@ The findings above are left exactly as written; this section tracks what happene
 | **H1** baselines on the wrong dataset | ✅ **fixed** | every doc now quotes shipped-artifact (F3) numbers from `FACTS.md` |
 | **H2** ablation code missing | ✅ **fixed** | `training/verify_ablation.py`; within-company AUC added |
 | **H3** scikit-learn undeclared | ⏳ open | still not in `pyproject.toml` |
-| **H4** narratives straddling splits | ⏳ open | needs group-aware splitting in EDA Cell 8 before Phase 2 |
+| **H4** narratives straddling splits | ✅ **fixed** (v3, 2026-10-01) | one text, one split: a text belongs to the split where it first appeared; later copies dropped (`sql/04_training_set/02_training_set.sql`) |
 | **M1** all-time cardinalities | ✅ **fixed** | `FACTS.md` states three frames; DDL sizing uses F1 |
 | **M2** null rates from wrong frame | ✅ **fixed** | same |
 | **M3** stale `Timely response?` figure | ✅ **fixed** | 99.62% (F1) |
-| **M4** `Submitted via` wrong-frame verdict | 🔶 decision pending | schema open item |
-| **M5** NULL outcome labelled 0 | 🔶 decided, not built | label view will exclude NULLs; the v2 parquet still holds 1 such row |
-| **M6** cold start | 📝 noted | `has_history` flags required in the feature view |
+| **M4** `Submitted via` wrong-frame verdict | ✅ **closed** (2026-09-30) | not a model input: one value (Web) among complaints with text |
+| **M5** NULL outcome labelled 0 | ✅ **decided + built** (2026-09-29) | Shivam: label 0, like untimely; `v_label` maps the 19 NULLs to 0; the events table keeps NULL |
+| **M6** cold start | ✅ **built** | `company_no_history` / `company_issue_no_history` inputs; the API scores an unknown company as no-history |
 | **L1** redundant `narratives.parquet` | ⏳ open | |
 | **L2** references to deleted file | ✅ **fixed** | |
 | **L3** stale archive path | ✅ **fixed** | |

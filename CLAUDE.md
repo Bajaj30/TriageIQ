@@ -1,12 +1,69 @@
 # TriageIQ — Agent Context
 
-> **Read order for a fresh session:** this file → `Context/FACTS.md` (every number) →
-> `Context/schema_explanation.md` (current phase) → `Context/TriageIQ.md` (full spec, when needed).
+> **Read order for a fresh session:** §0 below (where we are, how to resume) → the rest of this file →
+> `Context/FACTS.md` (every number) → `Learning/Phase3/revision.md` (how the deployed system works) →
+> `Context/TriageIQ.md` (full spec, when needed).
 > **`Context/FACTS.md` is the only source of numbers.** If this file disagrees with it, FACTS.md wins.
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-03 · model fixed (DistilBERT fusion, v3, 19 inputs) · Phase 3 = AWS deploy planned (§12) · learning guide `Learning/Phase3/directions.md` · Shivam is setting up AWS
+Last updated: 2026-10-06 · **all phases built and live** · model = DistilBERT fusion v3 (19 inputs), Platt-calibrated ·
+site on Vercel, API on AWS EC2 (Sydney) · blog on GitHub Pages · remaining work is optional (§0)
+
+---
+
+## 0. Where we are — read this first (2026-10-06)
+
+**State: built, deployed, written up.** Phases 0–3 are done; nothing is half-finished. What's left is optional.
+
+| what | where |
+|---|---|
+| Live demo (score a complaint · real 2024 complaints · how it works) | https://triageiq-mu.vercel.app · API docs `/docs` on the same address |
+| The essay "Finding the two percent" | https://bajaj30.github.io/TriageIQ/ (`docs/`) |
+| Code | https://github.com/Bajaj30/TriageIQ (branch `main`) |
+| Headline (2024 test, 150,000 complaints) | within-company **0.8224** (0.815–0.830) · riskiest 10% → **92.6%** of payouts |
+| Running cost | ≈ $21/month from $140 AWS credits; plan expires **2027-04-02** (§12) |
+
+**Request path:** visitor → Vercel (static site + `routes` forwarding API paths with a secret header) → NGINX on
+EC2 `3.106.107.237` (403 without the secret; 5 req/s per visitor) → FastAPI (`api/`) → Postgres `serving` schema
+(19 inputs via `serving.model_input`, text via `serving.clean_narrative`) + ONNX DistilBERT fusion → Platt → route.
+
+**Not in git — where it lives:**
+- **Model bundle** `training/outputs/serving_v3/` (model.onnx 266 MB, tokenizer.json, preprocessing.json,
+  calibration.json, model_card.json, serving_db.dump 57 MB): **only on the Mac and the server** (`~/triageiq/…`).
+  Training weights `model.pt`: Mac (`training/outputs/fusion_distilbert_full/`) + the saved Kaggle notebook version.
+  ⚠️ No third copy — worth putting the bundle in a private Kaggle dataset or a drive.
+- **Full database (16 GB):** the Docker volume of the root `docker-compose.yml` on the Mac. Rebuildable from
+  `Data/complaints.csv` by running `sql/` in number order (README "Run it yourself").
+- **Secrets:** root `.env` (local DB) · `deploy/.env` on the server (DB password + ORIGIN_SECRET) · Vercel env
+  `ORIGIN_SECRET` · `~/.ssh/triageiq-key.pem`. Never print or commit any of them.
+
+**Resume — the commands:**
+| to | run |
+|---|---|
+| start the full local DB | `docker compose up -d` (port 5433) |
+| run the API on the Mac | `sh api/run_local.sh` → http://localhost:8000/docs (needs the local DB) |
+| run the shipped stack locally | `docker compose -f deploy/docker-compose.yml up -d --build` → localhost:8000/docs |
+| update the server | `sh deploy/push.sh 3.106.107.237` (SSH only from Shivam's IP — if refused, his ISP IP changed: re-authorise port 22 in security group `sg-065abe94829601344`) |
+| server shell | `ssh -i ~/.ssh/triageiq-key.pem ubuntu@3.106.107.237` (docker needs `sudo`) |
+| update the website | `cd web && npx vercel deploy --prod --yes` |
+| update the blog | edit `docs/`, push to `main` (GitHub Pages rebuilds in ~1 min) |
+| AWS CLI | `aws login`, then `export AWS_PROFILE=triageiq` (session expires — "session expired" = log in again) |
+
+**Open — all optional, in order of value:**
+1. **60–90 s screen recording** of the demo for README / resume (step 3.10).
+2. **Read-only DB role** for the API (step 3.7) — today it connects as the DB owner. Low risk (DB not reachable
+   from outside, SQL is parameterised) but a cheap hardening.
+3. **Minimal CI** — ruff + pytest + `docker build` on push (step 3.8).
+4. **Monitoring** — a `prediction_log` table + one drift query; "replay 2024" demo (step 3.9).
+5. **v5 retrain through 2025** — after exams; plan at the end of §12.
+6. **"5 most similar past complaints"** (pgvector) — in the original design, never built (README marks it).
+7. Hygiene: scikit-learn undeclared in `pyproject.toml` (trap 8); audit items L1/L4/L5; FACTS.md's "F3" frame
+   row still describes the v2 parquet (301,460) — generated file: fix in `training/canonical_facts.py`, then regenerate.
+8. **Teardown** at the end (by 2027-04-02): delete every resource in §12, then release the Elastic IP.
+
+Learning side (Shivam): courses + the DMLS book after exams (`Learning/README.md`); interview prep from
+`Learning/Phase0–3/revision.md` + `Context/interview.md`.
 
 ---
 
@@ -21,8 +78,8 @@ complaint arrives → P(monetary relief) → high: senior analyst / low: templat
 
 - **PostgreSQL** holds 4.8M real complaints and computes point-in-time company / issue features.
 - **A fine-tuned DistilBERT** reads the complaint narrative.
-- **A fusion model + FastAPI on Cloud Run** combines both, reading features from the same view
-  training used.
+- **A fusion model + FastAPI** (ONNX on CPU, AWS EC2, behind NGINX; website on Vercel) combines both, reading
+  features computed by the same SQL formulas training used (skew-tested).
 
 **The thesis, measured on training set v3** (test = 150,000 complaints from 2024, 2.31% payouts;
 TF-IDF + logistic regression; `training/test.ipynb`; FACTS.md "Baselines on training set v3"):
@@ -57,6 +114,9 @@ gets the next step.
   concept even if the project uses only part of it (e.g. all of Docker, not just Compose), then the same
   idea implemented in TriageIQ, then he explains it back. Phase 3 follows `Learning/Phase3/directions.md`.
   **Prefers video lectures over blogs/articles** when pointing him to resources.
+- **Resume from the docs, not the chat (Shivam, 2026-10-06).** He works in multi-day gaps and must be able to pick the
+  project up from the .md files alone. **At the end of every working session, update §0** (state, what changed,
+  next steps) and any doc the work touched, then commit + push. A fresh session starts by reading §0.
 - **No new .md files unless he asks for one (2026-10-03).** Answer in chat, or update an existing file
   (CLAUDE.md, blog_log, logs) as standing duties require. Never create a doc just to hold an answer.
 
@@ -135,7 +195,7 @@ README.md                     public, plain-language (non-technical reader), Mer
 Context/FACTS.md              every number, three frames — generated, never hand-edit
 sql/03_features/feature_dictionary.md   every feature: meaning, frame, model input yes/no and why
 Context/metrics.md            every metric: what it answers, how computed, which code, why (not) used — no numbers
-Context/schema_explanation.md Phase 0.3 decisions, each tied to a concept   ← current work
+Context/schema_explanation.md Phase 0.3 decisions, each tied to a concept
 Context/TriageIQ.md           full engineering spec (bible v2); §1.4a = verified window-frame rules
 Context/WHAT_WHY.md           pitch and positioning
 Context/interview.md          per-phase: what broke, how it was fixed
@@ -177,9 +237,14 @@ sql/                          numbered SQL pipeline, run in pgAdmin — every fo
 
 sql/06_serving/ = the serving schema (snapshot, model_input(), lists, demo complaints) → pg_dump.
 api/ = FastAPI app (main.py endpoints · scorer.py model · db.py queries · schemas.py) · requirements.txt · run_local.sh.
-deploy/ = api.Dockerfile · docker-compose.yml (db + api + nginx[profile public]) · nginx/default.conf · initdb/01_restore.sh
-          · server_setup.sh · push.sh <ip> · .env.example (real .env git-ignored).
-frontend.md = the frontend brief (design for Claude Design + build contract); not built yet.
+deploy/ = api.Dockerfile · docker-compose.yml (db + api + nginx[profile public]) · nginx/default.conf.template (envsubst:
+          secret-header check + per-visitor rate limit) · initdb/01_restore.sh · server_setup.sh · push.sh <ip> · .env.example.
+web/ = the website on Vercel: index.html (score) · real.html · how.html · styles.css · app.js · vercel.json (routes +
+          secret header) · dev_server.py (local stand-in for Vercel).
+docs/ = the blog on GitHub Pages: index.html · blog.css · blog.js · data.js (generated) · .nojekyll.
+training/serving/ = calibrate.py · export_onnx.py · model_card.py → training/outputs/serving_v3/ (git-ignored, see §0).
+frontend.md = the frontend brief + build contract; built and live (web/).
+Learning/Phase3/revision.md = Phase 3 concept cards (calibration → ONNX → serving DB → API → Docker → AWS → NGINX → Vercel).
 NLP.md = every NLP / ML concept and metric used in the project, where and how (Shivam asked 2026-10-05).
 
 **Postgres:** container `triageiq-postgres`, database `triageiq`, user `triageiq`, `localhost:5433`,
@@ -199,9 +264,9 @@ work) come after all tables are loaded.
 | 0.3 | **Schema + DDL** | **DDL done** — all tables created, 12/12 constraint tests pass |
 | 0.4 | Bulk load | **Complete** — fact 4,826,564 · narrative 1,639,068 · events 14,479,692 · validated 21/21 · 6 indexes (company×issue lookup 0.19 ms, index-only); 31,378 company×issue pairs (F1) |
 | 0.5 | Label as a SQL view | **Complete** — `v_label`: 4,826,564 rows · paid 60,952 · untimely 2,785 · 19 unknown → 0 · base rate 1.26% (F1); reads the partial index, 1 s |
-| 1 | Layered point-in-time pipeline | **Complete** — `sql/03_features/` 01–08: `mv_features` (4,826,564 rows × 40 cols, ~80 s build) → `v_model_input` (**19 inputs**, see `sql/03_features/feature_dictionary.md`); recount tests + leak test pass (`sql/tests/`) |
-| 2 | pgvector, fusion, stratified ablation | **In progress** — DistilBERT fusion full run done (3 × ~481 s on one T4): within-company **0.8224**, within-strata 0.9492, PR 0.4395, riskiest 10% catches 92.6% (FACTS.md). Results: `training/results/fusion_full_v3.json`. Next: DistilBERT text-only + features-only arms, recalibration |
-| 3 | FastAPI, Docker, AWS deploy, monitoring | **Planned (2026-10-02)** — AWS instead of Cloud Run (free $100 credits); see §12. Shivam is setting up the AWS account. Order of work = `Learning/Phase3/directions.md` (3.0 foundations → 3.1 calibration → … → 3.9 monitoring → 3.10 wrap-up) |
+| 1 | Layered point-in-time pipeline | **Complete** — `sql/03_features/` 01–08: `mv_features` (4,826,564 rows × 48 cols since v4, ~80 s build at 40) → `v_model_input` (23 inputs since v4; the shipped model reads the first **19**, see `sql/03_features/feature_dictionary.md`); recount tests + leak test pass (`sql/tests/`) |
+| 2 | fusion model, ablation, evaluation | **Complete** — DistilBERT fusion v3 (3 × ~481 s on one T4): within-company **0.8224** (0.815–0.830), within-strata 0.9492, PR 0.4395, riskiest 10% catches 92.6% (FACTS.md); text-only 0.8036; v4 (+amount features) no better → v3 kept; error analysis (trap 14). Results: `training/results/`. pgvector similarity search never built (optional) |
+| 3 | calibration, ONNX, serving DB, FastAPI, Docker, AWS, NGINX, website | **Complete (live 2026-10-05)** — Days 1–5 + frontend + blog in §12; concept cards `Learning/Phase3/revision.md`. Deferred (optional, §0): read-only DB role, CI (3.8), monitoring (3.9), screen recording |
 
 ---
 
@@ -289,7 +354,7 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
 6. **Recalibration is mandatory** — v3: keep-fraction 0.0892 → logit offset **−2.4165** (read it from the
    manifest, never type it; v2's −2.2572 is dead). It fixes sampling only — see trap 13 for drift.
 7. **721 narratives straddle splits** (3,120 rows, 1.03%, 3 positives) — dup filter isn't group-aware.
-   Fix before Phase 2: assign each narrative hash to one split.
+   **FIXED in v3 (2026-10-01):** one text, one split (trap 12).
 8. **Undeclared dependency:** scikit-learn is required but not in `pyproject.toml`.
 9. **A global average is a credit-reporting average.** Credit reporting is 83.2% of F1 rows but 3.3% of
    payouts, so the global rate (1.26%, F1) is mostly its number. Smooth entity rates toward the
@@ -390,7 +455,7 @@ v1 archive: `Context/old_context/TriageIQ_v1_archive.md`. **Do not delete.**
   company 0.8224, riskiest 10% catches 92.6% vs 88.8% text-only ≈ 130 more payouts in the 2024 test).
   Shivam: the text-vs-fusion debate is settled → **DeBERTa text-only run skipped** (optional; the error
   analysis says the missing information isn't in the text). Fallback for CPU serving: TF-IDF fusion
-  (0.8115, 91.7%) if DistilBERT is too slow on Cloud Run — measure in Phase 3. Before showing any
+  (0.8115, 91.7%) if DistilBERT is too slow on Cloud Run — measured in Phase 3: fast enough (p50 ~0.2 s on EC2), no fallback. Before showing any
   probability: recalibrate on recent data (trap 13). Next improvement: dollar-amount + recent (6–12 mo)
   company×issue rate as SQL features → training set v4 → one fusion rerun (~30 min).
 - **v4 features (2026-10-02): 23 inputs = 19 + `has_amount`, `log_max_amount` (01_schema/08) + recent
@@ -577,19 +642,20 @@ closed; 200 real complaints via the public link vs offline max |Δp| 0.00017, sa
 **CPU credits (trap):** T4g in *standard* mode starts with 0 credits → throttled to the 20% baseline during setup and the
 200-call test (CPUCreditBalance ≈ 0, CPU 19.8%, steal 32%). Earns 24 credits/h when idle (max 576). Kept *standard*
 on purpose: it can never bill surplus credits (*unlimited* would). Re-measure latency once credits have built up.
-**NUMBERS MEASURED ON THE MAC — re-measure on the server (Day 5) and replace them here, in the blog log and in the
-README (Shivam, 2026-10-05).** Each is a Mac/local measurement until then:
+**Mac vs server — all measured. Server column re-measured 2026-10-06 at full speed** (CPU 100% busy, 0% steal under
+load → not throttled; the first Day-5 numbers were taken with 0 CPU credits and are kept only as the "out of breath"
+story). The server's 2 Graviton2 cores are ~10× slower than the M4 at this model. Used in README, blog_log, NLP.md:
 | number | Mac value | how measured | on the server |
 |---|---|---|---|
 | full local DB (stays home) | 16 GB | `pg_database_size`, 2026-10-05 | — (never ships) |
 | serving schema / dump file | 187 MB / 57 MB | `pg_total_relation_size` / file size | restored DB 188 MB |
-| feature lookup `serving.model_input` | 0.06 ms | EXPLAIN ANALYZE (in-DB, no network) | ⏳ |
-| model alone (ONNX, 2 threads) | p50 20 ms / p95 81 ms | `onnx_v3.json`, 300 complaints | ⏳ |
-| API end-to-end `/complaint/{id}` (DB + model) | p50 28 ms / p95 94 ms | 300 calls, 2026-10-04 | **throttled (0 credits):** server-side p50 501 ms / p95 3,590 ms; from India incl. the trip to Sydney p50 1,212 / p95 4,231 ms (200 calls) — ⏳ re-measure with credits |
-| API `/predict` (example complaint) | ~41 ms | one call | 103–143 ms server-side (throttled, 3 calls) — ⏳ re-measure |
+| feature lookup `serving.model_input` | 0.06 ms | EXPLAIN ANALYZE (in-DB, no network) | 0.6 ms p50 / 2.9 ms p95 (round trip from the api container, 50 calls) |
+| model alone (ONNX, 2 threads) | p50 20 ms / p95 81 ms | `onnx_v3.json`, 300 complaints | **p50 218 ms / p95 803 ms** (300 random 2024 complaints, inside the api container) |
+| API end-to-end `/complaint/{id}` (DB + model) | p50 28 ms / p95 94 ms | 300 calls, 2026-10-04 | **p50 210 ms / p95 807 ms** server-side (300 calls on the server, 2026-10-06). Throttled Day-5 run: p50 501 / p95 3,590; from India incl. the trip to Sydney p50 1,212 / p95 4,231 (200 calls) |
+| API `/predict` (example complaint) | ~41 ms | one call | **p50 82 ms / p95 86 ms** server-side (20 calls, short text; 2026-10-06) |
 | rebuilding all training features (`mv_features`) | ~80 s | Phase 1, at 40 columns — not re-timed at 48 | — (never ships) |
-| API in Docker on the Mac `/complaint/{id}` | p50 70 ms / p95 247 ms | 300 calls, 2026-10-05 | ⏳ |
-| RAM: api container / db container | 455 MiB / 45 MiB | `docker stats` after 300 calls | api 460 MiB · db 63 MiB · nginx 9 MiB; 857 MiB still available, swap ~3 MiB used → int8 NOT needed for memory |
+| API in Docker on the Mac `/complaint/{id}` | p50 70 ms / p95 247 ms | 300 calls, 2026-10-05 | (= the row above) |
+| RAM: api container / db container | 455 MiB / 45 MiB | `docker stats` after 300 calls | api 546 MiB · db 52 MiB · nginx 3 MiB after 14 h live (2026-10-06); ~850 MiB still available → int8 NOT needed for memory |
 **Later (after deploy / after exams) — v5 "recency" retrain, Shivam's idea 2026-10-03:** the raw CSV runs to
 2026-08-27 (raw file, complaints with text): 2025-H1 695,184 (1.08% pay) · 2025-H2 526,871 (1.46%) · 2026-H1 109,324
 (6.54%) · 2026-Jul/Aug 3,707 (9.50%, 49.73% still 'In progress'). **2026 is unusable** — outcomes not in yet and

@@ -18,6 +18,14 @@
 > you don't know, stop: write the exact term in `learning_log.md` and bring it to the main chat. It gets
 > explained, then **added to this file**, so the gap is closed for good.
 
+> [!NOTE]
+> **Build status (2026-10-06).** Steps **3.1–3.6 are built and live**; **3.7** is built except the read-only DB role;
+> **3.8** (CI) and **3.9** (monitoring) are deferred; **3.10**: README and the essay are done, the screen recording and
+> the final teardown are left. The *learning* side (the lectures and the book) is still ahead — after exams.
+> **As built, differs from the picture below:** the front is a website on Vercel, not only Swagger UI; NGINX sits in
+> front of the API; there's no `prediction_log` yet (3.9). What each step actually built, condensed for interviews:
+> **`Learning/Phase3/revision.md`**.
+
 **One book for the whole phase:** Chip Huyen, *Designing Machine Learning Systems* (O'Reilly, 2022).
 How to read it, in which order, and what to do per chapter: **`Learning/book_DMLS.md`**.
 

@@ -2,7 +2,7 @@
 
 Phase-by-phase: what it does, what broke, how it was fixed.
 **Concept-by-concept interview prep (Q → A, lectures) lives in `Learning/` — start at `Learning/README.md`.**
-This file holds the longer "what broke" stories (Phase 0 → Phase 2 planning).
+This file holds the longer "what broke" stories (Phase 0 → Phase 3, all built and live).
 Kept short on purpose — each entry should be speakable in under a minute.
 
 **One-line pitch:** Predict whether an incoming CFPB consumer complaint will end in monetary relief,
@@ -206,7 +206,7 @@ the sub-issue table drops all of them — no error, just fewer rows.
 
 ---
 
-## Phase 0.4 — Bulk load *(in progress)*
+## Phase 0.4 — Bulk load *(done)*
 **What it does:** Loads the 17.4M-row CSV into a raw staging table, then fills the modelled tables from
 it — one numbered, idempotent, self-checking SQL file per table.
 
@@ -264,7 +264,7 @@ having no history at all.
 
 ---
 
-## Phase 2 — planning *(decided before building)*
+## Phase 2 — planning *(decided before building; results below)*
 **What it does:** Fine-tunes a text encoder and fuses it with the SQL features, on a free-tier GPU.
 
 ### Issue 24 — "The SQL side carries more than the transformer" was only half true
@@ -301,3 +301,111 @@ Dynamic padding (pad each batch to its longest item, not to 512) is the usual fi
 nearly every random batch of 32 contains one long complaint, so everything pads to ~512 anyway. Grouping
 similar-length complaints into the same batch cut padded tokens **2.23×**. The textbook optimisation
 needed a second one to work.
+
+---
+
+## Phase 1 — Point-in-time features *(done)*
+**What it does:** Builds every company's and issue's track record in SQL, as it stood on the day each of the
+4,826,564 complaints arrived (window functions), then picks the 19 inputs the model reads.
+
+### Issue 29 — A leak test that passed by losing its own test case
+The leak test flips one company-day's answers and checks that complaints 0 and 59 days later don't change
+but day 60 does. The busiest day sat 21 days before the data's end, so the day-60 probe didn't exist — and
+the test reported PASS.
+
+**Fix:** Probe a day with at least 90 days of data after it, and count a missing probe as FAIL. The lesson:
+a test can pass by quietly losing its cases; make "nothing checked" a failure.
+
+### Issue 30 — Features that were really clocks
+`company_n_prior` (complaints so far) grew with the calendar: the average company count went from 63,274 in
+2022 to 751,264 in 2024 (all complaints). Tenure equalled "days since the data starts" for 91.68% of complaints.
+The model would learn *when*, and every 2024 value would sit outside the training range.
+
+**Fix:** Dropped all three clocks; volume enters as shares of national volume and 90-day trends instead.
+The question to ask of any feature: does it encode *when* rather than *what*?
+
+### Issue 31 — A check that took 11 minutes
+A window-function check over 4.8M rows spilled 28 GB to disk because Postgres's default sort memory is 4 MB.
+
+**Fix:** `work_mem = 256MB` for the database → 16 seconds. Measure memory before rewriting SQL.
+
+---
+
+## Phase 2 — Results *(done)*
+All on the same exam: 150,000 complaints from 2024 (3,471 payouts), never seen in training.
+
+### Issue 32 — Does the AI reader still need the database?
+**Answer, measured:** inside one company, DistilBERT reading text alone scores 0.8036 (0.796–0.812);
+with the 19 SQL inputs fused in, 0.8224 (0.815–0.830) — the ranges don't overlap. Reading the riskiest 10%
+catches 88.8% of payouts with text alone vs 92.6% fused. The database earns its place.
+
+### Issue 33 — Why it stops near 0.82
+**Error analysis** (`training/results/error_analysis_v3.md`): missed payouts are mostly *surprise* payouts on
+complaints that rarely pay (credit-report disputes, login problems) — likely goodwill credits. False alarms
+read exactly like refund cases; the company just didn't pay. The missing information is the company's
+decision, not something in the text — so a bigger model was not the next step.
+
+### Issue 34 — Three improvements that didn't improve anything
+- **Half the training data:** 0.8166 vs 0.8224 — inside the noise, so 8× more data (3.5 GPU-hours) was skipped.
+- **Dollar-amount features (v4):** 0.8195 (0.811–0.827) — DistilBERT already reads `{$…}` in the text. Kept v3.
+- **Reading past 512 word-pieces:** on the 8.4% of complaints that get cut, DistilBERT scores 0.9614 — the same
+  as a TF-IDF model that reads every word (0.9614). No sign the tail matters → no long-context model.
+Each was measured cheaply before spending on it.
+
+---
+
+## Phase 3 — Shipping it *(done, live 2026-10-05)*
+**What it does:** Turns the trained model into a public website: calibration → ONNX → a small serving
+database → FastAPI → Docker → AWS EC2 behind NGINX → a static site on Vercel.
+
+### Issue 35 — The percentages were too high
+After the case-control correction the model predicted 3.11% payouts on 2024 vs 2.31% actual. The correction
+fixes *sampling*; payouts were also falling year by year (drift).
+
+**Fix:** Platt scaling fitted on the newest labelled data (Jul–Dec 2024). Checked honestly first: fit on
+Jan–Jun, test on Jul–Dec → predicted 2.22% vs actual 2.10%. Isotonic regression was rejected: its flat steps
+create ties, which lowered within-company AUC (0.8296 → 0.8290). Calibration never changes the ranking.
+
+### Issue 36 — Proving the live features equal the training features
+The API can't read the 16 GB database; it gets a 187 MB snapshot "as of" 2025-01-01. The risk is
+train/serve skew — the same input computed two ways.
+
+**Fix:** The live function uses the same SQL formulas, and a **skew test** rebuilds the snapshot as of 3 past
+days and compares 20,773 complaints: 19/19 inputs identical, max difference 0. It also surfaced a subtle rule:
+in training, the 2nd complaint of a company on the same day has a 0-day gap; a live complaint has no same-day
+predecessor.
+
+### Issue 37 — The server started out of breath
+The first speed test on the server: p50 501 ms, p95 3,590 ms. The cheapest AWS servers (T4g) run at full
+speed only while they hold CPU credits — and a new one starts with none (CPU pinned at the 20% baseline).
+
+**Fix:** Nothing to fix — credits refill when idle, which a demo almost always is. Re-measured at full speed:
+p50 210 ms, p95 807 ms (0% steal). Kept the *standard* credit mode on purpose: *unlimited* can bill extra.
+
+### Issue 38 — The region I wanted was blocked
+EC2 launches in Mumbai (ap-south-1) were denied. The account belongs to an AWS Organization whose policy (SCP)
+blocks that region — not a permissions mistake on my side.
+
+**Fix:** Deployed in Sydney (ap-southeast-2). The cost: ~1.2 s round trip from India on the first, throttled test.
+
+### Issue 39 — Locking the server to the website
+The site on Vercel forwards API calls to the server. Anyone could also call the server's IP directly, and
+every visitor reaches NGINX from Vercel's IPs — so a per-IP rate limit would treat all visitors as one.
+
+**Fix:** Vercel adds a secret header; NGINX returns 403 without it, and rate-limits on the visitor's real IP
+(Vercel's `x-real-ip`) only when the secret matches (a forged header can't dodge the limit). Checked: direct
+calls 403; 40 rapid calls → 22 × 200 / 18 × 429.
+
+### Issue 40 — A 48-character password took the site down
+NGINX refused to start: `could not build map_hash`. The secret was longer than its default lookup-table slot
+(64 bytes). The container restart-looped for about three minutes.
+
+**Fix:** `map_hash_bucket_size 128;`. The local test had used a short practice secret — test with
+production-like values.
+
+### Issue 41 — A browser extension made the database diagram vanish
+On the blog, Dark Reader turned the diagram's SVG text light but left its boxes light: white on white.
+
+**Fix:** Every colour became a CSS variable with a designed dark theme (plus a toggle), and the diagram's
+tables became HTML buttons, so text and box always change colour together.
+

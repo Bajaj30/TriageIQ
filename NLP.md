@@ -349,12 +349,15 @@ vs 0.19% in the template group.
 **Model export to ONNX.** The network's recipe plus its weights in one file; it runs on ONNX Runtime with no
 PyTorch. It matches PyTorch to 1e-5.
 
-**Quantisation (int8).** Store weights in 8 bits. Planned, not needed: the server has RAM to spare.
+**Quantisation (int8).** Store weights in 8 bits. Considered, not needed: the server has RAM to spare
+(api ~550 MiB of ~1.8 GB) and 0.2 s is fast enough for triage.
 
 **Train/serve skew test.** The live track record was rebuilt for 3 past days. All 19 inputs matched training
 exactly, over 20,773 complaints.
 
-**Latency.** p50 / p95, the typical and the slow requests. On the Mac: 20 / 81 ms for the model alone.
+**Latency.** p50 / p95, the typical and the slow requests. Model alone: 20 / 81 ms on the M4 Mac, 218 / 803 ms
+on the 2-core cloud server (300 real 2024 complaints). The feature lookup is under 1 ms, so the model is
+nearly the whole wait.
 
 **Where:** `training/serving/`, `sql/06_serving/`, `api/`.
 
