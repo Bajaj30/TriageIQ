@@ -267,11 +267,12 @@ function themeToggle() {
   if (!btn) return;
   btn.addEventListener("click", () => {
     const isDark = document.documentElement.classList.toggle("dark");
-    localStorage.setItem("theme", isDark ? "dark" : "light");
+    try { localStorage.setItem("theme", isDark ? "dark" : "light"); } catch (e) { /* not remembered, still switched */ }
   });
   // If the OS preference changes and the user hasn't explicitly chosen, follow the OS
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-    if (!localStorage.getItem("theme")) {
+    let saved = null; try { saved = localStorage.getItem("theme"); } catch (e) {}
+    if (!saved) {
       document.documentElement.classList.toggle("dark", e.matches);
     }
   });
