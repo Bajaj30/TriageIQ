@@ -572,7 +572,7 @@ never keep a second copy here; two copies drift apart. What to reuse, by README 
 | **5. Under the hood** | **the snowflake** · the journey from raw file to score · the seven track-record steps |
 | 6. Results so far | the three tests (bar chart) · words vs track record |
 | 7. What changes | without vs with TriageIQ |
-| 8. Where the project is | the roadmap |
+| 9. Where the project is | the roadmap |
 
 ---
 

@@ -121,6 +121,7 @@ flowchart LR
 | Chance this complaint ends with a payout | a percentage — e.g. **31.7%** for a disputed overdraft fee |
 | Suggested route | 👩‍💼 senior analyst, or 📄 template reply |
 | The 5 most similar past complaints | ⏳ of 5 ended with a payout *(planned, not built)* |
+| Why this score | which sentences and which parts of the track record pushed it up or down *(on a laptop only — see section 8)* |
 
 ---
 
@@ -394,7 +395,60 @@ flowchart TB
 
 ---
 
-## 8. Where the project is
+## 8. Asking the model "why?"
+
+A score on its own asks for blind trust. So for any complaint, TriageIQ can also show **why** it scored the way it
+did: how much came from the customer's words, how much from each part of the company's track record, and which
+sentences mattered most.
+
+**The idea — splitting a prize fairly.** Picture a team that wins a prize, and you want to give each player a fair
+share. You can't just remove one player and look, because players help each other. So you add the players one at a
+time, in every possible order, and note how much the score jumps each time someone joins; a player's fair share is
+their average jump. *(tech: Shapley values, the maths behind SHAP)* Here the players are the complaint's words and ten
+parts of the track record. "Leaving a player out" means using the value from a typical complaint instead.
+
+The shares add up exactly, so every explanation reads like a short story:
+
+```
+a typical complaint ........................................ 0.02%
+  the complaint's words ................. odds of a payout × 42
+  this company's record overall ................. odds × 3.4
+  how busy this company has been lately ......... odds × 2.8
+  … and the rest
+this complaint ............................................. 31.7%
+```
+
+*(The example overdraft-fee complaint from the live demo. The starting point is low because most complaints are
+credit-report disputes that almost never pay.)* For the sentences, the model re-reads the complaint with some
+sentences hidden, many times over, and sees which ones move the score. In this example the sentence that raised the
+odds most — about 4 times — was *"I called customer service twice and was told the fees were correct and would not be
+refunded."*
+
+**Is it telling the truth?** An explanation can add up perfectly and still be decoration, so it was put to a test on
+200 complaints from 2024 (100 the company paid, 100 it didn't). The sentence tests use the 161 of them long enough
+to have at least four pieces of text:
+
+| test | result |
+|---|---|
+| Hide the sentence the explanation calls most important vs a random sentence | the score falls more in **91 of every 100** complaints |
+| Same with the top 3 sentences | **97 of every 100** |
+| A second, independent method *(tech: LIME)* | mostly agrees with the ranking |
+| Weak spot: long complaints, run again with different random choices | the single most important sentence changes about half the time — trust the top few, not just the top one |
+
+> [!NOTE]
+> **Not in production — it runs on a laptop only.** The live website doesn't offer explanations because the small
+> cloud server doesn't have the computing power. One explanation makes the AI re-read the complaint up to about 250
+> times: about 2 seconds on a laptop, but the server's two small processors run this model about 10 times slower
+> (measured), so an explanation would take an estimated 20 seconds or more — while blocking the scoring of everyone
+> else's complaints. It also needs a second copy of the AI model in memory. A server big enough would cost more than
+> the free cloud credits this project runs on. How to run it yourself: *For the technically curious*, below.
+
+**What it can't tell you:** it explains what the *model* reacted to, not why the *company* paid. The deciding fact
+is often a company's own decision that never appears in the text.
+
+---
+
+## 9. Where the project is
 
 ```mermaid
 flowchart LR
@@ -413,16 +467,18 @@ flowchart LR
 | Build the track record | ✅ done | 19 clues per complaint, stored for all 4.8 million complaints; the no-peeking test passed |
 | Train the AI reader | ✅ done | the fine-tuned model and the scores above |
 | Put it online | ✅ live | **https://triageiq-mu.vercel.app** — anyone can try it |
+| Explain each score | ✅ built, laptop only | "why this score?" for every complaint, tested for honesty — not online (section 8) |
 
 ---
 
-## 9. Honest limits
+## 10. Honest limits
 
 - **It predicts cost to the company, not harm to the customer.** The CFPB publishes no "how badly was
   this person hurt" label, so that can't be tested.
 - **It knows *whether* money was paid, not *how much*.** Amounts aren't published.
 - **The AI can only read about 1 in 3 complaints** — the ones whose writers chose to publish their story.
 - **It decides who looks first, not how a complaint is resolved.** People still handle every complaint.
+- **An explanation shows what the model reacted to, not the real reason a company paid.**
 
 ---
 
@@ -511,8 +567,23 @@ no better, so the simpler model shipped. Every number lives in [`Context/FACTS.m
    Each file ends with checks and the numbers to expect; `sql/tests/` re-checks the features by hand.
 6. Train on Kaggle (`training/KAGGLE_SETUP.md`), then `training/serving/calibrate.py` and `export_onnx.py`.
 
-**Just the service:** with the model bundle in `training/outputs/serving_v3/` (model files are too large for git),
+> [!IMPORTANT]
+> **The trained model is not in this repository.** The weights are 266 MB per file — too large for git — so they live
+> only on the author's machine and the server. A fresh clone can read and test all the code, but to score or explain
+> complaints you first need a model: train it (step 6), or ask the author for the bundle.
+
+**Just the service:** with the model bundle in `training/outputs/serving_v3/`,
 `docker compose -f deploy/docker-compose.yml up -d --build` → http://localhost:8000/docs.
+
+**The explanations (laptop only):** they also need the trained weights (`training/outputs/fusion_distilbert_full/model.pt`)
+and the training-set file (`Data/data/interim/triageiq_training_v3.parquet`, from step 5), neither of which is in git.
+1. `USE_TF=0 python training/serving/export_xai_onnx.py` — splits the model in two (the slow reader and the small
+   judge) and refuses to write anything unless the two halves score exactly like the shipped model.
+2. `python -m unittest api.test_xai -v` — the maths against hand-checked answers, plus the real model.
+3. `sh api/run_local.sh --port 8001`, then `API=http://127.0.0.1:8001 python3 web/dev_server.py` →
+   http://localhost:3000 → score a complaint → **Why this score?** (also on *Real 2024 complaints*).
+4. Optional: `USE_TF=0 python training/explain/validate_xai.py` reruns the honesty tests above (~20 min) →
+   `training/results/xai_v3.json`.
 
 ### Go deeper
 
