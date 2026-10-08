@@ -210,18 +210,23 @@ input:focus, select:focus, textarea:focus { border-color: var(--ink); outline: n
 #why-slot:empty { display: none; }
 .file #why-slot { margin-top: 28px; }
 .why { border-top: 2px solid var(--ink); padding-top: 16px; margin: 6px 0 20px; }
+.why-grid { display: grid; gap: 26px; }
+.file .why-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 44px; }   /* wide page: side by side */
+@media (max-width: 860px) { .file .why-grid { grid-template-columns: 1fr; } }
 .why-path { border-top: 1px solid var(--rule); margin: 4px 0 10px; }
-.why-row { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(70px, 1fr) 64px; gap: 12px; align-items: center;
-           padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
-.why-row.edge { font-weight: 600; background: var(--paper-2); padding-left: 8px; padding-right: 8px; }
-.why-name small { display: block; font: 400 12px/1.4 var(--mono); color: var(--muted); }
-.why-val { font: 600 14px/1 var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.why-row { padding: 10px 0 12px; border-bottom: 1px solid var(--rule); }
+.why-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 14px; }
+.why-row.edge { background: var(--paper-2); padding: 10px 10px; font-weight: 600; }
+.why-name small { display: block; font: 400 12px/1.4 var(--mono); color: var(--muted); margin-top: 2px; }
+.why-val { font: 600 15px/1 var(--mono); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .why-val.up { color: var(--accent); } .why-val.down { color: var(--calm); }
-.why-bar { position: relative; height: 10px; background: var(--paper-2); }
-.why-bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--rule-strong); }
+.why-bar { position: relative; display: block; height: 8px; margin-top: 8px; background: var(--paper-2); }
+.why-bar::after { content: ""; position: absolute; left: var(--zero, 0%); top: -3px; bottom: -3px; width: 1px;
+                  background: var(--rule-strong); }
 .why-bar i { position: absolute; top: 0; bottom: 0; }
 .why-bar i.up { background: var(--accent); } .why-bar i.down { background: var(--calm); }
-.why h3 { margin-top: 22px; }
+.why h3 { margin-top: 0; }
+.why-grid > div:last-child h3 { margin-top: 4px; }
 .why-text { font-size: 16px; }
 .hl { border-radius: 2px; padding: 1px 0; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .hl.up1 { background: var(--accent-soft); }

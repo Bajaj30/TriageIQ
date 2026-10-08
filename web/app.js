@@ -129,26 +129,40 @@ function whyHTML(r) {
   const restOdds = rest.reduce((a, f) => a * f.odds_factor, 1);
   const rows = shown.map((f) => ({ name: f.name, f: f.odds_factor, detail: FACTOR_DETAIL[f.name] ? FACTOR_DETAIL[f.name](f.inputs) : "" }));
   if (rest.length) rows.push({ name: `Everything else (${rest.length} more)`, f: restOdds, detail: "" });
-  const maxLog = Math.max(...rows.map((x) => Math.abs(Math.log(x.f))), 1e-9);
+  // the zero line sits where the data needs it: at the left edge when every factor raises the odds,
+  // further right only as far as the biggest "lowers" factor — so the bars use the whole width
+  const up = Math.max(0, ...rows.map((x) => Math.log(x.f)));
+  const down = Math.max(0, ...rows.map((x) => -Math.log(x.f)));
+  const span = up + down || 1, zero = (down / span) * 100;
   const bar = (f) => {
-    const w = (Math.abs(Math.log(f)) / maxLog) * 50, up = f >= 1;
-    return `<span class="why-bar"><i class="${up ? "up" : "down"}" style="${up ? "left" : "right"}:50%;width:${w}%"></i></span>`;
+    const w = (Math.abs(Math.log(f)) / span) * 100, rises = f >= 1;
+    return `<span class="why-bar" style="--zero:${zero}%"><i class="${rises ? "up" : "down"}" style="${rises
+      ? `left:${zero}%` : `right:${100 - zero}%`};width:${w}%"></i></span>`;
   };
+  const row = (x) => `<div class="why-row">
+      <div class="why-head"><span class="why-name">${esc(x.name)}${x.detail ? `<small>${esc(x.detail)}</small>` : ""}</span>
+        <span class="why-val ${x.f >= 1 ? "up" : "down"}">${oddsText(x.f)}</span></div>
+      ${bar(x.f)}</div>`;
   return `
     <section class="why">
       <p class="kicker">Why this score</p>
-      <div class="why-path">
-        <div class="why-row edge"><span class="why-name">A typical complaint</span><span></span><span class="why-val">${pct(r.typical_probability)}</span></div>
-        ${rows.map((x) => `<div class="why-row"><span class="why-name">${esc(x.name)}${x.detail ? `<small>${esc(x.detail)}</small>` : ""}</span>
-          ${bar(x.f)}<span class="why-val ${x.f >= 1 ? "up" : "down"}">${oddsText(x.f)}</span></div>`).join("")}
-        <div class="why-row edge"><span class="why-name">This complaint</span><span></span><span class="why-val">${pct(r.payout_probability)}</span></div>
+      <div class="why-grid">
+        <div>
+          <div class="why-path">
+            <div class="why-row edge"><div class="why-head"><span class="why-name">A typical complaint</span><span class="why-val">${pct(r.typical_probability)}</span></div></div>
+            ${rows.map(row).join("")}
+            <div class="why-row edge"><div class="why-head"><span class="why-name">This complaint</span><span class="why-val">${pct(r.payout_probability)}</span></div></div>
+          </div>
+          <p class="small">Each line multiplies the odds of a payout. The starting point is the model's score for a typical
+            complaint — most complaints are credit-report disputes that almost never pay, so it starts low.</p>
+        </div>
+        <div>
+          <h3>Which sentences mattered</h3>
+          <p class="narrative why-text">${highlightHTML(r)}</p>
+          <p class="small">Darker red raised the chance, green lowered it (hover a sentence for its effect). Measured by hiding
+            sentences and re-reading the rest — ${esc(r.sentence_method)}.${r.words_not_read ? ` The last ${r.words_not_read} words were past what the model reads.` : ""}</p>
+        </div>
       </div>
-      <p class="small">Each line multiplies the odds of a payout. The starting point is the model's score for a typical
-        complaint — most complaints are credit-report disputes that almost never pay, so it starts low.</p>
-      <h3>Which sentences mattered</h3>
-      <p class="narrative why-text">${highlightHTML(r)}</p>
-      <p class="small">Darker red raised the chance, green lowered it (hover a sentence for its effect). Measured by hiding
-        sentences and re-reading the rest — ${esc(r.sentence_method)}.${r.words_not_read ? ` The last ${r.words_not_read} words were past what the model reads.` : ""}</p>
       <p class="why-caveat">${esc(r.caveat)}</p>
       <p class="foot-meta">Explained in ${(r.latency_ms / 1000).toFixed(1)} s · Shapley values over the shipped model · every check passed</p>
     </section>`;
