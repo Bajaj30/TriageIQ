@@ -563,6 +563,8 @@ no better, so the simpler model shipped. Every number lives in [`Context/FACTS.m
 4. `docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.xai.yml up -d --build` — builds the API and
    loads the demo database (150,000 real complaints from 2024). About a minute later: http://localhost:8000/docs.
 5. `python3 web/dev_server.py` → **http://localhost:3000** — the website, with **Why this score?** on both pages.
+   Explanations are slower inside Docker than run natively: about a second for a short complaint, up to ~20 s for a
+   long one (measured on an M4 laptop).
 
 Leave out `-f deploy/docker-compose.xai.yml` to run exactly what the live site runs, without explanations. Port 8000
 already taken? Put `API_PORT=8010` in front of step 4 and `API=http://127.0.0.1:8010` in front of step 5.

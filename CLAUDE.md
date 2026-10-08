@@ -36,6 +36,8 @@ EC2 `3.106.107.237` (403 without the secret; 5 req/s per visitor) → FastAPI (`
   Release `model-v3`; `sh deploy/get_model.sh` downloads them and checks `deploy/model_bundle.sha256` (update that
   file AND the release if the bundle ever changes). Local run with explanations: `docker compose -f
   deploy/docker-compose.yml -f deploy/docker-compose.xai.yml up -d --build` (+ `API_PORT=…` if 8000 is taken).
+  **Tested from a fresh clone (2026-10-08):** get_model.sh → all 9 files verified; /predict 31.678% (= live); explain
+  0.8–2.2 s, long complaint ~20 s in Docker; api container ~1 GB with both model copies; website OK, no JS errors.
 - **Full database (16 GB):** the Docker volume of the root `docker-compose.yml` on the Mac. Rebuildable from
   `Data/complaints.csv` by running `sql/` in number order (README "Run it yourself").
 - **Secrets:** root `.env` (local DB) · `deploy/.env` on the server (DB password + ORIGIN_SECRET) · Vercel env
