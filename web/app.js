@@ -140,29 +140,25 @@ function whyHTML(r) {
       ? `left:${zero}%` : `right:${100 - zero}%`};width:${w}%"></i></span>`;
   };
   const row = (x) => `<div class="why-row">
-      <div class="why-head"><span class="why-name">${esc(x.name)}${x.detail ? `<small>${esc(x.detail)}</small>` : ""}</span>
-        <span class="why-val ${x.f >= 1 ? "up" : "down"}">${oddsText(x.f)}</span></div>
-      ${bar(x.f)}</div>`;
+      <span class="why-name">${esc(x.name)}${x.detail ? `<small>${esc(x.detail)}</small>` : ""}</span>
+      ${bar(x.f)}<span class="why-val ${x.f >= 1 ? "up" : "down"}">${oddsText(x.f)}</span></div>`;
+  const edge = (name, p) => `<div class="why-row edge"><span class="why-name">${name}</span><span class="why-val">${pct(p)}</span></div>`;
+  const long = r.text.length > 900;                   // long complaints: two newspaper columns, short lines stay readable
   return `
     <section class="why">
       <p class="kicker">Why this score</p>
-      <div class="why-grid">
-        <div>
-          <div class="why-path">
-            <div class="why-row edge"><div class="why-head"><span class="why-name">A typical complaint</span><span class="why-val">${pct(r.typical_probability)}</span></div></div>
-            ${rows.map(row).join("")}
-            <div class="why-row edge"><div class="why-head"><span class="why-name">This complaint</span><span class="why-val">${pct(r.payout_probability)}</span></div></div>
-          </div>
-          <p class="small">Each line multiplies the odds of a payout. The starting point is the model's score for a typical
-            complaint — most complaints are credit-report disputes that almost never pay, so it starts low.</p>
-        </div>
-        <div>
-          <h3>Which sentences mattered</h3>
-          <p class="narrative why-text">${highlightHTML(r)}</p>
-          <p class="small">Darker red raised the chance, green lowered it (hover a sentence for its effect). Measured by hiding
-            sentences and re-reading the rest — ${esc(r.sentence_method)}.${r.words_not_read ? ` The last ${r.words_not_read} words were past what the model reads.` : ""}</p>
-        </div>
+      <h3>Words vs the company's track record</h3>
+      <div class="why-path">
+        ${edge("A typical complaint", r.typical_probability)}
+        ${rows.map(row).join("")}
+        ${edge("This complaint", r.payout_probability)}
       </div>
+      <p class="small">Each line multiplies the odds of a payout. The starting point is the model's score for a typical
+        complaint — most complaints are credit-report disputes that almost never pay, so it starts low.</p>
+      <h3>Which sentences mattered</h3>
+      <p class="narrative why-text${long ? " two-col" : ""}">${highlightHTML(r)}</p>
+      <p class="small">Darker red raised the chance, green lowered it (hover a sentence for its effect). Measured by hiding
+        sentences and re-reading the rest — ${esc(r.sentence_method)}.${r.words_not_read ? ` The last ${r.words_not_read} words were past what the model reads.` : ""}</p>
       <p class="why-caveat">${esc(r.caveat)}</p>
       <p class="foot-meta">Explained in ${(r.latency_ms / 1000).toFixed(1)} s · Shapley values over the shipped model · every check passed</p>
     </section>`;
@@ -183,13 +179,19 @@ function highlightHTML(r) {
   return html + (r.words_not_read ? `<span class="unread" title="Past the 510 word-pieces the model reads">${narrativeHTML(tail)}</span>` : esc(tail));
 }
 
-async function addWhy(slot, request) {   // request: () => Promise of the explanation
-  if (!(await XAI)) return;
+async function addWhy(slot, request, target = slot) {   // request: () => Promise of the explanation
+  if (!(await XAI)) return;                           // target: where the panel goes (default: in place of the button)
   slot.innerHTML = `<button class="btn btn-quiet why-btn" type="button">Why this score?</button>`;
   const btn = $("button", slot);
   btn.addEventListener("click", async () => {
     btn.disabled = true; btn.textContent = "Re-reading the complaint…";
-    try { slot.innerHTML = whyHTML(await request()); }
+    try {
+      target.innerHTML = whyHTML(await request());
+      if (target !== slot) {
+        slot.innerHTML = `<p class="why-pointer">The explanation is below ↓</p>`;
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
     catch (err) {
       btn.disabled = false; btn.textContent = "Why this score?";
       slot.insertAdjacentHTML("beforeend", `<p class="notes">${esc((err.body && err.body.detail) || problemText(err) || "Could not explain this score.")}</p>`);
@@ -296,11 +298,12 @@ async function initScore() {
 
     const btn = $("#score-btn"), out = $("#assessment");
     btn.disabled = true; btn.textContent = "Scoring…";
+    $("#why-wide").innerHTML = "";                                   // an old explanation no longer applies
     out.innerHTML = '<p class="loading">Reading the complaint and the company’s track record</p>';
     try {
       const r = await api("/predict", { method: "POST", body: JSON.stringify(body) });
       out.innerHTML = assessmentHTML(r);
-      addWhy($("#why-slot", out), () => api("/explain", { method: "POST", body: JSON.stringify(body) }, 90000));
+      addWhy($("#why-slot", out), () => api("/explain", { method: "POST", body: JSON.stringify(body) }, 90000), $("#why-wide"));
     } catch (err) {
       out.innerHTML = emptyAssessment();
       if (err.status === 422) show422(err.body);
