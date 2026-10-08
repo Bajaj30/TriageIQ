@@ -406,6 +406,14 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   thousandths of a second on a laptop (a short one 11, the longest 54).
 
 ---
+- **Asking the model "why?"** *(tech: Shapley values / SHAP, LIME, faithfulness tests)* — imagine splitting a team's
+  prize fairly: add the players one at a time in every possible order and give each the average jump in score it
+  causes. Our players are the complaint's words and ten pieces of the company's track record, and the shares add up
+  exactly from "a typical complaint" to "this complaint". The honest part is testing it: on 200 complaints from
+  2024, deleting the sentence the explanation called most important lowered the score far more than deleting a
+  random sentence — in 91 of every 100 complaints. A second, independent method (LIME) mostly agreed. And one
+  weakness we kept visible: in long complaints, re-running with a different random seed picks the same "most
+  important sentence" only about half the time. It explains the model, not the bank's real reasons.
 
 ## 5. How the database does the heavy lifting
 

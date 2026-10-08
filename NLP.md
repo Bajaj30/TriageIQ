@@ -363,6 +363,42 @@ nearly the whole wait.
 
 ---
 
+## 12b. Explaining a score (XAI) — local only
+
+**Shapley values (the maths behind SHAP).** Share a result fairly among players: add them one at a time in
+every order, note each one's jump, average. The shares add up exactly: typical score + all shares = this score.
+In TriageIQ the players are the words plus 10 groups of the 19 inputs (inputs that only make sense together,
+like product + sub-product, are one player). "Removing" a player = using a typical complaint's value: 100
+complaints from Oct–Dec 2023. Computed in log-odds; shown as odds multipliers (×2 = doubles the odds).
+
+**Two-stage model.** The reader (DistilBERT → 128 numbers) is slow; the judge (→ logit) is tiny. Split out of the
+shipped model, identical to it (max difference 0 on 1,000 test complaints). Words vs inputs needs only the judge,
+so all 2,048 combinations are computed exactly.
+
+**Sentence attribution by deletion.** Pieces of text (sentences, ≤ 16) are players; removing one = deleting it and
+re-reading. ≤ 8 pieces: all combinations (exact); more: 16 random orders in reverse pairs (antithetic sampling).
+Caveat: text with sentences deleted is text the model never saw.
+
+**LIME.** A second method: delete random subsets, weight each by closeness to the full text, fit a weighted linear
+model. Used only to cross-check.
+
+**Faithfulness tests** (200 complaints from the 2024 test set, 100 paid + 100 not; `training/results/xai_v3.json`):
+- deleting the 1 piece ranked highest lowers the logit 0.37 on average vs 0.04 for a random piece — the top piece
+  wins in 91% of complaints (97% for the top 3: 0.91 vs 0.10);
+- deleting the piece ranked as lowering the score raised it in 82% of cases;
+- resetting the top-ranked input group to typical values lowered the score in 100% of cases, a random group didn't;
+- LIME agrees: rank correlation 0.85, same top-3 pieces 77% of the time;
+- **weak spot:** for complaints over 8 pieces the estimate is noisy — a second random seed keeps the ranking
+  (rank correlation 0.84) but picks the same single top piece only 53% of the time. Against the exact answer
+  (5–8 pieces), 16 orders get the top piece right 84% of the time.
+
+**What it shows:** across these 200, the words carry 30% of the total effect for paid complaints and 23% for unpaid
+ones; the company's own record carries most of the rest. Speed on the Mac: p50 1.7 s, p95 8.4 s per explanation.
+
+**Where:** `api/xai.py`, `training/serving/export_xai_onnx.py`, `training/explain/validate_xai.py`.
+
+---
+
 ## 13. Planned, not built
 
 **Embeddings and similar-complaint retrieval** (pgvector): show the 5 most similar past complaints and how they

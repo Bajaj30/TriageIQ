@@ -454,6 +454,7 @@ visitor ─https─▶ Vercel (static site) ─forwards API paths + a secret hea
 | Deployment | Docker Compose (db restored from a 57 MB dump + api + NGINX) on one EC2 t4g.small (ARM, Sydney), ≈ $21/month | [`deploy/`](deploy/) |
 | Website | plain HTML/CSS/JS on Vercel | [`web/`](web/) |
 | Essay | GitHub Pages | [`docs/`](docs/) |
+| Explanations *(local only)* | "Why this score?": Shapley values for the words and 10 groups of track-record inputs (exact), and for each sentence (delete-and-re-read); faithfulness-tested | [`api/xai.py`](api/xai.py), [`training/explain/`](training/explain/) |
 
 **Design rules:** no leakage (every input computable at complaint receipt) · one source of truth for features
 (all feature logic in SQL; training and serving use the same formulas, proven by the skew test) · temporal split,

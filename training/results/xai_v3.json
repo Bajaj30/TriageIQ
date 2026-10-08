@@ -1,0 +1,111 @@
+{
+ "sample": "2024 test set: 100 paid + 100 not paid, seed 42",
+ "background": "100 complaints from the validation split (Oct\u2013Dec 2023)",
+ "checks_max": {
+  "shares_add_up": 1.7763568394002505e-15,
+  "matches_live_model": 0.0,
+  "sentences_add_up": 8.881784197001252e-16,
+  "pieces_rejoined_match": 0.0
+ },
+ "latency_ms_mac_m4": {
+  "p50": 1655.681082999763,
+  "p95": 8430.355225350126,
+  "threads": 8
+ },
+ "pieces_per_complaint": {
+  "median": 8.0,
+  "exact_share": 0.55
+ },
+ "deletion_text": {
+  "top1": {
+   "complaints": 161,
+   "mean_logit_drop_top": 0.36592624609514796,
+   "mean_logit_drop_random": 0.03939557305265288,
+   "share_top_beats_random": 0.906832298136646
+  },
+  "top3": {
+   "complaints": 161,
+   "mean_logit_drop_top": 0.9143130853830009,
+   "mean_logit_drop_random": 0.09511442604816016,
+   "share_top_beats_random": 0.9751552795031055
+  }
+ },
+ "deleting_lowest_ranked_piece": {
+  "complaints": 161,
+  "share_score_rose_when_phi_negative": 0.8176100628930818
+ },
+ "deletion_track_record": {
+  "complaints": 200,
+  "mean_logit_drop_top_group": 1.0355241923339897,
+  "mean_logit_drop_random_group": -0.17044388698054114,
+  "share_top_beats_random": 1.0
+ },
+ "sampling_vs_exact_5_to_8_pieces": {
+  "complaints": 55,
+  "spearman_mean": 0.8920779220779221,
+  "top1_same_share": 0.8363636363636363,
+  "error_as_share_of_total": 0.19951434826252193
+ },
+ "seed_stability_over_8_pieces": {
+  "complaints": 90,
+  "spearman_mean": 0.835658459187871,
+  "top1_same_share": 0.5333333333333333
+ },
+ "lime_vs_shapley_sentences": {
+  "complaints": 60,
+  "spearman_mean": 0.848525281907635,
+  "top1_same_share": 0.6666666666666666,
+  "top3_overlap_mean": 0.7722222222222221
+ },
+ "mean_abs_log_odds_share": {
+  "The complaint's words": {
+   "paid": 2.31195172948591,
+   "not_paid": 1.0899116985076234
+  },
+  "The product": {
+   "paid": 0.09065536657161992,
+   "not_paid": 0.10873583512345249
+  },
+  "The kind of problem": {
+   "paid": 0.18764660436697558,
+   "not_paid": 0.19288606009857304
+  },
+  "This company's record on this kind of problem": {
+   "paid": 1.8061957678685665,
+   "not_paid": 0.4626639683200943
+  },
+  "This company's record overall": {
+   "paid": 1.602530311005483,
+   "not_paid": 0.6315797129833244
+  },
+  "Complaints this company never answered": {
+   "paid": 0.00028703447796582683,
+   "not_paid": 0.0002771070386231146
+  },
+  "How busy this company has been lately": {
+   "paid": 1.0017086558055848,
+   "not_paid": 1.4816379375205597
+  },
+  "How common this kind of problem is lately": {
+   "paid": 0.3949576628449252,
+   "not_paid": 0.5401304532234004
+  },
+  "Older American tag": {
+   "paid": 0.03198167278073336,
+   "not_paid": 0.023352284925685973
+  },
+  "Servicemember tag": {
+   "paid": 0.023996795595507953,
+   "not_paid": 0.06296463973496653
+  },
+  "The customer's state": {
+   "paid": 0.05849432162399843,
+   "not_paid": 0.1289888700584571
+  }
+ },
+ "words_share_of_total_effect": {
+  "paid": 0.3030066820454662,
+  "not_paid": 0.23265081153637432
+ },
+ "words_is_biggest_factor_share": 0.425
+}

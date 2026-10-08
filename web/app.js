@@ -6,9 +6,9 @@
 "use strict";
 
 // ---------------------------------------------------------------- talking to the API
-async function api(path, options = {}) {
+async function api(path, options = {}, timeoutMs = 20000) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 20000);            // a score never takes 20 s; give up cleanly
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);        // a score never takes 20 s; give up cleanly
   try {
     const res = await fetch(path, { ...options, signal: ctrl.signal,
       headers: { "Content-Type": "application/json", ...(options.headers || {}) } });
@@ -95,6 +95,92 @@ function narrativeHTML(text) {
   return esc(text)
     .replace(/\[REDACTED\]/g, '<span class="redact" title="Hidden by the CFPB">REDACTED</span>')
     .replace(/\[DATE\]/g, '<span class="redact date" title="A date hidden by the CFPB">DATE</span>');
+}
+
+// ---------------------------------------------------------------- "Why this score?" — explanations (local only)
+// The API explains a score with Shapley values (api/xai.py): a typical complaint's score, then how much each part
+// of THIS complaint multiplies the odds. Only offered where the API says it can (/explain/status) — the deployed
+// server doesn't carry the extra model files, and Vercel doesn't forward /explain, so the live site never shows it.
+const XAI = api("/explain/status").then((r) => !!(r && r.available)).catch(() => false);
+
+function oddsText(f) {
+  if (Math.abs(Math.log(f)) < Math.log(1.05)) return "≈ ×1";
+  const k = f >= 1 ? f : 1 / f;
+  return (f >= 1 ? "×" : "÷") + (k >= 10 ? Math.round(k).toLocaleString("en-US") : k.toFixed(1));
+}
+const yes = (v) => (v >= 0.5 ? "yes" : "no");
+const FACTOR_DETAIL = {   // the input that best describes each group, in plain words
+  "The product": (i) => `pays out on ${rate(i.product_rate_s)} of complaints`,
+  "The kind of problem": (i) => `pays out on ${rate(i.issue_rate_s)} of complaints`,
+  "This company's record on this kind of problem": (i) =>
+    i.company_issue_no_history >= 0.5 ? "no track record yet" : `paid on ${rate(i.company_issue_rate_s)}`,
+  "This company's record overall": (i) =>
+    i.company_no_history >= 0.5 ? "no track record yet" : `paid on ${rate(i.company_rate_s)}`,
+  "Complaints this company never answered": (i) => rate(i.company_untimely_rate),
+  "How busy this company has been lately": (i) => `volume ${trend(i.company_trend_90d)}`,
+  "How common this kind of problem is lately": (i) => `volume ${trend(i.issue_trend_90d)}`,
+  "Older American tag": (i) => yes(i.is_older_american),
+  "Servicemember tag": (i) => yes(i.is_servicemember),
+};
+
+function whyHTML(r) {
+  const shown = r.factors.filter((f) => Math.abs(Math.log(f.odds_factor)) >= Math.log(1.05)).slice(0, 7);
+  const rest = r.factors.filter((f) => !shown.includes(f));
+  const restOdds = rest.reduce((a, f) => a * f.odds_factor, 1);
+  const rows = shown.map((f) => ({ name: f.name, f: f.odds_factor, detail: FACTOR_DETAIL[f.name] ? FACTOR_DETAIL[f.name](f.inputs) : "" }));
+  if (rest.length) rows.push({ name: `Everything else (${rest.length} more)`, f: restOdds, detail: "" });
+  const maxLog = Math.max(...rows.map((x) => Math.abs(Math.log(x.f))), 1e-9);
+  const bar = (f) => {
+    const w = (Math.abs(Math.log(f)) / maxLog) * 50, up = f >= 1;
+    return `<span class="why-bar"><i class="${up ? "up" : "down"}" style="${up ? "left" : "right"}:50%;width:${w}%"></i></span>`;
+  };
+  return `
+    <section class="why">
+      <p class="kicker">Why this score</p>
+      <div class="why-path">
+        <div class="why-row edge"><span class="why-name">A typical complaint</span><span></span><span class="why-val">${pct(r.typical_probability)}</span></div>
+        ${rows.map((x) => `<div class="why-row"><span class="why-name">${esc(x.name)}${x.detail ? `<small>${esc(x.detail)}</small>` : ""}</span>
+          ${bar(x.f)}<span class="why-val ${x.f >= 1 ? "up" : "down"}">${oddsText(x.f)}</span></div>`).join("")}
+        <div class="why-row edge"><span class="why-name">This complaint</span><span></span><span class="why-val">${pct(r.payout_probability)}</span></div>
+      </div>
+      <p class="small">Each line multiplies the odds of a payout. The starting point is the model's score for a typical
+        complaint — most complaints are credit-report disputes that almost never pay, so it starts low.</p>
+      <h3>Which sentences mattered</h3>
+      <p class="narrative why-text">${highlightHTML(r)}</p>
+      <p class="small">Darker red raised the chance, green lowered it (hover a sentence for its effect). Measured by hiding
+        sentences and re-reading the rest — ${esc(r.sentence_method)}.${r.words_not_read ? ` The last ${r.words_not_read} words were past what the model reads.` : ""}</p>
+      <p class="why-caveat">${esc(r.caveat)}</p>
+      <p class="foot-meta">Explained in ${(r.latency_ms / 1000).toFixed(1)} s · Shapley values over the shipped model · every check passed</p>
+    </section>`;
+}
+
+function highlightHTML(r) {
+  const logs = r.sentences.map((x) => Math.log(x.odds_factor));
+  const max = Math.max(...logs.map(Math.abs), 1e-9);
+  let html = "", at = 0;
+  r.sentences.forEach((x, k) => {
+    const rel = logs[k] / max, level = Math.abs(rel) >= 0.6 ? 2 : Math.abs(rel) >= 0.25 ? 1 : 0;
+    const cls = level ? `hl ${rel > 0 ? "up" : "down"}${level}` : "hl";
+    html += esc(r.text.slice(at, x.start)) +
+      `<span class="${cls}" title="${x.odds_factor >= 1 ? "raises" : "lowers"} the odds ${oddsText(x.odds_factor)}">${narrativeHTML(r.text.slice(x.start, x.end))}</span>`;
+    at = x.end;
+  });
+  const tail = r.text.slice(at);
+  return html + (r.words_not_read ? `<span class="unread" title="Past the 510 word-pieces the model reads">${narrativeHTML(tail)}</span>` : esc(tail));
+}
+
+async function addWhy(slot, request) {   // request: () => Promise of the explanation
+  if (!(await XAI)) return;
+  slot.innerHTML = `<button class="btn btn-quiet why-btn" type="button">Why this score?</button>`;
+  const btn = $("button", slot);
+  btn.addEventListener("click", async () => {
+    btn.disabled = true; btn.textContent = "Re-reading the complaint…";
+    try { slot.innerHTML = whyHTML(await request()); }
+    catch (err) {
+      btn.disabled = false; btn.textContent = "Why this score?";
+      slot.insertAdjacentHTML("beforeend", `<p class="notes">${esc((err.body && err.body.detail) || problemText(err) || "Could not explain this score.")}</p>`);
+    }
+  });
 }
 
 // ---------------------------------------------------------------- shared: live numbers from /model-info
@@ -200,6 +286,7 @@ async function initScore() {
     try {
       const r = await api("/predict", { method: "POST", body: JSON.stringify(body) });
       out.innerHTML = assessmentHTML(r);
+      addWhy($("#why-slot", out), () => api("/explain", { method: "POST", body: JSON.stringify(body) }, 90000));
     } catch (err) {
       out.innerHTML = emptyAssessment();
       if (err.status === 422) show422(err.body);
@@ -225,6 +312,7 @@ function assessmentHTML(r) {
     <h3>What the model saw besides the text</h3>
     ${ledgerHTML(r.inputs)}
     ${notes}${cut}
+    <div id="why-slot"></div>
     <p class="foot-meta">Track records as of ${dateLong(r.features_as_of)} · scored in ${Math.round(r.latency_ms)} ms · ${esc(r.model_version)}</p>`;
 }
 function emptyAssessment() {
@@ -271,6 +359,7 @@ async function initReal() {
     try {
       const r = await api("/complaint/random" + (paid ? "?paid=" + paid : ""));
       out.innerHTML = caseHTML(r);
+      addWhy($("#why-slot", out), () => api(`/complaint/${r.complaint_id}/explain`, {}, 90000));
     } catch (err) {
       out.innerHTML = `<p class="banner">${esc(problemText(err) || "Could not load a complaint.")}</p>`;
     }
@@ -304,6 +393,7 @@ function caseHTML(r) {
           <p class="stamp-why">${why}</p>
         </aside>
       </div>
+      <div id="why-slot"></div>
     </article>`;
 }
 

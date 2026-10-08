@@ -13,6 +13,8 @@
   --accent-soft: #f2e4df;
   --calm: #2f5a4c;            /* deep green: a correct call */
   --calm-soft: #e3ece7;
+  --accent-mid: #e2b9ad;      /* "why this score": a sentence that raised the chance a lot */
+  --calm-mid: #b9d3c6;        /* … or lowered it a lot */
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --sans: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -202,6 +204,33 @@ input:focus, select:focus, textarea:focus { border-color: var(--ink); outline: n
 .colophon { border-top: 1px solid var(--rule); margin-top: 24px; }
 .colophon .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; padding-top: 20px; padding-bottom: 36px;
                   font: 400 12px/1.6 var(--mono); color: var(--muted); }
+
+/* ---------- why this score (explanations, local only) ---------- */
+.why-btn { margin: 4px 0 18px; }
+#why-slot:empty { display: none; }
+.file #why-slot { margin-top: 28px; }
+.why { border-top: 2px solid var(--ink); padding-top: 16px; margin: 6px 0 20px; }
+.why-path { border-top: 1px solid var(--rule); margin: 4px 0 10px; }
+.why-row { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(70px, 1fr) 64px; gap: 12px; align-items: center;
+           padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.why-row.edge { font-weight: 600; background: var(--paper-2); padding-left: 8px; padding-right: 8px; }
+.why-name small { display: block; font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.why-val { font: 600 14px/1 var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.why-val.up { color: var(--accent); } .why-val.down { color: var(--calm); }
+.why-bar { position: relative; height: 10px; background: var(--paper-2); }
+.why-bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--rule-strong); }
+.why-bar i { position: absolute; top: 0; bottom: 0; }
+.why-bar i.up { background: var(--accent); } .why-bar i.down { background: var(--calm); }
+.why h3 { margin-top: 22px; }
+.why-text { font-size: 16px; }
+.hl { border-radius: 2px; padding: 1px 0; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.hl.up1 { background: var(--accent-soft); }
+.hl.up2 { background: var(--accent-mid); }
+.hl.down1 { background: var(--calm-soft); }
+.hl.down2 { background: var(--calm-mid); }
+.unread { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--rule-strong); }
+.why-caveat { font-size: 13px; color: var(--ink-2); border-left: 3px solid var(--rule-strong); background: var(--paper-2);
+              padding: 10px 12px; margin: 16px 0 10px; }
 
 /* loading */
 .loading { color: var(--muted); font: 400 14px/1.4 var(--mono); }

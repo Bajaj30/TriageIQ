@@ -66,3 +66,37 @@ class ComplaintOut(Prediction):
     narrative: str = Field(description="Cleaned text, exactly as the model read it ([DATE] / [REDACTED] = CFPB blanks)")
     what_actually_happened: str | None = Field(description="The company's real response")
     actually_paid: bool
+
+
+# ---------------------------------------------------------------- explanations (local only — api/xai.py)
+class Factor(BaseModel):
+    name: str = Field(description="The complaint's words, or one group of track-record inputs")
+    logit: float = Field(description="Its Shapley share of the score, in the model's raw log-odds units")
+    odds_factor: float = Field(description="The same share as a multiplier on the odds of a payout: 2.0 = doubles them")
+    inputs: dict[str, float] = Field(description="This complaint's values for the inputs in the group (raw, unscaled)")
+
+
+class SentenceEffect(BaseModel):
+    start: int = Field(description="Where the piece starts in `text` (characters)")
+    end: int
+    text: str
+    logit: float
+    odds_factor: float
+
+
+class Explanation(BaseModel):
+    payout_probability: float
+    route: Literal["senior analyst", "template response"]
+    typical_probability: float = Field(description="The starting point: the model's score for a typical complaint "
+                                                   "(100 real complaints from Oct–Dec 2023, averaged in log-odds)")
+    factors: list[Factor] = Field(description="Starting point × every factor's odds_factor = this complaint's odds")
+    sentences: list[SentenceEffect] = Field(description="Pieces of the text in reading order, with their share of the "
+                                                        "words' effect (measured against an empty complaint)")
+    sentence_method: str
+    words_not_read: int = Field(description="Words after the 510th word-piece — the model never read them")
+    text: str = Field(description="The cleaned text, exactly as the model read it")
+    checks: dict[str, float] = Field(description="Each should be ~0: shares add up, the two-stage model equals the "
+                                                 "live model, the re-joined pieces score the same as the full text")
+    caveat: str = ("This explains what the model did, not why the company paid. The deciding fact is often a company "
+                   "decision that isn't in the text.")
+    latency_ms: float

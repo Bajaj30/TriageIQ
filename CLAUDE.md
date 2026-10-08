@@ -7,12 +7,12 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-06 · **all phases built and live** · model = DistilBERT fusion v3 (19 inputs), Platt-calibrated ·
+Last updated: 2026-10-08 · **all phases built and live** · explanations built (local only) · model = DistilBERT fusion v3 (19 inputs), Platt-calibrated ·
 site on Vercel, API on AWS EC2 (Sydney) · blog on GitHub Pages · remaining work is optional (§0)
 
 ---
 
-## 0. Where we are — read this first (2026-10-06)
+## 0. Where we are — read this first (2026-10-08)
 
 **State: built, deployed, written up.** Phases 0–3 are done; nothing is half-finished. What's left is optional.
 
@@ -61,6 +61,15 @@ EC2 `3.106.107.237` (403 without the secret; 5 req/s per visitor) → FastAPI (`
 7. Hygiene: scikit-learn undeclared in `pyproject.toml` (trap 8); audit items L1/L4/L5; FACTS.md's "F3" frame
    row still describes the v2 parquet (301,460) — generated file: fix in `training/canonical_facts.py`, then regenerate.
 8. **Teardown** at the end (by 2027-04-02): delete every resource in §12, then release the Elastic IP.
+
+**Explanations "Why this score?" — built 2026-10-08, LOCAL ONLY (not deployed).** Shapley values: words + 10 input
+groups exact (two-stage model, = model.onnx, max Δ 0), sentences by delete-and-re-read (exact ≤ 8 pieces, else 16
+antithetic orders). Run: `USE_TF=0 python training/serving/export_xai_onnx.py` (once; writes the xai_* files) →
+`sh api/run_local.sh --port 8001` (8000 is often taken by the local Docker serving stack) →
+`API=http://127.0.0.1:8001 python3 web/dev_server.py` → localhost:3000, button "Why this score?" on both pages.
+Faithfulness (`training/results/xai_v3.json`, 200 complaints of 2024): top piece beats a random one 91% (top-3: 97%);
+LIME agrees (rank corr 0.85); weak spot = >8 pieces, top piece same across seeds only 53% → more orders if needed.
+Not deployed because: a second DistilBERT copy (~270 MB RAM) and 2–8 s on the Mac (~10× slower on the server).
 
 Learning side (Shivam): courses + the DMLS book after exams (`Learning/README.md`); interview prep from
 `Learning/Phase0–3/revision.md` + `Context/interview.md`.
@@ -237,6 +246,9 @@ sql/                          numbered SQL pipeline, run in pgAdmin — every fo
 
 sql/06_serving/ = the serving schema (snapshot, model_input(), lists, demo complaints) → pg_dump.
 api/ = FastAPI app (main.py endpoints · scorer.py model · db.py queries · schemas.py) · requirements.txt · run_local.sh.
+     xai.py = explanations (Shapley values; LOCAL ONLY) · test_xai.py (`python -m unittest api.test_xai -v`).
+training/serving/export_xai_onnx.py = splits the model into reader (DistilBERT → 128 numbers) + judge (→ logit) for
+     explanations; gate: = model.onnx on 1,000 test complaints. training/explain/validate_xai.py = faithfulness tests.
 deploy/ = api.Dockerfile · docker-compose.yml (db + api + nginx[profile public]) · nginx/default.conf.template (envsubst:
           secret-header check + per-visitor rate limit) · initdb/01_restore.sh · server_setup.sh · push.sh <ip> · .env.example.
 web/ = the website on Vercel: index.html (score) · real.html · how.html · styles.css · app.js · vercel.json (routes +

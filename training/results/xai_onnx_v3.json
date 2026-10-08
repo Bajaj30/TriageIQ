@@ -1,0 +1,15 @@
+{
+ "split_vs_model_onnx_max_abs_logit": 0.0,
+ "test_complaints": 1000,
+ "limit": 0.0001,
+ "background": {
+  "rows": 100,
+  "split": "val (Oct\u2013Dec 2023)",
+  "seed": 42
+ },
+ "sizes_mb": {
+  "xai_encoder.onnx": 266.0,
+  "xai_head.onnx": 0.1,
+  "xai_background.npz": 0.1
+ }
+}

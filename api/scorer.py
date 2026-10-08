@@ -34,19 +34,27 @@ class Scorer:
         self.sess = ort.InferenceSession(str(model_dir / "model.onnx"), sess_options=so,
                                          providers=["CPUExecutionProvider"])
 
-    def score(self, clean_text: str, inputs: dict) -> dict:
-        body = self.tok.encode(clean_text, add_special_tokens=False).ids
-        ids = [self.cls] + body[: self.max_body] + [self.sep]
+    def table(self, inputs: dict) -> tuple[np.ndarray, np.ndarray]:
+        """The 19 inputs as the model's two arrays: category ids (1, 4) and scaled numbers (1, 15)."""
         for c in self.cat_cols:                                       # an id the model never saw would crash ONNX
             if not 0 <= int(inputs[c]) < self.vocab[c]:
                 raise ValueError(f"{c}={inputs[c]} is outside what the model was trained on")
         x = np.array([float(inputs[c]) for c in self.num_cols], dtype=np.float64)
         x[self.log1p] = np.log1p(x[self.log1p])
+        return (np.array([[int(inputs[c]) for c in self.cat_cols]], np.int64),
+                ((x - self.mean) / self.std).astype(np.float32)[None, :])
+
+    def probability(self, logit: float) -> float:
+        """Raw logit -> calibrated chance of a payout (case-control offset, then Platt)."""
+        return 1.0 / (1.0 + math.exp(-(self.cal["a"] * (logit + self.cal["offset"]) + self.cal["b"])))
+
+    def score(self, clean_text: str, inputs: dict) -> dict:
+        body = self.tok.encode(clean_text, add_special_tokens=False).ids
+        ids = [self.cls] + body[: self.max_body] + [self.sep]
+        cat, num = self.table(inputs)
         feeds = {"input_ids": np.array([ids], np.int64),
-                 "attention_mask": np.ones((1, len(ids)), np.int64),
-                 "cat": np.array([[int(inputs[c]) for c in self.cat_cols]], np.int64),
-                 "num": ((x - self.mean) / self.std).astype(np.float32)[None, :]}
+                 "attention_mask": np.ones((1, len(ids)), np.int64), "cat": cat, "num": num}
         logit = float(self.sess.run(["logit"], feeds)[0][0])
-        p = 1.0 / (1.0 + math.exp(-(self.cal["a"] * (logit + self.cal["offset"]) + self.cal["b"])))
-        return {"probability": p, "senior": p >= self.cal["senior_threshold_p"],
+        p = self.probability(logit)
+        return {"probability": p, "senior": p >= self.cal["senior_threshold_p"], "logit": logit,
                 "word_pieces": len(body), "cut_at_512": len(body) > self.max_body}
