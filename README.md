@@ -554,36 +554,33 @@ no better, so the simpler model shipped. Every number lives in [`Context/FACTS.m
 
 ### Run it yourself
 
-**The full pipeline** (rebuilds everything from the public data):
-1. Install Docker Desktop.
-2. Download the complaints CSV from the
+**Quick start — the finished system on your own computer** (no retraining; about 10 minutes, mostly downloading):
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it.
+2. `git clone https://github.com/Bajaj30/TriageIQ.git && cd TriageIQ`
+3. `sh deploy/get_model.sh` — the trained model is too large for git (266 MB per file), so this downloads it from the
+   [GitHub Release](https://github.com/Bajaj30/TriageIQ/releases/tag/model-v3) (~590 MB), checks every file's
+   fingerprint *(tech: sha256)*, and makes a local database password.
+4. `docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.xai.yml up -d --build` — builds the API and
+   loads the demo database (150,000 real complaints from 2024). About a minute later: http://localhost:8000/docs.
+5. `python3 web/dev_server.py` → **http://localhost:3000** — the website, with **Why this score?** on both pages.
+
+Leave out `-f deploy/docker-compose.xai.yml` to run exactly what the live site runs, without explanations. Port 8000
+already taken? Put `API_PORT=8010` in front of step 4 and `API=http://127.0.0.1:8010` in front of step 5.
+Stop it: the same command as step 4 with `down` instead of `up -d --build`.
+
+**The full pipeline** (rebuilds everything from the public data — a 9 GB download, hours of SQL, a GPU for training):
+1. Download the complaints CSV from the
    [CFPB Consumer Complaint Database](https://www.consumerfinance.gov/data-research/consumer-complaints/)
    and save it as `Data/complaints.csv` (about 9 GB).
-3. Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`.
-4. `docker compose up -d` — Postgres starts on `localhost:5433`.
-5. Run the SQL files in each folder's `log.md` order: `sql/00_staging/` → `01_schema/` → `02_load/` →
+2. Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`; `docker compose up -d` — Postgres on `localhost:5433`.
+3. Run the SQL files in each folder's `log.md` order: `sql/00_staging/` → `01_schema/` → `02_load/` →
    `03_features/` → `04_training_set/` → `05_export/` → `06_serving/` (pgAdmin's Query Tool, or
    `docker exec -i triageiq-postgres psql -U triageiq -d triageiq < sql/00_staging/01_load_raw.sql`).
    Each file ends with checks and the numbers to expect; `sql/tests/` re-checks the features by hand.
-6. Train on Kaggle (`training/KAGGLE_SETUP.md`), then `training/serving/calibrate.py` and `export_onnx.py`.
-
-> [!IMPORTANT]
-> **The trained model is not in this repository.** The weights are 266 MB per file — too large for git — so they live
-> only on the author's machine and the server. A fresh clone can read and test all the code, but to score or explain
-> complaints you first need a model: train it (step 6), or ask the author for the bundle.
-
-**Just the service:** with the model bundle in `training/outputs/serving_v3/`,
-`docker compose -f deploy/docker-compose.yml up -d --build` → http://localhost:8000/docs.
-
-**The explanations (laptop only):** they also need the trained weights (`training/outputs/fusion_distilbert_full/model.pt`)
-and the training-set file (`Data/data/interim/triageiq_training_v3.parquet`, from step 5), neither of which is in git.
-1. `USE_TF=0 python training/serving/export_xai_onnx.py` — splits the model in two (the slow reader and the small
-   judge) and refuses to write anything unless the two halves score exactly like the shipped model.
-2. `python -m unittest api.test_xai -v` — the maths against hand-checked answers, plus the real model.
-3. `sh api/run_local.sh --port 8001`, then `API=http://127.0.0.1:8001 python3 web/dev_server.py` →
-   http://localhost:3000 → score a complaint → **Why this score?** (also on *Real 2024 complaints*).
-4. Optional: `USE_TF=0 python training/explain/validate_xai.py` reruns the honesty tests above (~20 min) →
-   `training/results/xai_v3.json`.
+4. Train on Kaggle (`training/KAGGLE_SETUP.md`), then `training/serving/calibrate.py`, `export_onnx.py` and
+   `export_xai_onnx.py` (the last refuses to write anything unless the split model scores exactly like the shipped one).
+5. Checks: `python -m unittest api.test_xai -v` (the explanation maths, plus the real model when present) and
+   `USE_TF=0 python training/explain/validate_xai.py` (the honesty tests of section 8, ~20 min).
 
 ### Go deeper
 

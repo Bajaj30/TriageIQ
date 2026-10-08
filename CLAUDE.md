@@ -32,7 +32,10 @@ EC2 `3.106.107.237` (403 without the secret; 5 req/s per visitor) → FastAPI (`
 - **Model bundle** `training/outputs/serving_v3/` (model.onnx 266 MB, tokenizer.json, preprocessing.json,
   calibration.json, model_card.json, serving_db.dump 57 MB): **only on the Mac and the server** (`~/triageiq/…`).
   Training weights `model.pt`: Mac (`training/outputs/fusion_distilbert_full/`) + the saved Kaggle notebook version.
-  ⚠️ No third copy — worth putting the bundle in a private Kaggle dataset or a drive.
+  **Third copy + how a clone runs (2026-10-08):** the 9 bundle files incl. the 3 xai_* files are on the public GitHub
+  Release `model-v3`; `sh deploy/get_model.sh` downloads them and checks `deploy/model_bundle.sha256` (update that
+  file AND the release if the bundle ever changes). Local run with explanations: `docker compose -f
+  deploy/docker-compose.yml -f deploy/docker-compose.xai.yml up -d --build` (+ `API_PORT=…` if 8000 is taken).
 - **Full database (16 GB):** the Docker volume of the root `docker-compose.yml` on the Mac. Rebuildable from
   `Data/complaints.csv` by running `sql/` in number order (README "Run it yourself").
 - **Secrets:** root `.env` (local DB) · `deploy/.env` on the server (DB password + ORIGIN_SECRET) · Vercel env
@@ -249,7 +252,9 @@ api/ = FastAPI app (main.py endpoints · scorer.py model · db.py queries · sch
      xai.py = explanations (Shapley values; LOCAL ONLY) · test_xai.py (`python -m unittest api.test_xai -v`).
 training/serving/export_xai_onnx.py = splits the model into reader (DistilBERT → 128 numbers) + judge (→ logit) for
      explanations; gate: = model.onnx on 1,000 test complaints. training/explain/validate_xai.py = faithfulness tests.
-deploy/ = api.Dockerfile · docker-compose.yml (db + api + nginx[profile public]) · nginx/default.conf.template (envsubst:
+deploy/ = get_model.sh (downloads the model bundle from the GitHub Release, checks model_bundle.sha256, makes deploy/.env)
+          · docker-compose.xai.yml (LOCAL ONLY override: mounts the xai_* files → explanations on)
+          · api.Dockerfile · docker-compose.yml (db + api + nginx[profile public]; host port ${API_PORT:-8000}) · nginx/default.conf.template (envsubst:
           secret-header check + per-visitor rate limit) · initdb/01_restore.sh · server_setup.sh · push.sh <ip> · .env.example.
 web/ = the website on Vercel: index.html (score) · real.html · how.html · styles.css · app.js · vercel.json (routes +
           secret header) · dev_server.py (local stand-in for Vercel).

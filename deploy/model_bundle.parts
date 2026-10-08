@@ -1,0 +1,3 @@
+# files uploaded in ~45 MB parts (name.part01, part02, …) — deploy/get_model.sh joins them, then checks the sha256
+model.onnx 6
+xai_encoder.onnx 6
