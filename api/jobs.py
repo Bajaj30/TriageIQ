@@ -1,7 +1,7 @@
 """A waiting line for slow work: one explanation at a time, everyone else takes a ticket and checks back.
 
 WHY: on the server's 2 CPU cores an explanation takes ~2 s (short complaint) to ~100 s (long one) — the text is
-re-read up to ~250 times (api/xai.py). Holding a web request open that long breaks: NGINX gives up after 60 s,
+re-read up to ~250 times (api/xai.py). Holding a web request open that long breaks: our NGINX gives up after 30 s,
 and two explanations at once would only slow each other AND every visitor's ordinary score. So:
   submit()  -> a ticket at once: {job_id, status "queued", position = explanations ahead of you, wait estimate}
   view()    -> the same ticket later: "queued" → "running" → "done" (+ the explanation) or "failed" (+ why)

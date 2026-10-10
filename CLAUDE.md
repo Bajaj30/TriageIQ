@@ -80,7 +80,7 @@ LIME agrees (rank corr 0.85); weak spot = >8 pieces, top piece same across seeds
 one DistilBERT in RAM (api ~630 MiB, peak ~760 MB while explaining). (2) `api/jobs.py` = a waiting line: POST /explain or
 POST /complaint/{id}/explain → ticket at once; GET /explain/jobs/{id} → queued (place in line) / running / done;
 one at a time, same complaint shares a job, finished ones cached (500), max 20 waiting, tickets kept 30 min, in memory
-(a restart empties it). Why: NGINX cuts requests at 60 s and two at once would slow everyone's scoring. (3) NGINX: extra
+(a restart empties it). Why: our NGINX gives up on a request after 30 s (proxy_read_timeout) and two at once would slow everyone's scoring. (3) NGINX: extra
 limit for ASKING (4/min per visitor, burst 3); polling isn't counted. Vercel routes /explain + /explain/*.
 **Server timings (2026-10-10, one at a time):** short complaint 1.4–1.8 s · medium 39–71 s · long (cut at 510) ~98 s.
 While explaining, /predict through Vercel from India: median 0.69 s, max 0.93 s. Each explanation burns CPU credits
@@ -273,6 +273,7 @@ web/ = the website on Vercel: index.html (score) · real.html · how.html · sty
 docs/ = the blog on GitHub Pages: index.html · blog.css · blog.js · data.js (generated) · .nojekyll.
 training/serving/ = calibrate.py · export_onnx.py · model_card.py → training/outputs/serving_v3/ (git-ignored, see §0).
 frontend.md = the frontend brief + build contract; built and live (web/).
+Learning/deployment_concepts.md = Shivam's from-scratch deployment guide, 45 points (git-ignored: on the Mac only).
 Learning/Phase3/revision.md = Phase 3 concept cards (calibration → ONNX → serving DB → API → Docker → AWS → NGINX → Vercel).
 NLP.md = every NLP / ML concept and metric used in the project, where and how (Shivam asked 2026-10-05).
 

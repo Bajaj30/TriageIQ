@@ -396,7 +396,7 @@ model. Used only to cross-check.
 ones; the company's own record carries most of the rest. Speed on the Mac: p50 1.7 s, p95 8.4 s per explanation.
 
 **Serving it on a small server: a job queue.** On the server's 2 cores an explanation takes ~2 s (short complaint)
-to ~100 s (long). A web request can't wait that long (NGINX stops at 60 s), and two at once would slow everyone, so
+to ~100 s (long). A web request can't wait that long (our NGINX stops waiting after 30 s), and two at once would slow everyone, so
 the API hands out a ticket and runs explanations one at a time; the page polls the ticket and shows the place in
 line. Same pattern as any long-running job: submit → poll → result (`api/jobs.py`).
 

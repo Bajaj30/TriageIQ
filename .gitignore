@@ -33,3 +33,6 @@ training/outputs/
 
 # Vercel CLI link (project/org ids) — local only
 web/.vercel/
+
+# Personal study notes (Shivam asked to keep this one out of git)
+Learning/deployment_concepts.md

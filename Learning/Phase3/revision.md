@@ -185,7 +185,7 @@ visitor ─https─▶ Vercel (static site) ─API paths + secret header─▶ N
 - **In TriageIQ:** the model is split into reader (DistilBERT → 128 numbers) + judge (→ logit); the live scorer uses
   the same two halves (= model.onnx, max |Δp| 0 on 300 complaints), so explanations add no second model to RAM.
   On the server: ~2 s for a short complaint, ~40–70 s medium, ~100 s long.
-- **Q:** Why not just compute it in the request? → **A:** NGINX stops waiting at 60 s, browsers and proxies time out,
+- **Q:** Why not just compute it in the request? → **A:** our NGINX stops waiting after 30 s, browsers and proxies time out,
   and two at once would slow every visitor's ordinary score.
 
 ### 17c. The job queue — submit, poll, result

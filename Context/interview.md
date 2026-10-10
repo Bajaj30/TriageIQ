@@ -411,7 +411,7 @@ tables became HTML buttons, so text and box always change colour together.
 
 ### Issue 42 — An explanation takes up to two minutes; a web request can't
 "Why this score?" re-reads the complaint up to ~250 times. On the server's 2 cores that is ~2 s for a short
-complaint but ~100 s for a long one — longer than NGINX waits (60 s), and two at once would slow every visitor.
+complaint but ~100 s for a long one — longer than our NGINX waits (30 s), and two at once would slow every visitor.
 
 **Fix:** a job queue. Asking returns a ticket at once; the page polls it ("2 explanations ahead of you") and gets
 the result when done. One runs at a time; repeated complaints share a job or come from a cache; the line is capped.
