@@ -216,6 +216,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--ink); outline: n
 .why-wait { font-size: 14px; color: var(--ink-2); background: var(--paper-2); border-left: 3px solid var(--rule-strong);
             padding: 10px 14px; margin: 0 0 18px; }
 .why-wait span { display: block; font-size: 13px; color: var(--muted); margin-top: 4px; }
+.why-hint { font-size: 12px; color: var(--muted); margin: -10px 0 18px; }
 .why-pointer { font: 400 13px/1.4 var(--mono); color: var(--muted); margin: 4px 0 18px; }
 .why-path { border-top: 1px solid var(--rule); margin: 4px 0 10px; }
 /* a row: name · bar · value on one line (wide), or name + value above a full-width bar (phone) */

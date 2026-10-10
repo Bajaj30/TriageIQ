@@ -79,6 +79,7 @@
       <li><a href="#limits">Where it fails</a></li>
       <li><a href="#calibration">Honest percentages</a></li>
       <li><a href="#shipping">Shipping it</a></li>
+      <li><a href="#why">Asking the model why</a></li>
       <li><a href="#lessons">What I learned</a></li>
     </ol>
   </nav>
@@ -890,8 +891,42 @@
     </section>
 
     <!-- ============================================================ 12 -->
+    <section class="chapter" id="why">
+      <div class="chapter-head"><span class="num">12 — EXPLANATIONS</span>
+        <h2>Asking the model why</h2>
+      </div>
+      <div class="col">
+        <p>A score on its own asks for blind trust. So every score on the demo now has a button: <b>Why this
+          score?</b> It shows how much of the score came from the customer's words, how much from each part of the
+          company's track record, and which sentences mattered most.</p>
+        <p>The idea is old and fair. Picture a team that wins a prize, and you want to give each player their share.
+          You can't just remove one player and look, because players help each other. So you add the players one at a
+          time, in every possible order, and note how much the score jumps each time someone joins; a player's fair share
+          is their average jump. <span class="tech">tech: Shapley values, the maths behind SHAP</span> Here the players
+          are the complaint's words and ten parts of the track record, and "leaving one out" means using a typical
+          complaint's value instead. The shares add up exactly: a typical complaint starts at 0.02%; for the demo's
+          overdraft-fee example the words multiply the odds of a payout by 42 and the company's record by 3.4, and the
+          story ends at 31.7%. The sentence that pushed hardest was <em>"I called customer service twice and was told the
+          fees were correct and would not be refunded."</em></p>
+        <p>An explanation can add up perfectly and still be decoration, so I tested it. On 200 complaints from 2024, I
+          hid the sentence the explanation called most important, then a random one. In 91 of every 100 complaints, the
+          "important" one moved the score more — 97 for the top three. A second, independent method agreed with the
+          ranking. And one weakness stays visible: in long complaints, running it again can pick a different single top
+          sentence about half the time, so the top few are more trustworthy than the top one.
+          <span class="tech">tech: deletion test, LIME</span></p>
+        <p>Putting it online took one more trick. An explanation re-reads the complaint up to about 250 times: two
+          seconds for a short complaint on the server, but up to a minute and a half for a long one — too long to keep a
+          web page waiting, and two at once would slow everyone. So it works like a deli counter: you take a ticket, the
+          page shows how many are ahead of you, and explanations are made one at a time. A complaint someone already asked
+          about comes back instantly. <span class="tech">tech: job queue with polling</span></p>
+        <p class="disclaimer"><b>Disclaimer — explanations are experimental.</b> They show which parts of a complaint moved the model's score — not why the company actually paid; the deciding fact is often a company decision that isn't in the text. They are approximations: hiding sentences creates text the model never saw in training, and for long complaints the single most important sentence can change on a re-run (trust the top few). They are slow — up to about two minutes — because they run one at a time on a small server. Not legal or financial advice.</p>
+        <p class="pull">An explanation describes the model, not the bank's reasons.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ 13 -->
     <section class="chapter" id="lessons">
-      <div class="chapter-head"><span class="num">12 — LESSONS</span>
+      <div class="chapter-head"><span class="num">13 — LESSONS</span>
         <h2>What I'd tell myself at the start</h2>
       </div>
       <div class="col">

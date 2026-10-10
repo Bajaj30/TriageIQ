@@ -103,6 +103,8 @@ function narrativeHTML(text) {
 // server doesn't carry the extra model files, and Vercel doesn't forward /explain, so the live site never shows it.
 const XAI = api("/explain/status").then((r) => !!(r && r.available)).catch(() => false);
 
+const DISCLAIMER = "They show which parts of a complaint moved the model's score — not why the company actually paid; the deciding fact is often a company decision that isn't in the text. They are approximations: hiding sentences creates text the model never saw in training, and for long complaints the single most important sentence can change on a re-run (trust the top few). They are slow — up to about two minutes — because they run one at a time on a small server. Not legal or financial advice.";
+
 function oddsText(f) {
   if (Math.abs(Math.log(f)) < Math.log(1.05)) return "≈ ×1";
   const k = f >= 1 ? f : 1 / f;
@@ -159,7 +161,7 @@ function whyHTML(r) {
       <p class="narrative why-text${long ? " two-col" : ""}">${highlightHTML(r)}</p>
       <p class="small">Darker red raised the chance, green lowered it (hover a sentence for its effect). Measured by hiding
         sentences and re-reading the rest — ${esc(r.sentence_method)}.${r.words_not_read ? ` The last ${r.words_not_read} words were past what the model reads.` : ""}</p>
-      <p class="why-caveat">${esc(r.caveat)}</p>
+      <p class="why-caveat"><b>Disclaimer — explanations are experimental.</b> ${DISCLAIMER}</p>
       <p class="foot-meta">Explained in ${(r.latency_ms / 1000).toFixed(1)} s · Shapley values over the shipped model · every check passed</p>
     </section>`;
 }
@@ -208,10 +210,12 @@ async function waitFor(ticket, show) {
 
 async function addWhy(slot, request, target = slot) {   // request: () => Promise of a ticket
   if (!(await XAI)) return;                           // target: where the panel goes (default: in place of the button)
-  slot.innerHTML = `<button class="btn btn-quiet why-btn" type="button">Why this score?</button>`;
+  slot.innerHTML = `<button class="btn btn-quiet why-btn" type="button">Why this score?</button>
+    <p class="why-hint">Experimental · can take up to ~2 minutes · explains the model, not the company's decision</p>`;
   const btn = $("button", slot);
   btn.addEventListener("click", async () => {
     btn.disabled = true; btn.textContent = "Taking a ticket…";
+    const hint = $(".why-hint", slot); if (hint) hint.remove();
     const status = document.createElement("div");
     slot.appendChild(status);
     try {

@@ -444,8 +444,8 @@ to have at least four pieces of text:
 > complaint that was already explained comes back instantly. A bigger server would be faster, but would cost more
 > than the free cloud credits this project runs on.
 
-**What it can't tell you:** it explains what the *model* reacted to, not why the *company* paid. The deciding fact
-is often a company's own decision that never appears in the text.
+> [!CAUTION]
+> **Disclaimer — explanations are experimental.** They show which parts of a complaint moved the model's score — not why the company actually paid; the deciding fact is often a company decision that isn't in the text. They are approximations: hiding sentences creates text the model never saw in training, and for long complaints the single most important sentence can change on a re-run (trust the top few). They are slow — up to about two minutes — because they run one at a time on a small server. Not legal or financial advice.
 
 ---
 

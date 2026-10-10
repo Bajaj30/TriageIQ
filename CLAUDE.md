@@ -171,7 +171,7 @@ gets the next step.
   frames described in words ("all complaints", not "F1").
   **Deliverable DONE (2026-10-05): the blog is LIVE at https://bajaj30.github.io/TriageIQ/** — "Finding the two
   percent", `docs/` (index.html · blog.css · blog.js · data.js · .nojekyll), GitHub Pages from `main` /docs (legacy
-  build, auto-rebuilds on push). 12 chapters, 13 figures; interactive: waffle (2 in 100), the **snowflake** (click a
+  build, auto-rebuilds on push). 13 chapters (12 = "Asking the model why", 2026-10-10), 13 figures; interactive: waffle (2 in 100), the **snowflake** (click a
   table), the 60-day timeline (illustration), the smoothing-K slider + measured K bars, real word-pieces of complaint
   11216352 (raw 92 → clean 80), the read-X%-catch-Y% curve (from the 2024 test scores). `data.js` is GENERATED from
   project files (recall curve, tokens) — regenerate, don't hand-edit. Same look as the demo site.
