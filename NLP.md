@@ -363,7 +363,7 @@ nearly the whole wait.
 
 ---
 
-## 12b. Explaining a score (XAI) — local only
+## 12b. Explaining a score (XAI) — live, one at a time
 
 **Shapley values (the maths behind SHAP).** Share a result fairly among players: add them one at a time in
 every order, note each one's jump, average. The shares add up exactly: typical score + all shares = this score.
@@ -394,6 +394,11 @@ model. Used only to cross-check.
 
 **What it shows:** across these 200, the words carry 30% of the total effect for paid complaints and 23% for unpaid
 ones; the company's own record carries most of the rest. Speed on the Mac: p50 1.7 s, p95 8.4 s per explanation.
+
+**Serving it on a small server: a job queue.** On the server's 2 cores an explanation takes ~2 s (short complaint)
+to ~100 s (long). A web request can't wait that long (NGINX stops at 60 s), and two at once would slow everyone, so
+the API hands out a ticket and runs explanations one at a time; the page polls the ticket and shows the place in
+line. Same pattern as any long-running job: submit → poll → result (`api/jobs.py`).
 
 **Where:** `api/xai.py`, `training/serving/export_xai_onnx.py`, `training/explain/validate_xai.py`.
 

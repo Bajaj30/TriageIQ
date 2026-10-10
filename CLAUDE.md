@@ -7,7 +7,7 @@
 > Regenerate it with `python training/canonical_facts.py`.
 > **Keep this file updated as work progresses** — it is the handoff artifact between sessions.
 
-Last updated: 2026-10-08 · **all phases built and live** · explanations built (local only) · model = DistilBERT fusion v3 (19 inputs), Platt-calibrated ·
+Last updated: 2026-10-08 · **all phases built and live** · explanations LIVE (queued, one at a time) · model = DistilBERT fusion v3 (19 inputs), Platt-calibrated ·
 site on Vercel, API on AWS EC2 (Sydney) · blog on GitHub Pages · remaining work is optional (§0)
 
 ---
@@ -34,8 +34,8 @@ EC2 `3.106.107.237` (403 without the secret; 5 req/s per visitor) → FastAPI (`
   Training weights `model.pt`: Mac (`training/outputs/fusion_distilbert_full/`) + the saved Kaggle notebook version.
   **Third copy + how a clone runs (2026-10-08):** the 9 bundle files incl. the 3 xai_* files are on the public GitHub
   Release `model-v3`; `sh deploy/get_model.sh` downloads them and checks `deploy/model_bundle.sha256` (update that
-  file AND the release if the bundle ever changes). Local run with explanations: `docker compose -f
-  deploy/docker-compose.yml -f deploy/docker-compose.xai.yml up -d --build` (+ `API_PORT=…` if 8000 is taken).
+  file AND the release if the bundle ever changes). Local run (= production, explanations included): `docker compose
+  -f deploy/docker-compose.yml up -d --build` (+ `API_PORT=…` if 8000 is taken). The image no longer contains model.onnx.
   **Tested from a fresh clone (2026-10-08):** get_model.sh → all 9 files verified; /predict 31.678% (= live); explain
   0.8–2.2 s, long complaint ~20 s in Docker; api container ~1 GB with both model copies; website OK, no JS errors.
 - **Full database (16 GB):** the Docker volume of the root `docker-compose.yml` on the Mac. Rebuildable from
@@ -67,14 +67,24 @@ EC2 `3.106.107.237` (403 without the secret; 5 req/s per visitor) → FastAPI (`
    row still describes the v2 parquet (301,460) — generated file: fix in `training/canonical_facts.py`, then regenerate.
 8. **Teardown** at the end (by 2027-04-02): delete every resource in §12, then release the Elastic IP.
 
-**Explanations "Why this score?" — built 2026-10-08, LOCAL ONLY (not deployed).** Shapley values: words + 10 input
+**Explanations "Why this score?" — built 2026-10-08, LIVE since 2026-10-10 (Shivam: "complete local functionality in
+production, let it take a minute, visitors queue").** Shapley values: words + 10 input
 groups exact (two-stage model, = model.onnx, max Δ 0), sentences by delete-and-re-read (exact ≤ 8 pieces, else 16
 antithetic orders). Run: `USE_TF=0 python training/serving/export_xai_onnx.py` (once; writes the xai_* files) →
 `sh api/run_local.sh --port 8001` (8000 is often taken by the local Docker serving stack) →
 `API=http://127.0.0.1:8001 python3 web/dev_server.py` → localhost:3000, button "Why this score?" on both pages.
 Faithfulness (`training/results/xai_v3.json`, 200 complaints of 2024): top piece beats a random one 91% (top-3: 97%);
 LIME agrees (rank corr 0.85); weak spot = >8 pieces, top piece same across seeds only 53% → more orders if needed.
-Not deployed because: a second DistilBERT copy (~270 MB RAM) and 2–8 s on the Mac (~10× slower on the server).
+**How it's served:** (1) the scorer runs the two halves (xai_encoder + xai_head) instead of model.onnx — same scores
+(server vs old model.onnx stack: 300 complaints, max |Δp| 0.00000, same route 300/300) — and the explainer SHARES them:
+one DistilBERT in RAM (api ~630 MiB, peak ~760 MB while explaining). (2) `api/jobs.py` = a waiting line: POST /explain or
+POST /complaint/{id}/explain → ticket at once; GET /explain/jobs/{id} → queued (place in line) / running / done;
+one at a time, same complaint shares a job, finished ones cached (500), max 20 waiting, tickets kept 30 min, in memory
+(a restart empties it). Why: NGINX cuts requests at 60 s and two at once would slow everyone's scoring. (3) NGINX: extra
+limit for ASKING (4/min per visitor, burst 3); polling isn't counted. Vercel routes /explain + /explain/*.
+**Server timings (2026-10-10, one at a time):** short complaint 1.4–1.8 s · medium 39–71 s · long (cut at 510) ~98 s.
+While explaining, /predict through Vercel from India: median 0.69 s, max 0.93 s. Each explanation burns CPU credits
+(~2 per minute at full speed); heavy use could drain them → throttled to 20% → everything ~5× slower (no extra cost).
 
 Learning side (Shivam): courses + the DMLS book after exams (`Learning/README.md`); interview prep from
 `Learning/Phase0–3/revision.md` + `Context/interview.md`.
@@ -251,11 +261,11 @@ sql/                          numbered SQL pipeline, run in pgAdmin — every fo
 
 sql/06_serving/ = the serving schema (snapshot, model_input(), lists, demo complaints) → pg_dump.
 api/ = FastAPI app (main.py endpoints · scorer.py model · db.py queries · schemas.py) · requirements.txt · run_local.sh.
-     xai.py = explanations (Shapley values; LOCAL ONLY) · test_xai.py (`python -m unittest api.test_xai -v`).
+     xai.py = explanations (Shapley values) · jobs.py = the explanation waiting line · tests: `python -m unittest
+     api.test_xai api.test_jobs -v`.
 training/serving/export_xai_onnx.py = splits the model into reader (DistilBERT → 128 numbers) + judge (→ logit) for
      explanations; gate: = model.onnx on 1,000 test complaints. training/explain/validate_xai.py = faithfulness tests.
 deploy/ = get_model.sh (downloads the model bundle from the GitHub Release, checks model_bundle.sha256, makes deploy/.env)
-          · docker-compose.xai.yml (LOCAL ONLY override: mounts the xai_* files → explanations on)
           · api.Dockerfile · docker-compose.yml (db + api + nginx[profile public]; host port ${API_PORT:-8000}) · nginx/default.conf.template (envsubst:
           secret-header check + per-visitor rate limit) · initdb/01_restore.sh · server_setup.sh · push.sh <ip> · .env.example.
 web/ = the website on Vercel: index.html (score) · real.html · how.html · styles.css · app.js · vercel.json (routes +

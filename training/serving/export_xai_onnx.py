@@ -7,7 +7,7 @@ To explain a score we must re-run the model many times with parts swapped out. S
 only needs the judge again (free); only swapping SENTENCES needs the reader again. model.onnx has both stages
 fused, so this script exports them as two files. model.onnx itself is not touched — /predict keeps using it.
 
-WHAT IT BUILDS (in training/outputs/serving_v3/, git-ignored; local only — not shipped to the server):
+WHAT IT BUILDS (in training/outputs/serving_v3/, git-ignored; GitHub Release model-v3; the server scores with them):
   xai_encoder.onnx      (input_ids, attention_mask) -> text_vector (128)       the reader
   xai_head.onnx         (text_vector, cat, num)     -> logit                   the judge
   xai_background.npz    100 "typical" complaints: their text vectors + track-record inputs (already scaled)

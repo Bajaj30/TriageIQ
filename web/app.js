@@ -97,7 +97,7 @@ function narrativeHTML(text) {
     .replace(/\[DATE\]/g, '<span class="redact date" title="A date hidden by the CFPB">DATE</span>');
 }
 
-// ---------------------------------------------------------------- "Why this score?" — explanations (local only)
+// ---------------------------------------------------------------- "Why this score?" — explanations (queued)
 // The API explains a score with Shapley values (api/xai.py): a typical complaint's score, then how much each part
 // of THIS complaint multiplies the odds. Only offered where the API says it can (/explain/status) — the deployed
 // server doesn't carry the extra model files, and Vercel doesn't forward /explain, so the live site never shows it.
@@ -179,20 +179,53 @@ function highlightHTML(r) {
   return html + (r.words_not_read ? `<span class="unread" title="Past the 510 word-pieces the model reads">${narrativeHTML(tail)}</span>` : esc(tail));
 }
 
-async function addWhy(slot, request, target = slot) {   // request: () => Promise of the explanation
+// An explanation re-reads the complaint up to ~250 times: ~2 s for a short complaint, up to ~2 minutes for a long
+// one on the server. So the API hands out a TICKET at once (api/jobs.py) and runs one explanation at a time; the
+// page checks the ticket every few seconds and shows the visitor's place in line.
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function clock(s) { s = Math.max(0, Math.round(s)); return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")} s`; }
+function ticketHTML(t) {
+  if (t.status === "queued") {
+    const where = t.position === 0 ? "<b>Yours is next</b> — starting in a moment."
+      : `<b>You're in line.</b> ${t.position === 1 ? "1 explanation is" : `${t.position} explanations are`} ahead of yours — about ${clock(t.wait_estimate_s)}.`;
+    return `<p class="why-wait">${where}
+      <span>Explanations run one at a time on a small server; you can leave this tab open.</span></p>`;
+  }
+  return `<p class="why-wait"><b>Explaining now — ${clock(t.running_for_s || 0)}.</b> The model is re-reading the complaint
+    with sentences hidden, up to ~250 times. <span>Short complaints take seconds, long ones up to about two minutes.</span></p>`;
+}
+async function waitFor(ticket, show) {
+  const started = Date.now();
+  for (;;) {
+    if (ticket.status === "done") return ticket.result;
+    if (ticket.status === "failed") throw Object.assign(new Error("failed"), { body: { detail: ticket.error } });
+    show(ticket);
+    if (Date.now() - started > 20 * 60 * 1000) throw Object.assign(new Error("timeout"), { status: 0 });
+    await sleep(2500);
+    ticket = await api(`/explain/jobs/${ticket.job_id}`);
+  }
+}
+
+async function addWhy(slot, request, target = slot) {   // request: () => Promise of a ticket
   if (!(await XAI)) return;                           // target: where the panel goes (default: in place of the button)
   slot.innerHTML = `<button class="btn btn-quiet why-btn" type="button">Why this score?</button>`;
   const btn = $("button", slot);
   btn.addEventListener("click", async () => {
-    btn.disabled = true; btn.textContent = "Re-reading the complaint…";
+    btn.disabled = true; btn.textContent = "Taking a ticket…";
+    const status = document.createElement("div");
+    slot.appendChild(status);
     try {
-      target.innerHTML = whyHTML(await request());
+      const ticket = await request();
+      btn.textContent = "Explaining…";
+      const result = await waitFor(ticket, (t) => { status.innerHTML = ticketHTML(t); });
+      target.innerHTML = whyHTML(result);
       if (target !== slot) {
         slot.innerHTML = `<p class="why-pointer">The explanation is below ↓</p>`;
         target.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
     catch (err) {
+      status.remove();
       btn.disabled = false; btn.textContent = "Why this score?";
       slot.insertAdjacentHTML("beforeend", `<p class="notes">${esc((err.body && err.body.detail) || problemText(err) || "Could not explain this score.")}</p>`);
     }
@@ -303,7 +336,7 @@ async function initScore() {
     try {
       const r = await api("/predict", { method: "POST", body: JSON.stringify(body) });
       out.innerHTML = assessmentHTML(r);
-      addWhy($("#why-slot", out), () => api("/explain", { method: "POST", body: JSON.stringify(body) }, 90000), $("#why-wide"));
+      addWhy($("#why-slot", out), () => api("/explain", { method: "POST", body: JSON.stringify(body) }), $("#why-wide"));
     } catch (err) {
       out.innerHTML = emptyAssessment();
       if (err.status === 422) show422(err.body);
@@ -376,7 +409,7 @@ async function initReal() {
     try {
       const r = await api("/complaint/random" + (paid ? "?paid=" + paid : ""));
       out.innerHTML = caseHTML(r);
-      addWhy($("#why-slot", out), () => api(`/complaint/${r.complaint_id}/explain`, {}, 90000));
+      addWhy($("#why-slot", out), () => api(`/complaint/${r.complaint_id}/explain`, { method: "POST" }));
     } catch (err) {
       out.innerHTML = `<p class="banner">${esc(problemText(err) || "Could not load a complaint.")}</p>`;
     }

@@ -177,6 +177,28 @@ visitor ─https─▶ Vercel (static site) ─API paths + secret header─▶ N
 
 ---
 
+## G2. Explanations in production — slow work behind a queue (`api/xai.py`, `api/jobs.py`)
+
+### 17b. Shapley values, served on a small CPU
+- **Idea:** share the score fairly among the players (the words + 10 track-record groups; sentences) — average jump
+  when each player joins, over many orders. Details and honesty tests: `NLP.md` §12b.
+- **In TriageIQ:** the model is split into reader (DistilBERT → 128 numbers) + judge (→ logit); the live scorer uses
+  the same two halves (= model.onnx, max |Δp| 0 on 300 complaints), so explanations add no second model to RAM.
+  On the server: ~2 s for a short complaint, ~40–70 s medium, ~100 s long.
+- **Q:** Why not just compute it in the request? → **A:** NGINX stops waiting at 60 s, browsers and proxies time out,
+  and two at once would slow every visitor's ordinary score.
+
+### 17c. The job queue — submit, poll, result
+- **Idea:** a deli counter: take a ticket, watch the board. Long work runs in the background, one at a time; the
+  request only hands out a ticket.
+- **In TriageIQ:** POST /explain → ticket {job_id, place in line, estimate}; GET /explain/jobs/{id} → queued /
+  running / done (+ result). One worker thread, first come first served; the same complaint shares one job; finished
+  ones are cached; at most 20 waiting (then "line full"); NGINX limits *asking* to ~4 a minute per visitor.
+- **Q:** What breaks with an in-memory queue? → **A:** a restart forgets the line, and it can't spread over several
+  servers. The grown-up version is a broker (Redis/SQS) + separate workers — not worth it for one small demo server.
+- **Q:** How did you keep it from hurting normal scoring? → **A:** one explanation at a time; measured /predict while
+  three were queued: median 0.69 s through Vercel, unchanged in kind.
+
 ## H. Not built — and how I'd build it
 
 ### 18. CI (step 3.8)

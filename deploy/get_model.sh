@@ -49,7 +49,6 @@ fi
 
 cat <<'NEXT'
 == ready. Start it (Docker Desktop running):
-   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.xai.yml up -d --build
+   docker compose -f deploy/docker-compose.yml up -d --build
    python3 web/dev_server.py          -> http://localhost:3000   (API docs: http://localhost:8000/docs)
-   (leave out the docker-compose.xai.yml part to run without the "Why this score?" explanations)
 NEXT

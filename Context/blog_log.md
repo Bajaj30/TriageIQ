@@ -414,6 +414,13 @@ that didn't; how often does the model rank the payout one higher? 50 is a coin f
   random sentence — in 91 of every 100 complaints. A second, independent method (LIME) mostly agreed. And one
   weakness we kept visible: in long complaints, re-running with a different random seed picks the same "most
   important sentence" only about half the time. It explains the model, not the bank's real reasons.
+- **Explanations go live — with a ticket machine** *(tech: asynchronous job queue, polling)* — explaining one
+  score means re-reading the complaint up to about 250 times. On the small cloud server that takes 2 seconds for a
+  short complaint but up to about 1½ minutes for a long one — too long to keep a web page waiting, and two at once
+  would slow everybody. So it works like a deli counter: you take a ticket, the page shows how many are ahead of you,
+  and explanations are made one at a time. A complaint someone already asked about comes back instantly. To fit in
+  the server's memory, the scorer was switched to the same two model halves the explanations use — first proven to
+  give exactly the same scores on 300 real complaints.
 
 ## 5. How the database does the heavy lifting
 

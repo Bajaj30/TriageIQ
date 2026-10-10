@@ -51,6 +51,7 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB}
       ORT_THREADS: "2"
+      XAI_BATCH: "4"                          # explanations: 4 texts per pass keeps peak memory low (~760 MB)
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"    # host:container — this machine only, never the internet
     depends_on:

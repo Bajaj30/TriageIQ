@@ -409,3 +409,12 @@ On the blog, Dark Reader turned the diagram's SVG text light but left its boxes 
 **Fix:** Every colour became a CSS variable with a designed dark theme (plus a toggle), and the diagram's
 tables became HTML buttons, so text and box always change colour together.
 
+### Issue 42 — An explanation takes up to two minutes; a web request can't
+"Why this score?" re-reads the complaint up to ~250 times. On the server's 2 cores that is ~2 s for a short
+complaint but ~100 s for a long one — longer than NGINX waits (60 s), and two at once would slow every visitor.
+
+**Fix:** a job queue. Asking returns a ticket at once; the page polls it ("2 explanations ahead of you") and gets
+the result when done. One runs at a time; repeated complaints share a job or come from a cache; the line is capped.
+And to fit in 2 GB of RAM, the live scorer switched to the same two model halves the explainer uses — proven to give
+identical scores on 300 complaints — so there is only one copy of DistilBERT in memory.
+

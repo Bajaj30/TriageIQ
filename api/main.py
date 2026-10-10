@@ -10,11 +10,12 @@ Design (Learning/Phase3/directions.md, step 3.4):
   - The model, tokenizer and database pool are loaded ONCE at startup (lifespan), not per request.
   - Endpoints are plain `def`, not `async def`: scoring keeps the CPU busy (no waiting to hand over), so
     FastAPI runs them on its thread pool and one slow request doesn't freeze the others.
-  - Explanations (/explain, /complaint/{id}/explain) are LOCAL ONLY: they need the xai_* model files, which are not
-    shipped. Where they're missing (the server) the endpoints are hidden from /docs and answer 503. /predict never
-    depends on them.
+  - Explanations ("why this score?") take ~2–100 s on the server, so they don't answer in the request: POST
+    /explain (or POST /complaint/{id}/explain) returns a TICKET at once, GET /explain/jobs/{id} shows its place in
+    line and, when done, the explanation. One runs at a time (api/jobs.py). They need the xai_* model files
+    (GitHub Release model-v3); without them the endpoints are hidden from /docs and answer 503.
 """
-import os, threading, time
+import hashlib, json, os, time
 from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
@@ -23,15 +24,16 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import RedirectResponse
 
 from api import db
-from api.schemas import ComplaintIn, ComplaintOut, Explanation, Prediction
+from api.jobs import Line, LineFull
+from api.schemas import ComplaintIn, ComplaintOut, ExplainTicket, Explanation, Prediction
 from api.scorer import Scorer
 
 MODEL_DIR = Path(os.environ.get("MODEL_DIR", "training/outputs/serving_v3"))
 THREADS = int(os.environ.get("ORT_THREADS", "2"))
-XAI_THREADS = int(os.environ.get("XAI_THREADS", "4"))     # explanations re-read the text ~100–250 times
+XAI_BATCH = int(os.environ.get("XAI_BATCH", "8"))         # texts per DistilBERT pass while explaining (server: 4)
+XAI_MAX_WAITING = int(os.environ.get("XAI_MAX_WAITING", "20"))
 XAI_FILES = ("xai_encoder.onnx", "xai_head.onnx", "xai_background.npz")
 XAI_READY = all((MODEL_DIR / f).is_file() for f in XAI_FILES) and (Path(__file__).parent / "xai.py").is_file()
-_xai_lock = threading.Lock()
 
 
 @asynccontextmanager
@@ -40,6 +42,10 @@ async def lifespan(app: FastAPI):
     db.pool.open(wait=True, timeout=30)
     with db.pool.connection() as conn:
         app.state.as_of = db.snapshot_day(conn)
+    if XAI_READY:                                          # shares the scorer's model: no second copy in memory
+        from api.xai import Explainer
+        app.state.explainer = Explainer(MODEL_DIR, app.state.scorer, THREADS, batch=XAI_BATCH)
+        app.state.line = Line(lambda job: _explanation(*job), max_waiting=XAI_MAX_WAITING)
     yield
     db.pool.close()
 
@@ -121,24 +127,14 @@ def complaint(complaint_id: int):
         narrative=r["text"], what_actually_happened=r["company_response"], actually_paid=bool(r["paid"]))
 
 
-# ---------------------------------------------------------------- explanations (local only)
-def _explainer():
-    """Built on first use (loads a second copy of DistilBERT, ~270 MB), then kept."""
-    if not XAI_READY:
-        raise HTTPException(status_code=503, detail="Explanations are only available on a local run "
-                                                    "(they need the xai_* model files, which aren't deployed).")
-    with _xai_lock:
-        if getattr(app.state, "explainer", None) is None:
-            from api.xai import Explainer                  # imported here: the server doesn't ship api/xai.py
-            app.state.explainer = Explainer(MODEL_DIR, app.state.scorer, XAI_THREADS)
-    return app.state.explainer
-
-
-def _explanation(text: str, inputs: dict, t0: float) -> Explanation:
-    r = _explainer().explain(text, inputs)
+# ---------------------------------------------------------------- explanations: a ticket now, the answer later
+def _explanation(text: str, inputs: dict) -> Explanation:
+    """Runs on the line's worker thread, one at a time."""
+    t0 = time.perf_counter()
+    r = app.state.explainer.explain(text, inputs)
     bad = {k: v for k, v in r["checks"].items() if v > 1e-4}
     if bad:                                                # never show an explanation that doesn't add up
-        raise HTTPException(status_code=500, detail=f"explanation failed its own checks: {bad}")
+        raise RuntimeError(f"explanation failed its own checks: {bad}")
     return Explanation(
         payout_probability=round(r["probability"], 5), route=_route(r["senior"]),
         typical_probability=r["typical_probability"], factors=r["factors"], sentences=r["sentences"],
@@ -146,18 +142,30 @@ def _explanation(text: str, inputs: dict, t0: float) -> Explanation:
         checks=r["checks"], latency_ms=round((time.perf_counter() - t0) * 1000, 1))
 
 
+def _ticket(text: str, inputs: dict) -> ExplainTicket:
+    if not XAI_READY:
+        raise HTTPException(status_code=503, detail="Explanations aren't available here (the xai_* model files are missing).")
+    key = hashlib.sha256(json.dumps({"text": text, "inputs": {k: float(v) for k, v in inputs.items()}},
+                                    sort_keys=True).encode()).hexdigest()   # same complaint -> same job / cached answer
+    try:
+        return ExplainTicket(**app.state.line.submit(key, (text, inputs)))
+    except LineFull as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
 @app.get("/explain/status", include_in_schema=False)
 def explain_status():
-    """For the website: show the "Why this score?" button only where explanations work."""
-    return {"available": XAI_READY}
+    """For the website: offer "Why this score?" only where explanations work, and say how busy the line is."""
+    return {"available": XAI_READY, **(app.state.line.status() if XAI_READY else {})}
 
 
-@app.post("/explain", response_model=Explanation, tags=["explain"], include_in_schema=XAI_READY)
+@app.post("/explain", response_model=ExplainTicket, tags=["explain"], include_in_schema=XAI_READY)
 def explain(c: ComplaintIn):
-    """WHY did the model give this score? Same input as /predict. Shares of the score for the words and for 10
-    groups of track-record inputs (exact Shapley values), and for each sentence (Shapley values over sentences,
-    by deleting and re-reading). A few seconds: the text is re-read up to ~250 times."""
-    t0 = time.perf_counter()
+    """WHY did the model give this score? Same input as /predict. Returns a TICKET at once — then poll
+    `GET /explain/jobs/{job_id}`: "queued" (with your place in line) → "running" → "done" (+ the explanation).
+    The explanation: shares of the score for the words and 10 groups of track-record inputs (exact Shapley values),
+    and for each sentence (Shapley values over sentences, by deleting and re-reading). On the server it takes
+    ~2 s for a short complaint, up to ~100 s for a long one; one runs at a time."""
     with db.pool.connection() as conn:
         try:
             ids, _ = db.resolve(conn, c.company, c.product, c.sub_product, c.issue, c.state)
@@ -165,19 +173,27 @@ def explain(c: ComplaintIn):
             raise HTTPException(status_code=422, detail=str(e))
         inputs = db.model_input(conn, ids, c.older_american, c.servicemember)
         text = db.clean(conn, c.narrative)
-    return _explanation(text, inputs, t0)
+    return _ticket(text, inputs)
 
 
-@app.get("/complaint/{complaint_id}/explain", response_model=Explanation, tags=["explain"],
-         include_in_schema=XAI_READY)
+@app.post("/complaint/{complaint_id}/explain", response_model=ExplainTicket, tags=["explain"],
+          include_in_schema=XAI_READY)
 def explain_complaint(complaint_id: int):
-    """WHY did the model give this real 2024 complaint its score? (see POST /explain)"""
-    t0 = time.perf_counter()
+    """WHY did the model give this real 2024 complaint its score? Returns a ticket (see POST /explain)."""
     with db.pool.connection() as conn:
         r = db.test_complaint(conn, complaint_id)
     if r is None:
         raise HTTPException(status_code=404, detail=f"complaint {complaint_id} is not in the 2024 demo set")
-    return _explanation(r["text"], {k: r[k] for k in db.INPUTS}, t0)
+    return _ticket(r["text"], {k: r[k] for k in db.INPUTS})
+
+
+@app.get("/explain/jobs/{job_id}", response_model=ExplainTicket, tags=["explain"], include_in_schema=XAI_READY)
+def explain_job(job_id: str):
+    """Your ticket: place in line, or the finished explanation. Tickets are kept 30 minutes after they finish."""
+    t = app.state.line.view(job_id) if XAI_READY else None
+    if t is None:
+        raise HTTPException(status_code=404, detail="no such explanation ticket (they expire 30 minutes after finishing)")
+    return ExplainTicket(**t)
 
 
 @app.get("/options/{what}", tags=["options"])

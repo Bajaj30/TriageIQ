@@ -121,7 +121,7 @@ flowchart LR
 | Chance this complaint ends with a payout | a percentage — e.g. **31.7%** for a disputed overdraft fee |
 | Suggested route | 👩‍💼 senior analyst, or 📄 template reply |
 | The 5 most similar past complaints | ⏳ of 5 ended with a payout *(planned, not built)* |
-| Why this score | which sentences and which parts of the track record pushed it up or down *(on a laptop only — see section 8)* |
+| Why this score | which sentences and which parts of the track record pushed it up or down *(slow: up to ~2 minutes — see section 8)* |
 
 ---
 
@@ -436,12 +436,13 @@ to have at least four pieces of text:
 | Weak spot: long complaints, run again with different random choices | the single most important sentence changes about half the time — trust the top few, not just the top one |
 
 > [!NOTE]
-> **Not in production — it runs on a laptop only.** The live website doesn't offer explanations because the small
-> cloud server doesn't have the computing power. One explanation makes the AI re-read the complaint up to about 250
-> times: about 2 seconds on a laptop, but the server's two small processors run this model about 10 times slower
-> (measured), so an explanation would take an estimated 20 seconds or more — while blocking the scoring of everyone
-> else's complaints. It also needs a second copy of the AI model in memory. A server big enough would cost more than
-> the free cloud credits this project runs on. How to run it yourself: *For the technically curious*, below.
+> **Live, but slow — and you may wait in line.** One explanation makes the AI re-read the complaint up to about 250
+> times. The small cloud server this project runs on has two modest processors, so an explanation takes about
+> **2 seconds for a short complaint and up to about 1½–2 minutes for a long one** (measured on the server). Two at
+> once would only slow each other — and everyone else's ordinary scoring — so explanations run **one at a time**:
+> you get a place in line, like a ticket at a deli counter, and the page shows how many are ahead of you. A
+> complaint that was already explained comes back instantly. A bigger server would be faster, but would cost more
+> than the free cloud credits this project runs on.
 
 **What it can't tell you:** it explains what the *model* reacted to, not why the *company* paid. The deciding fact
 is often a company's own decision that never appears in the text.
@@ -467,7 +468,7 @@ flowchart LR
 | Build the track record | ✅ done | 19 clues per complaint, stored for all 4.8 million complaints; the no-peeking test passed |
 | Train the AI reader | ✅ done | the fine-tuned model and the scores above |
 | Put it online | ✅ live | **https://triageiq-mu.vercel.app** — anyone can try it |
-| Explain each score | ✅ built, laptop only | "why this score?" for every complaint, tested for honesty — not online (section 8) |
+| Explain each score | ✅ live (slow, one at a time) | "why this score?" for every complaint, tested for honesty (section 8) |
 
 ---
 
@@ -510,7 +511,7 @@ visitor ─https─▶ Vercel (static site) ─forwards API paths + a secret hea
 | Deployment | Docker Compose (db restored from a 57 MB dump + api + NGINX) on one EC2 t4g.small (ARM, Sydney), ≈ $21/month | [`deploy/`](deploy/) |
 | Website | plain HTML/CSS/JS on Vercel | [`web/`](web/) |
 | Essay | GitHub Pages | [`docs/`](docs/) |
-| Explanations *(local only)* | "Why this score?": Shapley values for the words and 10 groups of track-record inputs (exact), and for each sentence (delete-and-re-read); faithfulness-tested | [`api/xai.py`](api/xai.py), [`training/explain/`](training/explain/) |
+| Explanations | "Why this score?": Shapley values for the words and 10 groups of track-record inputs (exact), and for each sentence (delete-and-re-read); faithfulness-tested | [`api/xai.py`](api/xai.py), [`training/explain/`](training/explain/) |
 
 **Design rules:** no leakage (every input computable at complaint receipt) · one source of truth for features
 (all feature logic in SQL; training and serving use the same formulas, proven by the skew test) · temporal split,
@@ -560,14 +561,13 @@ no better, so the simpler model shipped. Every number lives in [`Context/FACTS.m
 3. `sh deploy/get_model.sh` — the trained model is too large for git (266 MB per file), so this downloads it from the
    [GitHub Release](https://github.com/Bajaj30/TriageIQ/releases/tag/model-v3) (~590 MB), checks every file's
    fingerprint *(tech: sha256)*, and makes a local database password.
-4. `docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.xai.yml up -d --build` — builds the API and
+4. `docker compose -f deploy/docker-compose.yml up -d --build` — builds the API and
    loads the demo database (150,000 real complaints from 2024). About a minute later: http://localhost:8000/docs.
 5. `python3 web/dev_server.py` → **http://localhost:3000** — the website, with **Why this score?** on both pages.
    Explanations are slower inside Docker than run natively: about a second for a short complaint, up to ~20 s for a
    long one (measured on an M4 laptop).
 
-Leave out `-f deploy/docker-compose.xai.yml` to run exactly what the live site runs, without explanations. Port 8000
-already taken? Put `API_PORT=8010` in front of step 4 and `API=http://127.0.0.1:8010` in front of step 5.
+This is exactly what the live site runs, explanations included. Port 8000 already taken? Put `API_PORT=8010` in front of step 4 and `API=http://127.0.0.1:8010` in front of step 5.
 Stop it: the same command as step 4 with `down` instead of `up -d --build`.
 
 **The full pipeline** (rebuilds everything from the public data — a 9 GB download, hours of SQL, a GPU for training):

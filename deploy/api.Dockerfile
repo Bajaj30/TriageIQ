@@ -25,7 +25,11 @@ RUN useradd --create-home --uid 1000 app
 WORKDIR /app
 COPY --from=build /venv /venv
 # the model bundle (training/serving/): changes rarely -> its own layer, before the code
-COPY training/outputs/serving_v3/model.onnx \
+# the model as its two halves (reader + judge): the same scores as model.onnx (max difference 0), and the
+# explanations reuse them — one copy of DistilBERT in memory (api/scorer.py)
+COPY training/outputs/serving_v3/xai_encoder.onnx \
+     training/outputs/serving_v3/xai_head.onnx \
+     training/outputs/serving_v3/xai_background.npz \
      training/outputs/serving_v3/tokenizer.json \
      training/outputs/serving_v3/preprocessing.json \
      training/outputs/serving_v3/calibration.json \

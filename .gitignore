@@ -22,6 +22,9 @@ Data/data/
 Context/*.docx
 Context/*.pages
 
+# Books / papers (copyrighted — e.g. Designing Machine Learning Systems.pdf); the repo is public
+*.pdf
+
 # model runs (weights are hundreds of MB) — kept on Kaggle / locally, never in git
 training/outputs/
 

@@ -29,8 +29,10 @@ the odds of a payout ×2.4". Exact in calibrated space: calibrated log-odds = a�
 WHAT IT IS NOT: the model's reasons, not the company's. Error analysis (CLAUDE.md trap 14): the deciding fact is
 often a company decision that isn't in the text.
 
-LOCAL ONLY: needs the three xai_* files (git-ignored, not shipped). The server doesn't have them, so the
-explain endpoints report "not available" there. A second copy of DistilBERT would also cost ~270 MB of RAM.
+SERVING: needs the three xai_* files (git-ignored; GitHub Release model-v3). When they're present the scorer runs
+the same two halves (api/scorer.py), so explanations share its DistilBERT — no second copy in memory. On the
+small server an explanation takes up to about a minute, so the API runs them one at a time from a queue
+(api/main.py) and visitors wait their turn.
 """
 import re
 from math import factorial
@@ -134,13 +136,17 @@ def split_units(text: str, max_words: int = MAX_WORDS, max_units: int = MAX_UNIT
 
 # ---------------------------------------------------------------- the explainer
 class Explainer:
-    def __init__(self, model_dir: Path, scorer, threads: int = 2):
-        so = ort.SessionOptions()
-        so.intra_op_num_threads, so.inter_op_num_threads = threads, 1
-        self.reader = ort.InferenceSession(str(model_dir / "xai_encoder.onnx"), sess_options=so,
-                                           providers=["CPUExecutionProvider"])
-        self.judge = ort.InferenceSession(str(model_dir / "xai_head.onnx"), sess_options=so,
-                                          providers=["CPUExecutionProvider"])
+    def __init__(self, model_dir: Path, scorer, threads: int = 2, batch: int = 16):
+        if getattr(scorer, "split", False):              # the scorer already runs the two halves: share them
+            self.reader, self.judge = scorer.reader, scorer.judge
+        else:
+            so = ort.SessionOptions()
+            so.intra_op_num_threads, so.inter_op_num_threads = threads, 1
+            self.reader = ort.InferenceSession(str(model_dir / "xai_encoder.onnx"), sess_options=so,
+                                               providers=["CPUExecutionProvider"])
+            self.judge = ort.InferenceSession(str(model_dir / "xai_head.onnx"), sess_options=so,
+                                              providers=["CPUExecutionProvider"])
+        self.batch = batch                                 # texts per DistilBERT pass: smaller = less peak memory
         bg = np.load(model_dir / "xai_background.npz")
         self.bg_text, self.bg_cat, self.bg_num = bg["text_vector"], bg["cat"], bg["num"]
         self.s = scorer
@@ -160,8 +166,8 @@ class Explainer:
                 for t in texts]
         out = np.zeros((len(seqs), 128), np.float32)
         order = np.argsort([len(q) for q in seqs])
-        for k in range(0, len(seqs), 16):
-            idx = order[k:k + 16]
+        for k in range(0, len(seqs), self.batch):
+            idx = order[k:k + self.batch]
             w = max(len(seqs[i]) for i in idx)
             ids, att = np.zeros((len(idx), w), np.int64), np.zeros((len(idx), w), np.int64)
             for j, i in enumerate(idx):

@@ -68,7 +68,7 @@ class ComplaintOut(Prediction):
     actually_paid: bool
 
 
-# ---------------------------------------------------------------- explanations (local only — api/xai.py)
+# ---------------------------------------------------------------- explanations (api/xai.py, queued by api/jobs.py)
 class Factor(BaseModel):
     name: str = Field(description="The complaint's words, or one group of track-record inputs")
     logit: float = Field(description="Its Shapley share of the score, in the model's raw log-odds units")
@@ -100,3 +100,14 @@ class Explanation(BaseModel):
     caveat: str = ("This explains what the model did, not why the company paid. The deciding fact is often a company "
                    "decision that isn't in the text.")
     latency_ms: float
+
+
+class ExplainTicket(BaseModel):
+    job_id: str
+    status: Literal["queued", "running", "done", "failed"]
+    position: int | None = Field(default=None, description="Explanations ahead of yours (0 = yours is running)")
+    wait_estimate_s: float | None = Field(default=None, description="Rough seconds until yours is done")
+    running_for_s: float | None = None
+    result: Explanation | None = None
+    error: str | None = None
+

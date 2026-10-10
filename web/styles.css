@@ -205,7 +205,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--ink); outline: n
 .colophon .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; padding-top: 20px; padding-bottom: 36px;
                   font: 400 12px/1.6 var(--mono); color: var(--muted); }
 
-/* ---------- why this score (explanations, local only) ---------- */
+/* ---------- why this score (explanations) ---------- */
 .why-btn { margin: 4px 0 18px; }
 #why-slot:empty { display: none; }
 .file #why-slot { margin-top: 28px; }
@@ -213,6 +213,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--ink); outline: n
 .why-wide { padding: 0 0 48px; scroll-margin-top: 16px; }
 .why-wide:empty { display: none; }
 .why-wide .why { margin-top: 0; }
+.why-wait { font-size: 14px; color: var(--ink-2); background: var(--paper-2); border-left: 3px solid var(--rule-strong);
+            padding: 10px 14px; margin: 0 0 18px; }
+.why-wait span { display: block; font-size: 13px; color: var(--muted); margin-top: 4px; }
 .why-pointer { font: 400 13px/1.4 var(--mono); color: var(--muted); margin: 4px 0 18px; }
 .why-path { border-top: 1px solid var(--rule); margin: 4px 0 10px; }
 /* a row: name · bar · value on one line (wide), or name + value above a full-width bar (phone) */

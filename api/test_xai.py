@@ -101,6 +101,14 @@ class TheRealModel(unittest.TestCase):
         self.assertEqual(len(r["sentences"]), 4)
         self.assertEqual(r["sentence_method"], "exact: all 16 combinations")
 
+    def test_two_halves_score_like_model_onnx(self):
+        from api.scorer import Scorer
+        whole = Scorer(MODEL_DIR, prefer_split=False)
+        self.assertTrue(self.scorer.split and not whole.split)
+        for text in (self.text, "My card was charged twice for one purchase and the bank refuses to refund it to me."):
+            self.assertAlmostEqual(self.scorer.score(text, self.inputs)["probability"],
+                                   whole.score(text, self.inputs)["probability"], places=9)
+
     def test_probability_is_the_live_one(self):
         r = self.x.explain(self.text, self.inputs)
         self.assertAlmostEqual(r["probability"], self.scorer.score(self.text, self.inputs)["probability"], places=9)

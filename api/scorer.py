@@ -4,7 +4,12 @@
                               (fusion_distilbert.ipynb cell 3; 1000/1000 identical ids, training/results/onnx_v3.json)
   inputs -> scaled numbers    log1p(company_quiet_days), then (x - train mean) / train std   (notebook cell 4,
                               preprocessing.json — fitted on train only, never refitted here)
-  model  -> logit             model.onnx on ONNX Runtime, CPU (training/serving/export_onnx.py)
+  model  -> logit             ONNX Runtime, CPU. Either model.onnx (training/serving/export_onnx.py), or — when the
+                              two halves are present — xai_encoder.onnx ("the reader": text -> 128 numbers) then
+                              xai_head.onnx ("the judge": 128 numbers + 19 inputs -> logit). Same weights, same
+                              scores (max difference 0 on 1,000 test complaints, training/results/xai_onnx_v3.json);
+                              the explanations (api/xai.py) need the halves, so loading only them keeps ONE copy of
+                              DistilBERT in memory instead of two (the server has ~2 GB).
   logit  -> probability       p = sigmoid(a * (logit + offset) + b)   (training/serving/calibrate.py)
   probability -> route        p >= senior threshold -> "senior analyst", else "template response"
 Feature logic is NOT here: the 19 inputs arrive from SQL (serving.model_input) — ground rule 4.
@@ -17,7 +22,7 @@ from tokenizers import Tokenizer
 
 
 class Scorer:
-    def __init__(self, model_dir: Path, threads: int = 2):
+    def __init__(self, model_dir: Path, threads: int = 2, prefer_split: bool = True):
         self.prep = json.loads((model_dir / "preprocessing.json").read_text())
         self.cal = json.loads((model_dir / "calibration.json").read_text())
         self.card = json.loads((model_dir / "model_card.json").read_text())
@@ -31,8 +36,12 @@ class Scorer:
         self.vocab = self.prep["vocab"]                               # embedding table sizes per category
         so = ort.SessionOptions()
         so.intra_op_num_threads, so.inter_op_num_threads = threads, 1
-        self.sess = ort.InferenceSession(str(model_dir / "model.onnx"), sess_options=so,
-                                         providers=["CPUExecutionProvider"])
+        load = lambda f: ort.InferenceSession(str(model_dir / f), sess_options=so, providers=["CPUExecutionProvider"])
+        self.split = prefer_split and all((model_dir / f).is_file() for f in ("xai_encoder.onnx", "xai_head.onnx"))
+        if self.split:
+            self.reader, self.judge = load("xai_encoder.onnx"), load("xai_head.onnx")
+        else:
+            self.sess = load("model.onnx")
 
     def table(self, inputs: dict) -> tuple[np.ndarray, np.ndarray]:
         """The 19 inputs as the model's two arrays: category ids (1, 4) and scaled numbers (1, 15)."""
@@ -52,9 +61,12 @@ class Scorer:
         body = self.tok.encode(clean_text, add_special_tokens=False).ids
         ids = [self.cls] + body[: self.max_body] + [self.sep]
         cat, num = self.table(inputs)
-        feeds = {"input_ids": np.array([ids], np.int64),
-                 "attention_mask": np.ones((1, len(ids)), np.int64), "cat": cat, "num": num}
-        logit = float(self.sess.run(["logit"], feeds)[0][0])
+        text = {"input_ids": np.array([ids], np.int64), "attention_mask": np.ones((1, len(ids)), np.int64)}
+        if self.split:
+            vec = self.reader.run(["text_vector"], text)[0]
+            logit = float(self.judge.run(["logit"], {"text_vector": vec, "cat": cat, "num": num})[0][0])
+        else:
+            logit = float(self.sess.run(["logit"], {**text, "cat": cat, "num": num})[0][0])
         p = self.probability(logit)
         return {"probability": p, "senior": p >= self.cal["senior_threshold_p"], "logit": logit,
                 "word_pieces": len(body), "cut_at_512": len(body) > self.max_body}

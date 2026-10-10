@@ -20,6 +20,9 @@ map $from_vercel $visitor {                       # whose limit does this reques
     default $binary_remote_addr;                  # anything else (it will be refused anyway)
 }
 limit_req_zone $visitor zone=per_ip:10m rate=5r/s;   # ~5 requests a second per visitor
+limit_req_zone $visitor zone=explain:1m rate=4r/m;   # asking for an explanation: ~4 a minute per visitor (each one
+                                                     # can keep the server busy for up to ~100 s; checking on a
+                                                     # ticket is NOT counted here — it's a normal, cheap request)
 limit_req_status 429;                                 # over the limit -> "429 Too Many Requests"
 
 server {
@@ -28,6 +31,18 @@ server {
     server_name _;
     server_tokens off;                 # don't advertise the NGINX version
     client_max_body_size 64k;          # a complaint is at most 20,000 characters
+
+    location ~ ^/(explain|complaint/[0-9]+/explain)$ {   # asking for an explanation (POST): the slow kind
+        if ($from_vercel = 0) { return 403; }
+        limit_req zone=explain burst=3 nodelay;
+        limit_req zone=per_ip burst=20 nodelay;
+        proxy_pass http://api:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $visitor;
+        proxy_set_header X-Forwarded-For $visitor;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 30s;                      # answers at once with a ticket; the work happens later
+    }
 
     location / {
         if ($from_vercel = 0) { return 403; }        # not through Vercel -> refused
