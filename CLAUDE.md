@@ -22,6 +22,7 @@ site on Vercel, API on AWS EC2 (Sydney) · blog on GitHub Pages · remaining wor
 | The essay "Finding the two percent" | https://bajaj30.github.io/TriageIQ/ (`docs/`) |
 | Code | https://github.com/Bajaj30/TriageIQ (branch `main`) |
 | Headline (2024 test, 150,000 complaints) | within-company **0.8224** (0.815–0.830) · riskiest 10% → **92.6%** of payouts |
+| Project report (PDF, academic format, 28 pp.) | `report/TriageIQ_Project_Report.pdf` — regenerate with `python report/build_report.py` (2026-10-21) |
 | Running cost | ≈ $21/month from $140 AWS credits; plan expires **2027-04-02** (§12) |
 
 **Request path:** visitor → Vercel (static site + `routes` forwarding API paths with a secret header) → NGINX on
