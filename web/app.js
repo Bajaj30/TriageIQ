@@ -99,8 +99,9 @@ function narrativeHTML(text) {
 
 // ---------------------------------------------------------------- "Why this score?" — explanations (queued)
 // The API explains a score with Shapley values (api/xai.py): a typical complaint's score, then how much each part
-// of THIS complaint multiplies the odds. Only offered where the API says it can (/explain/status) — the deployed
-// server doesn't carry the extra model files, and Vercel doesn't forward /explain, so the live site never shows it.
+// of THIS complaint multiplies the odds. Only offered where the API says it can (/explain/status): live on the
+// deployed site since 2026-10-10 (Vercel forwards /explain and /explain/*); hidden wherever the xai_* model files
+// are missing.
 const XAI = api("/explain/status").then((r) => !!(r && r.available)).catch(() => false);
 
 const DISCLAIMER = "They show which parts of a complaint moved the model's score — not why the company actually paid; the deciding fact is often a company decision that isn't in the text. They are approximations: hiding sentences creates text the model never saw in training, and for long complaints the single most important sentence can change on a re-run (trust the top few). They are slow — up to about two minutes — because they run one at a time on a small server. Not legal or financial advice.";

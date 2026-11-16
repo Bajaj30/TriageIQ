@@ -1,4 +1,4 @@
-"""Why did the model give THIS score? — Shapley values over the shipped model. Local use only (see below).
+"""Why did the model give THIS score? — Shapley values over the shipped model. Live in production (see SERVING below).
 
 THE IDEA (Shapley values, the maths behind "SHAP"): share a team's result fairly among its players. Add the
 players one at a time in some order and note how much the score jumps when each one joins; a player's fair

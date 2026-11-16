@@ -276,7 +276,7 @@ frontend.md = the frontend brief + build contract; built and live (web/).
 Learning/how_it_works.md = the live system end to end (git-ignored: on the Mac only): A = life of every request hop by
      hop (startup, /predict in 21 steps, every other endpoint, explanations, status codes, a code change) · B = the 26
      backend + Docker points (rebuilt from the code 2026-11-16) · C = the 45 deployment points, compressed.
-     Replaces Learning/deployment_concepts.md (delete only after Shivam confirms).
+     (Replaced Learning/deployment_concepts.md, deleted 2026-11-16.)
 Learning/Phase3/revision.md = Phase 3 concept cards (calibration → ONNX → serving DB → API → Docker → AWS → NGINX → Vercel).
 NLP.md = every NLP / ML concept and metric used in the project, where and how (Shivam asked 2026-10-05).
 
