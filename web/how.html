@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <script src="/scorecards.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body data-page="how">
@@ -81,6 +82,35 @@
         <dt>This site</dt><dd>Plain HTML, CSS and JavaScript on Vercel, forwarding to the API</dd>
         <dt>Links</dt><dd><a href="/docs">API docs</a> · <a href="https://github.com/Bajaj30/TriageIQ">Source on GitHub</a></dd>
       </dl>
+    </section>
+
+    <section class="block">
+      <details class="scorecards" id="scorecards">
+        <summary>
+          <span class="kicker">The track record, number by number</span>
+          <span class="sc-title">Production score cards for SQL features</span>
+          <span class="sc-hint">Two real 2024 complaints side by side: one the company paid, one it didn't</span>
+        </summary>
+        <p class="sc-intro">The 19 numbers the model read next to each complaint's words. Both complaints are real, from
+          2024, never seen in training, and about the same product and the same kind of problem. So the difference comes
+          from the company's record and the words. Every value is what the live service returns for that complaint. Each card
+          ends with how its score was made: how much each part moved it, then the final calculation.</p>
+        <div class="sc-grid" id="sc-grid"><p class="small">The score cards need JavaScript.</p></div>
+        <ul class="sc-foot">
+          <li><b>Inputs, not reasons.</b> The model weighs these together with the complaint's words. To see what moved a
+            particular score, open a real complaint and press “Why this score?”.</li>
+          <li><b>No peeking at the future.</b> Payout rates count only complaints at least 60 days old on the day the
+            complaint arrived (a company's answer takes time); the 90-day counts end the day before it arrived.</li>
+          <li><b>Small records are pulled toward the default.</b> Each rate starts with 5 imaginary complaints at the
+            product's rate, so a company with 3 complaints can't look like a 33% payer. With thousands of real ones, as
+            here, those 5 barely move it.</li>
+          <li><b>Factors multiply the odds, not the percentage.</b> Odds are chance ÷ (1 − chance): a 2.3% chance is odds of
+            about 1 to 42; for small chances the two are almost the same. The factors are Shapley values (the same numbers
+            as “Why this score?”), and they multiply out exactly to the final score.</li>
+          <li class="small">Source: the live API (<code>GET /complaint/9307696</code>, <code>/complaint/9628925</code>);
+            the counts are recounted from all 4.8 million complaints of 2022–24 and match every value.</li>
+        </ul>
+      </details>
     </section>
   </main>
 

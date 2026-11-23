@@ -1,3 +1,4 @@
 # files Vercel must not publish
 dev_server.py
+make_scorecards.py
 __pycache__
